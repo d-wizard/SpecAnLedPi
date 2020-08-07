@@ -4,3 +4,6 @@
 [submodule "modules/rpi_ws281x"]
 	path = modules/rpi_ws281x
 	url = https://github.com/jgarff/rpi_ws281x.git
+[submodule "modules/plotperfectclient"]
+	path = modules/plotperfectclient
+	url = https://github.com/d-wizard/plotperfectclient.git
