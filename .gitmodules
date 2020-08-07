@@ -1,0 +1,6 @@
+[submodule "modules/Ne10"]
+	path = modules/Ne10
+	url = https://github.com/projectNe10/Ne10
+[submodule "modules/rpi_ws281x"]
+	path = modules/rpi_ws281x
+	url = https://github.com/jgarff/rpi_ws281x.git
