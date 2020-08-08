@@ -20,12 +20,19 @@ env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g')
 
 src = [ 'main.cpp',
         'alsaMic.cpp',
+        'specAnFft.cpp',
         'modules/plotperfectclient/sendMemoryToPlot.c', 
         'modules/plotperfectclient/smartPlotMessage.c' ]
-inc = ['./modules/plotperfectclient']
-lib = ['rt', 'asound', 'fftw3', 'pthread']
 
-env.Program( source=src,  
-             LIBS=lib,
+inc = [ './modules/plotperfectclient', 
+        './modules/Ne10/inc' ]
+
+lib = ['rt', 'asound', 'fftw3', 'pthread', 'NE10']
+
+libpath = ['./modules/Ne10/build/modules']
+
+env.Program( source=src,
              CPPPATH=inc,
+             LIBS=lib,
+             LIBPATH=libpath,
              target="SpecAnLedPi" )
