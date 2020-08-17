@@ -16,10 +16,12 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#include <math.h>
 #include "fftModifier.h"
 
 
-FftModifier::FftModifier(float samplesRate, int fftSize, int numOutputValues, tFftModifiers& modifiers)
+FftModifier::FftModifier(float samplesRate, int fftSize, int numOutputValues, tFftModifiers& modifiers):
+   m_logScale(modifiers.logScale)
 {
    initIndexMap(samplesRate, fftSize, numOutputValues, modifiers);
    initScale(modifiers);
@@ -50,8 +52,23 @@ int FftModifier::modify(uint16_t* inOut)
       else if(sum < 0) sum = 0;
       inOut[outIndex] = sum;
    }
+   if(m_logScale)
+      logScale(inOut, numOuts);
 
    return numOuts;
+}
+
+
+void FftModifier::logScale(uint16_t* inOut, int num)
+{
+   static constexpr float maxU16 = (float)0xFFFF;
+   static constexpr float scalar = maxU16 / 4.8165; // log(0xFFFF) ~= 4.8165 (make sure to round up so scaler is slightly smaller)
+   for(int i = 0; i < num; ++i)
+   {
+      if(inOut[i] == 0) inOut[i] = 1; // Log of 0 is invalid, set to 1 to avoid.
+
+      inOut[i] = logf((float)inOut[i]) * scalar;
+   }
 }
 
 float FftModifier::spliceToFreq(float splice, float range, bool isStop)
