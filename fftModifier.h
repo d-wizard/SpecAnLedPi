@@ -28,8 +28,10 @@ typedef struct tFftModifiers
    uint16_t clipMax;
    uint16_t clipMin;
 
+   bool logScale;
+
    // Constructor. Initialize to a Do Nothing state (i.e. do not modify the FFT)
-   tFftModifiers():startFreq(0.0), stopFreq(0.0), clipMax(0xFFFF), clipMin(0){}
+   tFftModifiers():startFreq(0.0), stopFreq(0.0), clipMax(0xFFFF), clipMin(0), logScale(false){}
 }tFftModifiers;
 
 
@@ -53,8 +55,12 @@ private:
    int32_t m_scalar;
    int32_t m_offset;
 
+   bool m_logScale;
+
    float spliceToFreq(float splice, float range, bool isStop);
    void initIndexMap(float samplesRate, int fftSize, int numOutputValues, tFftModifiers& modifiers);
    void initScale(tFftModifiers& modifiers);
+
+   void logScale(uint16_t* inOut, int num);
 };
 
