@@ -21,15 +21,19 @@ env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g')
 src = [ 'main.cpp',
         'alsaMic.cpp',
         'specAnFft.cpp',
+        'fftModifier.cpp',
+        'fftRunRate.cpp',
+        'ledStrip.cpp',
         'modules/plotperfectclient/sendMemoryToPlot.c', 
         'modules/plotperfectclient/smartPlotMessage.c' ]
 
 inc = [ './modules/plotperfectclient', 
-        './modules/Ne10/inc' ]
+        './modules/Ne10/inc', 
+        './modules/rpi_ws281x' ]
 
-lib = ['rt', 'asound', 'fftw3', 'pthread', 'NE10']
+lib = ['rt', 'asound', 'fftw3', 'pthread', 'NE10', 'ws2811']
 
-libpath = ['./modules/Ne10/build/modules']
+libpath = ['./modules/Ne10/build/modules', './modules/rpi_ws281x']
 
 env.Program( source=src,
              CPPPATH=inc,
