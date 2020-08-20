@@ -183,7 +183,7 @@ void cleanUpBeforeExit()
 
 void signalHandler(int signum)
 {
-   //cleanUpBeforeExit();
+   cleanUpBeforeExit();
 }
 
 int main (int argc, char *argv[])
@@ -201,7 +201,7 @@ int main (int argc, char *argv[])
    pcmSampBuff.reserve(5000);
 
    // Create the processing thread.
-  processingThread.reset(new std::thread(processPcmSamples));
+   processingThread.reset(new std::thread(processPcmSamples));
 
    // Setup LED strip.
    ledColors.resize(NUM_LEDS);
