@@ -24,6 +24,7 @@ src = [ 'main.cpp',
         'fftModifier.cpp',
         'fftRunRate.cpp',
         'ledStrip.cpp',
+        'colorScale.cpp',
         'modules/plotperfectclient/sendMemoryToPlot.c', 
         'modules/plotperfectclient/smartPlotMessage.c' ]
 
