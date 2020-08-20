@@ -21,6 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <vector>
+#include <signal.h>
 #include <math.h>
 #include <memory> // unique_ptr
 #include "specAnLedPiTypes.h"
@@ -41,16 +42,17 @@
 #define SAMPLE_RATE (44100)
 #define NUM_LEDS (20)
 
+// Microphone Capture
+static std::unique_ptr<AlsaMic> mic;
+
 // FFT Stuff
 #define FFT_SIZE (256) // Base 2 number
-//static std::unique_ptr<SpecAnFft> fft;
-//static std::vector<uint16_t> fftSamp;
 
 static std::unique_ptr<FftRunRate> fftRun;
 static std::unique_ptr<FftModifier> fftModifier;
 
-
 // Processing Thread Stuff.
+static std::unique_ptr<std::thread> processingThread;
 static std::mutex bufferMutex;
 static std::condition_variable bufferReadyCondVar;
 static tPcmBuffer pcmSampBuff;
@@ -103,9 +105,6 @@ void processPcmSamples()
                int numBins = fftModifier->modify(fftResult->data());
                for(int i = 0 ; i < NUM_LEDS; ++i)
                {
-                  //ledColors[i].rgb.r = fftResult->data()[i] >> 8;
-                  //ledColors[i].rgb.b = fftResult->data()[i] >> 8;
-                  //ledColors[i].rgb.g = fftResult->data()[i] >> 8;
                   ledColors[i] = colorScale->getColor(fftResult->data()[i]*16);
                }
                ledStrip->set(ledColors);
@@ -119,7 +118,6 @@ void processPcmSamples()
 
 void alsaMicSamples(int16_t* samples, size_t numSamp)
 {
-   //return;
    // Move to buffer and return ASAP.
    std::unique_lock<std::mutex> lock(bufferMutex);
    auto origSize = pcmSampBuff.size();
@@ -128,56 +126,15 @@ void alsaMicSamples(int16_t* samples, size_t numSamp)
    bufferReadyCondVar.notify_all();
 }
 
-
-int main (int argc, char *argv[])
+void defineColorScale()
 {
-   //smartPlot_createFlushThread(10);
-
-   //fft.reset(new SpecAnFft(FFT_SIZE));
-   //fftSamp.resize(2*FFT_SIZE);
-   fftRun.reset(new FftRunRate(SAMPLE_RATE, FFT_SIZE, 150.0));
-
-
-   tFftModifiers mod;
-   mod.startFreq = 300;
-   mod.stopFreq = 12000;
-   mod.clipMin = 0;
-   mod.clipMax = 5000;
-   mod.logScale = false;
-   fftModifier.reset(new FftModifier(SAMPLE_RATE, FFT_SIZE, NUM_LEDS, mod));
-
-   pcmSampBuff.reserve(5000);
-
-   sleep(1);
-
-   // Create the processing thread.
-   std::thread processingThread(processPcmSamples);
-
-   std::unique_ptr<AlsaMic> mic;
-
-   mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE, 1, alsaMicSamples));
-
-   ledColors.resize(NUM_LEDS);
-   ledStrip.reset(new LedStrip(NUM_LEDS, LedStrip::GRB));
-#if 0
-   tRgbVector leds(NUM_LEDS);
-   leds[0].rgb.r = 100;
-   leds[2].rgb.g = 100;
-   leds[4].rgb.b = 100;
-   
-   leds[6].rgb.r = 29*2;
-   leds[6].rgb.b = 29*2;
-   leds[6].rgb.g = 29*2;
-
-   ledStrip->set(leds);
-#endif
-
    std::vector<ColorScale::tColorPoint> colors;
    std::vector<ColorScale::tBrightnessPoint> bright;
 
    colors.resize(1);
    bright.resize(2);
 
+   // Christmas colors: Red, White, Green.
    int idx = 0;
    colors[idx].color.u32 = 0x0000FF;
    colors[idx].startPoint  = 0;
@@ -206,21 +163,60 @@ int main (int argc, char *argv[])
    bright[1].brightness = 0.25;
 
    colorScale.reset(new ColorScale(colors, bright));
+}
 
-
-   sleep(100);
-
+void cleanUpBeforeExit()
+{
+   // Stop getting samples from the microphone.
    mic.reset();
 
+   // Kill the proc thread and join.
    procThreadLives = false;
    bufferMutex.lock();
    bufferReadyCondVar.notify_all();
    bufferMutex.unlock();
-   processingThread.join();
+   processingThread->join();
 
+   // Turn off all the LEDs in the LED strip.
    ledStrip.reset();
-   sleep(1);
+}
 
+void signalHandler(int signum)
+{
+   //cleanUpBeforeExit();
+}
 
-  return 0;
+int main (int argc, char *argv[])
+{
+   fftRun.reset(new FftRunRate(SAMPLE_RATE, FFT_SIZE, 150.0));
+
+   tFftModifiers mod;
+   mod.startFreq = 300;
+   mod.stopFreq = 12000;
+   mod.clipMin = 0;
+   mod.clipMax = 5000;
+   mod.logScale = false;
+   fftModifier.reset(new FftModifier(SAMPLE_RATE, FFT_SIZE, NUM_LEDS, mod));
+
+   pcmSampBuff.reserve(5000);
+
+   // Create the processing thread.
+  processingThread.reset(new std::thread(processPcmSamples));
+
+   // Setup LED strip.
+   ledColors.resize(NUM_LEDS);
+   ledStrip.reset(new LedStrip(NUM_LEDS, LedStrip::GRB));
+
+   // Define the Color Scale Gradient.
+   defineColorScale();
+
+   // Setup Signal Handler for ctrl+c
+   signal(SIGINT, signalHandler);
+
+   // Start capturing from the microphone.
+   mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE, 1, alsaMicSamples));
+
+   sleep(0x7FFFFFFF);
+
+   return 0;
 }
