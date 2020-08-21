@@ -20,6 +20,7 @@
 #include <math.h>
 #include "colorScale.h"
 
+#define FULL_SCALE (65536.0f)
 
 ColorScale::ColorScale(std::vector<tColorPoint>& colorPoints, std::vector<tBrightnessPoint>& brightnessPoints)
 {
@@ -30,12 +31,14 @@ ColorScale::ColorScale(std::vector<tColorPoint>& colorPoints, std::vector<tBrigh
    m_colorPoints.resize(colorsSize);
    for(size_t i = 0; i < colorsSize; ++i)
    {
+      bool first = (i == 0);
       bool last = (i == (colorsSize-1));
-      int32_t startPoint = colorPoints[i].startPoint;
-      int32_t endPoint   = last ? 0x10000 : colorPoints[i+1].startPoint;
+      int32_t startPoint = first ? 0 : colorPoints[i].startPoint * FULL_SCALE;
+      int32_t endPoint   = last ? FULL_SCALE : colorPoints[i+1].startPoint * FULL_SCALE;
 
       // endPoint should keep getting bigger.
       assert( endPoint > startPoint );
+      assert( endPoint <= FULL_SCALE );
 
       // Store colors.
       m_red[i].start   = colorPoints[i  ].color.rgb.r;
@@ -56,12 +59,14 @@ ColorScale::ColorScale(std::vector<tColorPoint>& colorPoints, std::vector<tBrigh
    float maxBrightness = 255.0f * sqrtf(3); // 3 channels (red, green, blue), hence the square root of 3.
    for(size_t i = 0; i < brightnessSize; ++i)
    {
+      bool first = (i == 0);
       bool last = (i == (brightnessSize-1));
-      int32_t startPoint = brightnessPoints[i].startPoint;
-      int32_t endPoint = last ? 0x10000 : brightnessPoints[i+1].startPoint;
+      int32_t startPoint = first ? 0 : brightnessPoints[i].startPoint * FULL_SCALE;
+      int32_t endPoint = last ? FULL_SCALE : brightnessPoints[i+1].startPoint * FULL_SCALE;
 
       // endPoint should keep getting bigger.
       assert( endPoint > startPoint );
+      assert( endPoint <= FULL_SCALE );
 
       // Store brightness.
       m_brightness[i].start = brightnessPoints[i  ].brightness * maxBrightness;

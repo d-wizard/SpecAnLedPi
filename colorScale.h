@@ -27,13 +27,13 @@ public:
    typedef struct 
    {
       tRgbColor color;
-      uint16_t startPoint; // Inclusive
+      float startPoint; // Inclusive (0 to 1)
    }tColorPoint;
    
    typedef struct 
    {
       float brightness; // 0 to 1
-      uint16_t startPoint; // Inclusive
+      float startPoint; // Inclusive (0 to 1)
    }tBrightnessPoint;
 
    ColorScale(std::vector<tColorPoint>& colorPoints, std::vector<tBrightnessPoint>& brightnessPoints);

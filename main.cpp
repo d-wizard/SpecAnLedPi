@@ -131,36 +131,39 @@ void defineColorScale()
    std::vector<ColorScale::tColorPoint> colors;
    std::vector<ColorScale::tBrightnessPoint> bright;
 
-   colors.resize(1);
-   bright.resize(2);
-
-   // Christmas colors: Red, White, Green.
    int idx = 0;
+   colors.resize(1);
+   bright.resize(1);
+
+   // Patriotic colors: Red, White, Blue.
    colors[idx].color.u32 = 0x0000FF;
-   colors[idx].startPoint  = 0;
+   colors[idx].startPoint  = 0.00;
    idx++; colors.resize(idx+1);
 
    colors[idx].color.u32 = 0x0000FF;
-   colors[idx].startPoint  = 4096;
+   colors[idx].startPoint  = 0.08;
    idx++; colors.resize(idx+1);
 
    colors[idx].color.u32 = 0xFFFFFF;
-   colors[idx].startPoint  = 6000;
+   colors[idx].startPoint  = 0.09;
    idx++; colors.resize(idx+1);
 
    colors[idx].color.u32 = 0xFFFFFF;
-   colors[idx].startPoint  = 14000;
+   colors[idx].startPoint  = 0.20;
    idx++; colors.resize(idx+1);
 
-   colors[idx].color.u32 = 0x00FF00;
-   colors[idx].startPoint  = 16384;
+   colors[idx].color.u32 = 0xFF0000;
+   colors[idx].startPoint  = 0.25;
    idx++; colors.resize(idx+1);
 
-   colors[idx].color.u32 = 0x00FF00;
+   colors[idx].color.u32 = 0xFF0000;
 
-   bright[0].brightness = 0.0;
-   bright[0].startPoint = 0;
-   bright[1].brightness = 0.25;
+   idx = 0;
+   bright[idx].brightness = 0.0;
+   bright[idx].startPoint = 0;
+   idx++; bright.resize(idx+1);
+
+   bright[idx].brightness = 0.25;
 
    colorScale.reset(new ColorScale(colors, bright));
 }
