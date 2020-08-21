@@ -84,7 +84,7 @@ ColorScale::~ColorScale()
 }
 
 
-tRgbColor ColorScale::getColor(uint16_t value)
+SpecAnLedTypes::tRgbColor ColorScale::getColor(uint16_t value)
 {
    int colorIndex = pointIndex(m_colorPoints.data(), m_colorPoints.size(), value);
    int brghtIndex = pointIndex(m_brightnessPoints.data(), m_brightnessPoints.size(), value);
@@ -106,7 +106,7 @@ tRgbColor ColorScale::getColor(uint16_t value)
    if(green > 255) green = 255;
    if(blue  > 255) blue  = 255;
 
-   tRgbColor retVal;
+   SpecAnLedTypes::tRgbColor retVal;
    retVal.rgb.r = (uint8_t)(red+0.5);
    retVal.rgb.g = (uint8_t)(green+0.5);
    retVal.rgb.b = (uint8_t)(blue+0.5);

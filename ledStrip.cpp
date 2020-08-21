@@ -34,26 +34,26 @@ LedStrip::LedStrip(size_t numLeds, eRgbOrder order, unsigned gpio):
    m_ledStrip.channel[0].brightness = 0xFF;
 
    int strip_type;
-   switch(order) // Note: Need to swap Red & Blue
+   switch(order)
    {
       default:
       case RGB:
-         strip_type = WS2811_STRIP_BGR;
+         strip_type = WS2811_STRIP_RGB;
       break;
       case RBG:
-         strip_type = WS2811_STRIP_BRG;
-      break;
-      case GRB:
-         strip_type = WS2811_STRIP_GBR;
-      break;
-      case GBR:
-         strip_type = WS2811_STRIP_GRB;
-      break;
-      case BRG:
          strip_type = WS2811_STRIP_RBG;
       break;
+      case GRB:
+         strip_type = WS2811_STRIP_GRB;
+      break;
+      case GBR:
+         strip_type = WS2811_STRIP_GBR;
+      break;
+      case BRG:
+         strip_type = WS2811_STRIP_BRG;
+      break;
       case BGR:
-         strip_type = WS2811_STRIP_RGB;
+         strip_type = WS2811_STRIP_BGR;
       break;
    }
    m_ledStrip.channel[0].strip_type = strip_type;
@@ -68,7 +68,7 @@ LedStrip::~LedStrip()
    ws2811_fini(&m_ledStrip);
 }
 
-void LedStrip::set(const tRgbVector& ledColors)
+void LedStrip::set(const SpecAnLedTypes::tRgbVector& ledColors)
 {
    size_t numToSet = std::min(m_numLeds, ledColors.size());
    for(size_t i = 0; i < numToSet; ++i)
@@ -81,7 +81,7 @@ void LedStrip::set(const tRgbVector& ledColors)
 
 void LedStrip::clear()
 {
-   tRgbVector off;
+   SpecAnLedTypes::tRgbVector off;
    off.resize(m_numLeds);
    memset(&off[0].u32, 0, sizeof(off[0].u32)*m_numLeds);
    set(off);

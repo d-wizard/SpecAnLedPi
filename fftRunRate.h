@@ -28,7 +28,7 @@ public:
    FftRunRate(float sampleRate, int fftSize, float fftRate);
    virtual ~FftRunRate();
 
-   tFftVector* run(tPcmSample* samples, size_t numSamp);
+   SpecAnLedTypes::tFftVector* run(SpecAnLedTypes::tPcmSample* samples, size_t numSamp);
 
 
 private:
@@ -43,8 +43,8 @@ private:
 
    SpecAnFft m_fft;
 
-   tPcmBuffer m_pcmBuffer;
-   tFftVector m_fftResult;
+   SpecAnLedTypes::tPcmBuffer m_pcmBuffer;
+   SpecAnLedTypes::tFftVector m_fftResult;
 
    int m_numSampNeededToDoFft;
    int m_numSampToRemoveAfterFft;

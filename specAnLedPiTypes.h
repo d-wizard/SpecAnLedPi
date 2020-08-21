@@ -21,25 +21,41 @@
 #include <stdint.h>
 #include <vector>
 
-typedef int16_t tPcmSample;
-typedef uint16_t tFftBin;
-
-typedef std::vector<tPcmSample> tPcmBuffer;
-
-typedef std::vector<tFftBin> tFftVector;
-
-typedef struct
+namespace SpecAnLedTypes
 {
-   uint8_t r;
-   uint8_t g;
-   uint8_t b;
-}tRgbStruct;
+   typedef int16_t tPcmSample;
+   typedef uint16_t tFftBin;
 
-typedef union
-{
-   tRgbStruct rgb;
-   uint32_t u32;
-}tRgbColor;
+   typedef std::vector<tPcmSample> tPcmBuffer;
 
+   typedef std::vector<tFftBin> tFftVector;
 
-typedef std::vector<tRgbColor> tRgbVector;
+   typedef struct
+   {
+      // Typical hex color codes are 0xRRGGBB (i.e. blue is the LSB)
+      uint8_t b;
+      uint8_t g;
+      uint8_t r;
+   }tRgbStruct;
+
+   typedef union
+   {
+      tRgbStruct rgb;
+      uint32_t u32;
+   }tRgbColor;
+
+   // Define some colors for easy use.
+   static constexpr uint32_t COLOR_RED     = 0xFF0000;
+   static constexpr uint32_t COLOR_GREEN   = 0x00FF00;
+   static constexpr uint32_t COLOR_BLUE    = 0x0000FF;
+   static constexpr uint32_t COLOR_YELLOW  = 0xFFFF00;
+   static constexpr uint32_t COLOR_CYAN    = 0x00FFFF;
+   static constexpr uint32_t COLOR_MAGENTA = 0xFF00FF;
+   static constexpr uint32_t COLOR_WHITE   = 0xFFFFFF;
+   static constexpr uint32_t COLOR_ORANGE  = 0xFF4500; // Orange is not as well defined as previous colors. Here is my best guess.
+   static constexpr uint32_t COLOR_PURPLE  = 0x8A2BE2; // Purple is not as well defined as previous colors. Here is my best guess.
+
+   typedef std::vector<tRgbColor> tRgbVector;
+
+}
+

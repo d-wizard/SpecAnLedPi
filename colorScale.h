@@ -26,7 +26,7 @@ class ColorScale
 public:
    typedef struct 
    {
-      tRgbColor color;
+      SpecAnLedTypes::tRgbColor color;
       float startPoint; // Inclusive (0 to 1)
    }tColorPoint;
    
@@ -39,7 +39,7 @@ public:
    ColorScale(std::vector<tColorPoint>& colorPoints, std::vector<tBrightnessPoint>& brightnessPoints);
    virtual ~ColorScale();
 
-   tRgbColor getColor(uint16_t value);
+   SpecAnLedTypes::tRgbColor getColor(uint16_t value);
 
 private:
    // Make uncopyable

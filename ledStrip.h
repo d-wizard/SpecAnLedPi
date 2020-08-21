@@ -39,7 +39,7 @@ public:
    LedStrip(size_t numLeds, eRgbOrder order, unsigned gpio = 18);
    virtual ~LedStrip();
 
-   void set(const tRgbVector& ledColors);
+   void set(const SpecAnLedTypes::tRgbVector& ledColors);
    void clear();
 
 private:

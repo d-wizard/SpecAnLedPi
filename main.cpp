@@ -55,12 +55,12 @@ static std::unique_ptr<FftModifier> fftModifier;
 static std::unique_ptr<std::thread> processingThread;
 static std::mutex bufferMutex;
 static std::condition_variable bufferReadyCondVar;
-static tPcmBuffer pcmSampBuff;
+static SpecAnLedTypes::tPcmBuffer pcmSampBuff;
 static bool procThreadLives = true;
 
 // LED Stuff
 static std::unique_ptr<LedStrip> ledStrip;
-static tRgbVector ledColors;
+static SpecAnLedTypes::tRgbVector ledColors;
 static std::unique_ptr<ColorScale> colorScale;
 
 void processPcmSamples()
@@ -99,7 +99,7 @@ void processPcmSamples()
             int numBins = fftModifier->modify(fftSamp.data());//numSamp/2;//
             smartPlot_1D(fftSamp.data(), E_UINT_16, numBins, numBins, 0, "FFT", "re");
          #else
-            tFftVector* fftResult = fftRun->run(samples, numSamp);
+            SpecAnLedTypes::tFftVector* fftResult = fftRun->run(samples, numSamp);
             if(fftResult != nullptr)
             {
                int numBins = fftModifier->modify(fftResult->data());
@@ -136,27 +136,27 @@ void defineColorScale()
    bright.resize(1);
 
    // Patriotic colors: Red, White, Blue.
-   colors[idx].color.u32 = 0x0000FF;
+   colors[idx].color.u32 = SpecAnLedTypes::COLOR_RED;
    colors[idx].startPoint  = 0.00;
    idx++; colors.resize(idx+1);
 
-   colors[idx].color.u32 = 0x0000FF;
+   colors[idx].color.u32 = colors[idx-1].color.u32; // Repeat previous color.
    colors[idx].startPoint  = 0.08;
    idx++; colors.resize(idx+1);
 
-   colors[idx].color.u32 = 0xFFFFFF;
+   colors[idx].color.u32 = SpecAnLedTypes::COLOR_WHITE;
    colors[idx].startPoint  = 0.09;
    idx++; colors.resize(idx+1);
 
-   colors[idx].color.u32 = 0xFFFFFF;
+   colors[idx].color.u32 = colors[idx-1].color.u32; // Repeat previous color.
    colors[idx].startPoint  = 0.20;
    idx++; colors.resize(idx+1);
 
-   colors[idx].color.u32 = 0xFF0000;
+   colors[idx].color.u32 = SpecAnLedTypes::COLOR_BLUE;
    colors[idx].startPoint  = 0.25;
    idx++; colors.resize(idx+1);
 
-   colors[idx].color.u32 = 0xFF0000;
+   colors[idx].color.u32 = colors[idx-1].color.u32; // Repeat previous color.
 
    idx = 0;
    bright[idx].brightness = 0.0;

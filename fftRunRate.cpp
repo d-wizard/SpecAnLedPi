@@ -42,9 +42,9 @@ FftRunRate::~FftRunRate()
 
 }
 
-tFftVector* FftRunRate::run(tPcmSample* samples, size_t numSamp)
+SpecAnLedTypes::tFftVector* FftRunRate::run(SpecAnLedTypes::tPcmSample* samples, size_t numSamp)
 {
-   tFftVector* fftResults = nullptr;
+   SpecAnLedTypes::tFftVector* fftResults = nullptr;
 
    // Copy new samples in.
    auto origSize = m_pcmBuffer.size();
