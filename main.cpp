@@ -32,6 +32,10 @@
 #include "ledStrip.h"
 #include "colorScale.h"
 
+#ifdef SEEED_ADC_DEV_ADDR
+#include "seeed_adc_8chan_12bit.h"
+#endif
+
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -63,10 +67,16 @@ static std::unique_ptr<LedStrip> ledStrip;
 static SpecAnLedTypes::tRgbVector ledColors;
 static std::unique_ptr<ColorScale> colorScale;
 
+#ifdef SEEED_ADC_DEV_ADDR
+// Gain Knob
+static std::unique_ptr<SeeedAdc8Ch12Bit> adc8Ch;
+#endif
+
 void processPcmSamples()
 {
    int16_t samples[FFT_SIZE];
    size_t numSamp = FFT_SIZE;
+   int gain = 16;
    while(procThreadLives)
    {
       bool copySamples = false;
@@ -105,11 +115,15 @@ void processPcmSamples()
                int numBins = fftModifier->modify(fftResult->data());
                for(int i = 0 ; i < NUM_LEDS; ++i)
                {
-                  ledColors[i] = colorScale->getColor(fftResult->data()[i]*16);
+                  ledColors[i] = colorScale->getColor(fftResult->data()[i]*gain);
                }
                ledStrip->set(ledColors);
                //smartPlot_1D(fftResult->data(), E_UINT_16, numBins, numBins, 0, "FFT", "re");
             }
+            
+#ifdef SEEED_ADC_DEV_ADDR
+            gain = adc8Ch->isActive() ? adc8Ch->getAdcValue(SEEED_ADC_GAIN_NUM) >> 5 : 16;
+#endif
          #endif
       }
    }
@@ -216,6 +230,10 @@ int main (int argc, char *argv[])
    // Setup Signal Handler for ctrl+c
    signal(SIGINT, signalHandler);
 
+#ifdef SEEED_ADC_DEV_ADDR
+   adc8Ch.reset(new SeeedAdc8Ch12Bit(SEEED_ADC_DEV_ADDR));
+#endif
+   
    // Start capturing from the microphone.
    mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE, 1, alsaMicSamples));
 

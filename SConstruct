@@ -18,6 +18,12 @@
 
 env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g')
 
+# Determine if the Seeed 8 Channel - 12 bit ADC Hat is available
+seeddAdcHatAvailable = True
+if seeddAdcHatAvailable:
+   seeedAdcDevicAddr = 4 # I2C Address 0x04 appears to be the default address to the Seeed ADC Hat
+   gainAdcChannelNum = 7
+
 src = [ 'main.cpp',
         'alsaMic.cpp',
         'specAnFft.cpp',
@@ -28,6 +34,8 @@ src = [ 'main.cpp',
         'modules/plotperfectclient/sendMemoryToPlot.c', 
         'modules/plotperfectclient/smartPlotMessage.c' ]
 
+defines = []
+
 inc = [ './modules/plotperfectclient', 
         './modules/Ne10/inc', 
         './modules/rpi_ws281x' ]
@@ -36,7 +44,14 @@ lib = ['rt', 'asound', 'fftw3', 'pthread', 'NE10', 'ws2811']
 
 libpath = ['./modules/Ne10/build/modules', './modules/rpi_ws281x']
 
+# Add to the build if the Seeed ADC Hat is attached to the Raspberry SpecAnLedPi
+if seeddAdcHatAvailable:
+   defines += ['SEEED_ADC_DEV_ADDR=' + str(seeedAdcDevicAddr)]
+   defines += ['SEEED_ADC_GAIN_NUM=' + str(gainAdcChannelNum)]
+   lib += ['wiringPi']
+
 env.Program( source=src,
+             CPPDEFINES=defines,
              CPPPATH=inc,
              LIBS=lib,
              LIBPATH=libpath,
