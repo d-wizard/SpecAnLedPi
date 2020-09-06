@@ -25,10 +25,10 @@ ColorGradient::ColorGradient(size_t numPoints)
 {
    size_t numZones = numPoints * 2 - 1;
    float reach = 0.5f / (float)numZones;
-   float deltaBetweenPoints = 1.0f / (float)numPoints;
+   float deltaBetweenPoints = 1.0f / (float)(numPoints-1);
 
    m_gradPoints.resize(numPoints);
-   for(auto i = 0; i < m_gradPoints.size(); ++i)
+   for(size_t i = 0; i < m_gradPoints.size(); ++i)
    {
       bool first = (i == 0);
       bool last  = (i == (m_gradPoints.size()-1));
@@ -37,7 +37,7 @@ ColorGradient::ColorGradient(size_t numPoints)
       m_gradPoints[i].saturation = 0;
       m_gradPoints[i].lightness = 0;
       m_gradPoints[i].position = 0.0f + deltaBetweenPoints * i;
-      m_gradPoints[i].reach = (first || last) ? reach * 2.0 : reach;
+      m_gradPoints[i].reach = (first || last) ? reach * 2.0f : reach;
    }
 }
 
@@ -48,7 +48,7 @@ ColorGradient::~ColorGradient()
 
 void ColorGradient::updateGradient(ColorGradient::eGradientOptions option, float value, int pointIndex)
 {
-   if(pointIndex >= 0 && pointIndex < m_gradPoints.size())
+   if(pointIndex >= 0 && pointIndex < (int)m_gradPoints.size())
    {
       storePrevSettings(option, pointIndex);
 
@@ -103,15 +103,85 @@ void ColorGradient::setPos(float value, size_t pointIndex)
 {
    if(pointIndex > 0 && pointIndex < (m_gradPoints.size()-1))
    {
+      float valueToUse = value;
+      float reach = m_gradPoints[pointIndex].reach;
 
+      float loLimit = getLoLimit(pointIndex);
+      float hiLimit = getHiLimit(pointIndex);
+
+      bool loValid = false;
+      bool hiValid = false;
+
+      while(!loValid || !hiValid)
+      {
+         loValid = hiValid = true;
+         float edgeLoNew = valueToUse - reach;
+         if(edgeLoNew < loLimit)
+         {
+            valueToUse = loLimit + reach;
+            loValid = false;
+         }
+
+         float edgeHiNew = valueToUse + reach;
+         if(edgeHiNew > hiLimit)
+         {
+            valueToUse = hiLimit - reach;
+            hiValid = false;
+         }
+      }
+
+      // Actually update the position of this point.
+      m_gradPoints[pointIndex].position = valueToUse;
+      locationChanged(pointIndex);
    }
 }
 
 void ColorGradient::setReach(float value, size_t pointIndex)
 {
+   if(pointIndex >= 0 && pointIndex <= (m_gradPoints.size()-1))
+   {
+      float valueToUse = value;
+      float position = m_gradPoints[pointIndex].position;
 
+      float loLimit = getLoLimit(pointIndex);
+      float hiLimit = getHiLimit(pointIndex);
+
+      bool loValid = false;
+      bool hiValid = false;
+
+      while(!loValid || !hiValid)
+      {
+         loValid = hiValid = true;
+         float edgeLoNew = position - valueToUse;
+         if(edgeLoNew < loLimit)
+         {
+            valueToUse = position - loLimit;
+            loValid = false;
+         }
+
+         float edgeHiNew = position + valueToUse;
+         if(edgeHiNew > hiLimit)
+         {
+            valueToUse = hiLimit - position;
+            hiValid = false;
+         }
+      }
+
+      // Actually update the position of this point.
+      m_gradPoints[pointIndex].reach = valueToUse;
+      locationChanged(pointIndex);
+   }
 }
 
+float ColorGradient::getLoLimit(size_t pointIndex)
+{
+   return MIN_INCREMENT * pointIndex;
+}
+
+float ColorGradient::getHiLimit(size_t pointIndex)
+{
+   return FULL_SCALE - MIN_INCREMENT * (m_gradPoints.size()-1-pointIndex);
+}
 
 void ColorGradient::storePrevSettings(eGradientOptions option, int pointIndex)
 {
@@ -139,7 +209,7 @@ void ColorGradient::locationChanged(size_t pointIndex)
       float newScalePosLo = m_gradPoints[pointIndex].position - m_gradPoints[pointIndex].reach;
       float oldScalePosLo = m_previousGradPoints[pointIndex].position - m_previousGradPoints[pointIndex].reach;
       float ratioLo = newScalePosLo / oldScalePosLo;
-      for(auto i = 0; i < pointIndex; ++i)
+      for(size_t i = 0; i < pointIndex; ++i)
       {
          m_gradPoints[i].position = m_previousGradPoints[i].position * ratioLo;
          m_gradPoints[i].reach    = m_previousGradPoints[i].reach    * ratioLo;
@@ -153,7 +223,7 @@ void ColorGradient::locationChanged(size_t pointIndex)
       float newScalePosHi = m_gradPoints[pointIndex].position + m_gradPoints[pointIndex].reach;
       float oldScalePosHi = m_previousGradPoints[pointIndex].position + m_previousGradPoints[pointIndex].reach;
       float ratioHi = (FULL_SCALE - newScalePosHi) / (FULL_SCALE - oldScalePosHi);
-      for(auto i = pointIndex+1; i < m_gradPoints.size(); ++i)
+      for(size_t i = pointIndex+1; i < m_gradPoints.size(); ++i)
       {
          float reflectPos = FULL_SCALE - m_previousGradPoints[i].position;
          m_gradPoints[i].position = FULL_SCALE - (reflectPos * ratioHi);

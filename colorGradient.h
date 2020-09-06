@@ -70,7 +70,8 @@ private:
    void storePrevSettings(eGradientOptions option, int pointIndex);
    void locationChanged(size_t pointIndex);
 
-   void scaleLocation(bool lowSide, size_t pointIndex, float ratio);
+   float getLoLimit(size_t pointIndex);
+   float getHiLimit(size_t pointIndex);
 
 };
 
