@@ -31,6 +31,9 @@ src = [ 'main.cpp',
         'fftRunRate.cpp',
         'ledStrip.cpp',
         'colorScale.cpp',
+        'colorGradient.cpp',
+        'gradientToScale.cpp',
+        'hsvrgb.cpp',
         'modules/plotperfectclient/sendMemoryToPlot.c', 
         'modules/plotperfectclient/smartPlotMessage.c' ]
 

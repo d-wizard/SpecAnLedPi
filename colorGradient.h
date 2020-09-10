@@ -36,16 +36,6 @@ public:
       E_GRAD_INVALID
    }eGradientOptions;
 
-   ColorGradient(size_t numPoints);
-   virtual ~ColorGradient();
-
-   void updateGradient(eGradientOptions option, float value, int pointIndex);
-
-private:
-   ColorGradient(); // No default constructor.
-
-   static constexpr float MIN_INCREMENT = 0.0078125; // 1/128
-
    typedef struct
    {
       float hue;
@@ -55,6 +45,17 @@ private:
       float reach;
    }tGradientPoint;
    
+   ColorGradient(size_t numPoints);
+   virtual ~ColorGradient();
+
+   void updateGradient(eGradientOptions option, float value, int pointIndex);
+
+   std::vector<tGradientPoint> getGradient();
+private:
+   ColorGradient(); // No default constructor.
+
+   static constexpr float MIN_INCREMENT = 0.0078125; // 1/128
+
    std::vector<tGradientPoint> m_gradPoints;
 
    void setHue(  float value, size_t pointIndex);
@@ -72,6 +73,8 @@ private:
 
    float getLoLimit(size_t pointIndex);
    float getHiLimit(size_t pointIndex);
+
+   
 
 };
 

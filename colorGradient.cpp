@@ -46,6 +46,11 @@ ColorGradient::~ColorGradient()
 
 }
 
+std::vector<ColorGradient::tGradientPoint> ColorGradient::getGradient()
+{
+   return m_gradPoints;
+}
+
 void ColorGradient::updateGradient(ColorGradient::eGradientOptions option, float value, int pointIndex)
 {
    if(pointIndex >= 0 && pointIndex < (int)m_gradPoints.size())
@@ -138,6 +143,8 @@ void ColorGradient::setPos(float value, size_t pointIndex)
 
 void ColorGradient::setReach(float value, size_t pointIndex)
 {
+   if(value < MIN_INCREMENT)
+      value = MIN_INCREMENT;
    if(pointIndex >= 0 && pointIndex <= (m_gradPoints.size()-1))
    {
       float valueToUse = value;
