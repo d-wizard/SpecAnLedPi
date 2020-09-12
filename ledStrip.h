@@ -41,6 +41,7 @@ public:
 
    void set(const SpecAnLedTypes::tRgbVector& ledColors);
    void clear();
+   size_t getNumLeds() {return m_numLeds;}
 
 private:
    // Make uncopyable

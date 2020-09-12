@@ -51,6 +51,8 @@ public:
    void updateGradient(eGradientOptions option, float value, int pointIndex);
 
    std::vector<tGradientPoint> getGradient();
+
+   size_t getNumPoints() {return m_gradPoints.size();}
 private:
    ColorGradient(); // No default constructor.
 

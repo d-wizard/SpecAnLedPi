@@ -16,7 +16,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-
+#include <stdio.h>
 #include <assert.h>
 #include "colorGradient.h"
 
@@ -38,6 +38,7 @@ ColorGradient::ColorGradient(size_t numPoints)
       m_gradPoints[i].lightness = 0;
       m_gradPoints[i].position = 0.0f + deltaBetweenPoints * i;
       m_gradPoints[i].reach = (first || last) ? reach * 2.0f : reach;
+      assert(m_gradPoints[i].reach >= MIN_INCREMENT);
    }
 }
 
@@ -156,18 +157,21 @@ void ColorGradient::setReach(float value, size_t pointIndex)
       bool loValid = false;
       bool hiValid = false;
 
+      bool first = (pointIndex == 0);
+      bool last  = (pointIndex == (m_gradPoints.size()-1));
+
       while(!loValid || !hiValid)
       {
          loValid = hiValid = true;
          float edgeLoNew = position - valueToUse;
-         if(edgeLoNew < loLimit)
+         if(edgeLoNew < loLimit && !first)
          {
             valueToUse = position - loLimit;
             loValid = false;
          }
 
          float edgeHiNew = position + valueToUse;
-         if(edgeHiNew > hiLimit)
+         if(edgeHiNew > hiLimit && !last)
          {
             valueToUse = hiLimit - position;
             hiValid = false;
