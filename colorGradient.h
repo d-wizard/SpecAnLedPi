@@ -60,6 +60,7 @@ private:
    static constexpr float MIN_INCREMENT = 0.0078125; // 1/128
 
    std::vector<tGradientPoint> m_gradPoints;
+   int m_numZones;
 
    void setHue(  float value, size_t pointIndex);
    void setSat(  float value, size_t pointIndex);

@@ -24,8 +24,8 @@
 
 ColorGradient::ColorGradient(size_t numPoints)
 {
-   size_t numZones = numPoints * 2 - 1;
-   float reach = 0.5f / (float)numZones;
+   m_numZones = numPoints * 2 - 1;
+   float reach = 0.5f / (float)m_numZones;
    float deltaBetweenPoints = 1.0f / (float)(numPoints-1);
 
    m_gradPoints.resize(numPoints);
@@ -221,12 +221,13 @@ void ColorGradient::setReach(float value, size_t pointIndex)
 
 float ColorGradient::getLoLimit(size_t pointIndex)
 {
-   return MIN_INCREMENT * pointIndex;
+   // There are 3 ranges between points. So multiply point index by 3.
+   return MIN_INCREMENT * pointIndex * 3;
 }
 
 float ColorGradient::getHiLimit(size_t pointIndex)
 {
-   return FULL_SCALE - MIN_INCREMENT * (m_gradPoints.size()-1-pointIndex);
+   return FULL_SCALE - getLoLimit(m_gradPoints.size()-1-pointIndex);
 }
 
 void ColorGradient::storePrevSettings(eGradientOptions option, int pointIndex)
