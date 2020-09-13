@@ -49,6 +49,30 @@ RotaryEncoder::~RotaryEncoder()
 
 }
 
+bool RotaryEncoder::checkButton(bool only1TruePerPress)
+{
+   bool retVal = false;
+   if(m_buttonGpio > 0)
+   {
+      if(only1TruePerPress)
+      {
+         // Only return true if this is a transition from unpressed to pressed.
+         bool curVal = digitalRead(m_buttonGpio);
+         if(curVal != m_buttonPrevState)
+         {
+            retVal = curVal;
+            m_buttonPrevState = retVal;
+         }
+      }
+      else
+      {
+         retVal = digitalRead(m_buttonGpio);
+         m_buttonPrevState = retVal;
+      }
+   }
+   return retVal;
+}
+
 void RotaryEncoder::updateRotation()
 {
    // This may be called at a very fast rate to simply record the state of the GPIOs.
@@ -102,3 +126,4 @@ RotaryEncoder::eRotation RotaryEncoder::checkRotation()
 
    return retVal;
 }
+

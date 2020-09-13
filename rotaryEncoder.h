@@ -33,10 +33,12 @@ public:
    RotaryEncoder(int forwardFirstGpio, int backwardFirstGpio, int buttonGpio);
    virtual ~RotaryEncoder();
 
+   bool checkButton(bool only1TruePerPress);
+
    void updateRotation();
 
    eRotation checkRotation();
-   //bool checkButton(bool only1TruePerPress);
+
 
 private:
    // Make uncopyable
@@ -56,4 +58,6 @@ private:
    int m_backwardPrevState = 0;
    int m_rotaryReadIndex = 0;
    int m_rotaryWriteIndex = 0;
+
+   bool m_buttonPrevState = false;
 };

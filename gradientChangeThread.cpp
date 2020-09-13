@@ -65,6 +65,7 @@ void GradChangeThread::threadFunction()
    ledColors.resize(numLeds);
 
    bool updatedGradient = false;
+   bool fineTune = false;
 
    while(m_threadLives)
    {
@@ -77,9 +78,14 @@ void GradChangeThread::threadFunction()
       if(m_threadLives)
       {
          auto dialValue = m_rotaryDial->checkRotation();
+         if(m_rotaryDial->checkButton(true))
+         {
+            fineTune = !fineTune;
+         }
          if(dialValue != RotaryEncoder::E_NO_CHANGE)
          {
-            float delta = (dialValue == RotaryEncoder::E_FORWARD) ? 0.01 : -0.01;
+            float change = fineTune ? 0.01 : 0.1;
+            float delta = (dialValue == RotaryEncoder::E_FORWARD) ? change : -change;
             m_colorGrad->updateGradientDelta(m_gradOption, delta, m_gradPointIndex);
 
             std::vector<ColorGradient::tGradientPoint> grad = m_colorGrad->getGradient();
