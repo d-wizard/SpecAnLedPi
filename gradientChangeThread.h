@@ -22,11 +22,12 @@
 #include <atomic>
 #include "colorGradient.h"
 #include "ledStrip.h"
+#include "rotaryEncoder.h"
 
 class GradChangeThread
 {
 public:
-   GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, int dialAdcNum);
+   GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<RotaryEncoder> rotaryDial);
    virtual ~GradChangeThread();
 
    void setGradientOption(ColorGradient::eGradientOptions newOption);
@@ -42,7 +43,7 @@ private:
 
    std::shared_ptr<ColorGradient> m_colorGrad;
    std::shared_ptr<LedStrip> m_ledStrip;
-   int m_dialAdcNum;
+   std::shared_ptr<RotaryEncoder> m_rotaryDial;
 
    std::thread m_thread;
    std::atomic<ColorGradient::eGradientOptions> m_gradOption;

@@ -17,6 +17,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include <stdio.h>
+#include <math.h>
 #include <assert.h>
 #include "colorGradient.h"
 
@@ -86,6 +87,40 @@ void ColorGradient::updateGradient(ColorGradient::eGradientOptions option, float
    }
 }
 
+void ColorGradient::updateGradientDelta(eGradientOptions option, float delta, int pointIndex)
+{
+   float newValue;
+   switch(option)
+   {
+      case E_GRAD_HUE:
+         newValue = fmod(m_gradPoints[pointIndex].hue+delta, 1.0); // Hue wraps around.
+         if(newValue < 0)
+         {
+            newValue = 1.0 + newValue; // fmod mirrors around 0. So need to make negative numbers positive.
+         }
+      break;
+      case E_GRAD_SATURATION:
+         newValue = m_gradPoints[pointIndex].saturation + delta;
+      break;
+      case E_GRAD_LIGHTNESS:
+         newValue = m_gradPoints[pointIndex].lightness + delta;
+      break;
+      case E_GRAD_POSITION:
+         newValue = m_gradPoints[pointIndex].position + delta;
+      break;
+      case E_GRAD_REACH:
+         newValue = m_gradPoints[pointIndex].reach + delta;
+      break;
+      default:
+         assert(0);
+      break;
+   }
+   if(newValue < 0.0)
+      newValue = 0.0;
+   else if(newValue > 1.0)
+      newValue = 1.0;
+   updateGradient(option, newValue, pointIndex);
+}
 
 void ColorGradient::setHue(float value, size_t pointIndex)
 {

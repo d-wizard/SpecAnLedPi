@@ -49,6 +49,7 @@ public:
    virtual ~ColorGradient();
 
    void updateGradient(eGradientOptions option, float value, int pointIndex);
+   void updateGradientDelta(eGradientOptions option, float delta, int pointIndex);
 
    std::vector<tGradientPoint> getGradient();
 

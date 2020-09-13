@@ -19,17 +19,14 @@
 #include <unistd.h>
 #include <vector>
 #include "gradientChangeThread.h"
-#include "seeed_adc_8chan_12bit.h"
 #include "colorScale.h"
 #include "gradientToScale.h"
 #include "specAnLedPiTypes.h"
 
-#include "smartPlotMessage.h"
-
-GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, int dialAdcNum):
+GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<RotaryEncoder> rotaryDial):
    m_colorGrad(colorGrad),
    m_ledStrip(ledStrip),
-   m_dialAdcNum(dialAdcNum),
+   m_rotaryDial(rotaryDial),
    m_gradOption(ColorGradient::E_GRAD_HUE),
    m_gradPointIndex(0),
    m_threadLives(true)
@@ -61,34 +58,43 @@ void GradChangeThread::setGradientPointIndex(int newPointIndex)
 
 void GradChangeThread::threadFunction()
 {
-   SeeedAdc8Ch12Bit adc;
    std::vector<ColorScale::tColorPoint> colors;
    std::vector<ColorScale::tBrightnessPoint> bright;
    size_t numLeds = m_ledStrip->getNumLeds();
    SpecAnLedTypes::tRgbVector ledColors;
    ledColors.resize(numLeds);
 
+   bool updatedGradient = false;
+
    while(m_threadLives)
    {
-      usleep(250*1000);
+      if(!updatedGradient)
+      {
+         usleep(10*1000);
+      }
+      updatedGradient = false;
+
       if(m_threadLives)
       {
-         int adcValue = adc.getAdcValue(m_dialAdcNum);
-         float adcValueFloat = (float)adcValue / 4095.0;
-         smartPlot_1D(&adcValueFloat, E_FLOAT_32, 1, 100, 1, "ADC", "Val");
-         m_colorGrad->updateGradient(m_gradOption, adcValueFloat, m_gradPointIndex);
-
-         std::vector<ColorGradient::tGradientPoint> grad = m_colorGrad->getGradient();
-         Convert::convertGradientToScale(grad, colors, bright);
-
-         ColorScale colorScale(colors, bright);
-
-         float deltaBetweenPoints = (float)65535/(float)(numLeds-1);
-         for(size_t i = 0 ; i < numLeds; ++i)
+         auto dialValue = m_rotaryDial->checkRotation();
+         if(dialValue != RotaryEncoder::E_NO_CHANGE)
          {
-            ledColors[i] = colorScale.getColor((float)i * deltaBetweenPoints);
+            float delta = (dialValue == RotaryEncoder::E_FORWARD) ? 0.01 : -0.01;
+            m_colorGrad->updateGradientDelta(m_gradOption, delta, m_gradPointIndex);
+
+            std::vector<ColorGradient::tGradientPoint> grad = m_colorGrad->getGradient();
+            Convert::convertGradientToScale(grad, colors, bright);
+
+            ColorScale colorScale(colors, bright);
+
+            float deltaBetweenPoints = (float)65535/(float)(numLeds-1);
+            for(size_t i = 0 ; i < numLeds; ++i)
+            {
+               ledColors[i] = colorScale.getColor((float)i * deltaBetweenPoints);
+            }
+            m_ledStrip->set(ledColors);
+            updatedGradient = true;
          }
-         m_ledStrip->set(ledColors);
       }
    }
 }
