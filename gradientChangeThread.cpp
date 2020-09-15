@@ -16,6 +16,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#include <stdio.h>
 #include <unistd.h>
 #include <vector>
 #include "gradientChangeThread.h"
@@ -29,7 +30,9 @@ GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std
    m_rotaryDial(rotaryDial),
    m_gradOption(ColorGradient::E_GRAD_HUE),
    m_gradPointIndex(0),
-   m_threadLives(true)
+   m_threadLives(true),
+   m_addPoint(false),
+   m_removePoint(false)
 {
    m_thread = std::thread(&GradChangeThread::threadFunction, this);
 }
@@ -55,6 +58,15 @@ void GradChangeThread::setGradientPointIndex(int newPointIndex)
    }
 }
 
+void GradChangeThread::addGradientPoint()
+{
+   m_addPoint = true;
+}
+
+void GradChangeThread::removeGradientPoint()
+{
+   m_removePoint = true;
+}
 
 void GradChangeThread::threadFunction()
 {
@@ -77,6 +89,7 @@ void GradChangeThread::threadFunction()
 
       if(m_threadLives)
       {
+         bool updateLeds = false;
          auto dialValue = m_rotaryDial->checkRotation();
          if(m_rotaryDial->checkButton(true))
          {
@@ -87,7 +100,27 @@ void GradChangeThread::threadFunction()
             float change = fineTune ? 0.01 : 0.1;
             float delta = (dialValue == RotaryEncoder::E_FORWARD) ? change : -change;
             m_colorGrad->updateGradientDelta(m_gradOption, delta, m_gradPointIndex);
+            updateLeds = true;
+         }
 
+         if(m_addPoint)
+         {
+            m_addPoint = false;
+            m_colorGrad->addPoint(m_gradPointIndex);
+            setGradientPointIndex(m_gradPointIndex+1);
+            updateLeds = true;
+         }
+
+         if(m_removePoint)
+         {
+            m_removePoint = false;
+            m_colorGrad->removePoint(m_gradPointIndex);
+            setGradientPointIndex(m_gradPointIndex-1);
+            updateLeds = true;
+         }
+
+         if(updateLeds)
+         {
             std::vector<ColorGradient::tGradientPoint> grad = m_colorGrad->getGradient();
             Convert::convertGradientToScale(grad, colors, bright);
 
@@ -101,6 +134,7 @@ void GradChangeThread::threadFunction()
             m_ledStrip->set(ledColors);
             updatedGradient = true;
          }
+
       }
    }
 }

@@ -33,6 +33,9 @@ public:
    void setGradientOption(ColorGradient::eGradientOptions newOption);
    void setGradientPointIndex(int newPointIndex);
 
+   void addGradientPoint();
+   void removeGradientPoint();
+
 private:
    // Make uncopyable
    GradChangeThread();
@@ -49,6 +52,9 @@ private:
    std::atomic<ColorGradient::eGradientOptions> m_gradOption;
    std::atomic<int> m_gradPointIndex;
    std::atomic<bool> m_threadLives;
+
+   std::atomic<bool> m_addPoint;
+   std::atomic<bool> m_removePoint;
 };
 
 
