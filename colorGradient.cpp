@@ -219,6 +219,51 @@ void ColorGradient::setReach(float value, size_t pointIndex)
    }
 }
 
+void ColorGradient::addPoint(int pointIndexToDuplicate)
+{
+   bool validIndex = (pointIndexToDuplicate >= 0 && pointIndexToDuplicate < (int)m_gradPoints.size());
+   if(validIndex && getLoLimit(m_gradPoints.size()) < 1.0) // If 1.0 or greater, there is no room for another point.
+   {
+      auto duplicateIter = m_gradPoints.begin();
+      for(int i = 0; i < pointIndexToDuplicate; ++i)
+         duplicateIter++;
+      auto newPoint = m_gradPoints[pointIndexToDuplicate];
+      newPoint.reach = 0.0; // Set to zero and let fixSpacing() deal with it.
+
+      m_gradPoints.insert(duplicateIter, newPoint);
+      fixSpacing();
+   }
+}
+
+void ColorGradient::removePoint(int pointIndexToRemove)
+{
+   bool validIndex = (pointIndexToRemove >= 0 && pointIndexToRemove < (int)m_gradPoints.size());
+   if(validIndex && m_gradPoints.size() > 2)
+   {
+      bool first = (pointIndexToRemove == 0);
+      bool last  = (pointIndexToRemove == (m_gradPoints.size()-1));
+      
+      auto toRemoveIter = m_gradPoints.begin();
+      for(int i = 0; i < pointIndexToRemove; ++i)
+         toRemoveIter++;
+
+      m_gradPoints.erase(toRemoveIter);
+
+      if(first)
+      {
+         // Removed the first value. Make sure new first has the correct position.
+         m_gradPoints[0].position = 0.0;
+      }
+      else if(last)
+      {
+         // Removed the last value. Make sure new last has the correct position.
+         m_gradPoints[m_gradPoints.size()-1].position = 1.0;
+      }
+
+      fixSpacing();
+   }
+}
+
 float ColorGradient::getLoLimit(size_t pointIndex)
 {
    // There are 3 ranges between points. So multiply point index by 3.
@@ -277,5 +322,117 @@ void ColorGradient::locationChanged(size_t pointIndex)
          m_gradPoints[i].reach    = m_previousGradPoints[i].reach * ratioHi;
       }
    }
-
 }
+
+void ColorGradient::fixSpacing()
+{
+   bool goodPass = false;
+   bool upDirection = false;
+   while(goodPass == false)
+   {
+      goodPass = true;
+      upDirection = !upDirection;
+
+      if(upDirection)
+      {
+         // Moving up the Gradient Points (Only move the starts / ends of point forward)
+         for(size_t i = 0; i < (m_gradPoints.size()-1); ++i) // Handle the last point outside of this loop.
+         {
+            bool thisIsFirst = (i == 0);
+            bool nextIsLast  = (i == (m_gradPoints.size()-2));
+
+            if(m_gradPoints[i].reach < MIN_INCREMENT)
+            {
+               goodPass = false;
+
+               auto oldReach = m_gradPoints[i].reach;
+               m_gradPoints[i].reach = MIN_INCREMENT;
+               if(!thisIsFirst)
+               {
+                  m_gradPoints[i].position += (m_gradPoints[i].reach - oldReach); // Move position by the change in reach. This way the start point remains the same (i.e. don't move anything backward).
+               }
+            }
+
+            auto thisEnd   = m_gradPoints[i  ].position + m_gradPoints[i  ].reach;
+            auto nextStart = m_gradPoints[i+1].position - m_gradPoints[i+1].reach;
+            auto nextEnd   = m_gradPoints[i+1].position + m_gradPoints[i+1].reach;
+
+            if( (nextStart - thisEnd) < MIN_INCREMENT)
+            {
+               goodPass = false;
+               // Not enough gap between this point and the next point. Move the next point.
+               auto moveStartAmount = MIN_INCREMENT - (nextStart - thisEnd);
+               if(nextIsLast)
+               {
+                  // Just change the reach. The position cannot be moved.
+                  m_gradPoints[i+1].reach -= moveStartAmount;
+               }
+               else
+               {
+                  // Move the reach and the position such that only the start position moves.
+                  m_gradPoints[i+1].reach -= (moveStartAmount/2.0);
+                  m_gradPoints[i+1].position = nextEnd - m_gradPoints[i+1].reach;
+               }
+            }
+         } // End for
+
+         // The last point's reach wasn't checked in the for loop.
+         if(m_gradPoints[m_gradPoints.size()-1].reach < MIN_INCREMENT)
+         {
+            goodPass = false; // Do not change here (only change values start/end point forward here). Will be fixed next time through the loop.
+         }
+      }
+      else
+      {
+         // Moving down the Gradient Points (Only move the starts / ends of point backward)
+         for(size_t i = m_gradPoints.size()-1; i > 0; --i) // Handle the first point outside of this loop.
+         {
+            bool thisIsLast  = (i == (m_gradPoints.size()-1));
+            bool prevIsFirst = (i == 1);
+
+            if(m_gradPoints[i].reach < MIN_INCREMENT)
+            {
+               goodPass = false;
+
+               auto oldReach = m_gradPoints[i].reach;
+               m_gradPoints[i].reach = MIN_INCREMENT;
+               if(!thisIsLast)
+               {
+                  m_gradPoints[i].position -= (m_gradPoints[i].reach - oldReach); // Move position by the change in reach. This way the end point remains the same (i.e. don't move anything forward).
+               }
+            }
+
+            auto thisStart = m_gradPoints[i  ].position - m_gradPoints[i  ].reach;
+            auto prevStart = m_gradPoints[i-1].position - m_gradPoints[i-1].reach;
+            auto prevEnd   = m_gradPoints[i-1].position + m_gradPoints[i-1].reach;
+
+            if( (thisStart - prevEnd) < MIN_INCREMENT)
+            {
+               goodPass = false;
+               // Not enough gap between this point and the next point. Move the next point.
+               auto moveEndAmount = MIN_INCREMENT - (thisStart - prevEnd);
+               if(prevIsFirst)
+               {
+                  // Just change the reach. The position cannot be moved.
+                  m_gradPoints[i-1].reach -= moveEndAmount;
+               }
+               else
+               {
+                  // Move the reach and the position such that only the end position moves.
+                  m_gradPoints[i-1].reach -= (moveEndAmount/2.0);
+                  m_gradPoints[i-1].position = prevStart + m_gradPoints[i-1].reach;
+               }
+            }
+         } // End for
+
+         // The last point's reach wasn't checked in the for loop.
+         if(m_gradPoints[0].reach < MIN_INCREMENT)
+         {
+            goodPass = false; // Do not change here (only change values start/end point backward here). Will be fixed next time through the loop.
+         }
+      }
+
+   }
+}
+
+

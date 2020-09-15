@@ -51,6 +51,9 @@ public:
    void updateGradient(eGradientOptions option, float value, int pointIndex);
    void updateGradientDelta(eGradientOptions option, float delta, int pointIndex);
 
+   void addPoint(int pointIndexToDuplicate);
+   void removePoint(int pointIndexToRemove);
+
    std::vector<tGradientPoint> getGradient();
 
    size_t getNumPoints() {return m_gradPoints.size();}
@@ -78,6 +81,7 @@ private:
    float getLoLimit(size_t pointIndex);
    float getHiLimit(size_t pointIndex);
 
+   void fixSpacing();
    
 
 };
