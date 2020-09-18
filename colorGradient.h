@@ -82,6 +82,7 @@ private:
    float getHiLimit(size_t pointIndex);
 
    void fixSpacing();
+   bool fixSpacing(bool upDirection);
    
 
 };
