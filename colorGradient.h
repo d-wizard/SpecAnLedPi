@@ -74,7 +74,8 @@ private:
    // Keep track of previous orientation for when position / reach change.
    eGradientOptions m_previousOption = E_GRAD_INVALID;
    int m_previousIndex = -1;
-   std::vector<tGradientPoint> m_previousGradPoints;
+   std::vector<tGradientPoint> m_previousGradPointsLo;
+   std::vector<tGradientPoint> m_previousGradPointsHi;
    void storePrevSettings(eGradientOptions option, int pointIndex);
    void locationChanged(size_t pointIndex);
 

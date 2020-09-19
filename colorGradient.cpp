@@ -310,7 +310,7 @@ void ColorGradient::storePrevSettings(eGradientOptions option, int pointIndex)
    {
       m_previousOption = option;
       m_previousIndex = pointIndex;
-      m_previousGradPoints = m_gradPoints;
+      m_previousGradPointsLo = m_previousGradPointsHi = m_gradPoints;
    }
 }
 
@@ -326,12 +326,23 @@ void ColorGradient::locationChanged(size_t pointIndex)
    {
       // Low
       float newScalePosLo = m_gradPoints[pointIndex].position - m_gradPoints[pointIndex].reach;
-      float oldScalePosLo = m_previousGradPoints[pointIndex].position - m_previousGradPoints[pointIndex].reach;
+      float oldScalePosLo = m_previousGradPointsLo[pointIndex].position - m_previousGradPointsLo[pointIndex].reach;
+      float lowerPointHi  = m_previousGradPointsLo[pointIndex-1].position + m_previousGradPointsLo[pointIndex-1].reach;
       float ratioLo = newScalePosLo / oldScalePosLo;
+
+      bool newOverlap = newScalePosLo < lowerPointHi;
+
+      if(!newOverlap)
+      {
+         // No overlap, just restore the original values.
+         ratioLo = 1.0;
+         m_previousGradPointsLo[pointIndex] = m_gradPoints[pointIndex]; // Make sure this value is used if scaling needs to be applied.
+      }
+
       for(size_t i = 0; i < pointIndex; ++i)
       {
-         m_gradPoints[i].position = m_previousGradPoints[i].position * ratioLo;
-         m_gradPoints[i].reach    = m_previousGradPoints[i].reach    * ratioLo;
+         m_gradPoints[i].position = m_previousGradPointsLo[i].position * ratioLo;
+         m_gradPoints[i].reach    = m_previousGradPointsLo[i].reach    * ratioLo;
       }
 
    }
@@ -340,13 +351,24 @@ void ColorGradient::locationChanged(size_t pointIndex)
    {
       // High (similar to low side but reflect from +1.0)
       float newScalePosHi = m_gradPoints[pointIndex].position + m_gradPoints[pointIndex].reach;
-      float oldScalePosHi = m_previousGradPoints[pointIndex].position + m_previousGradPoints[pointIndex].reach;
+      float oldScalePosHi = m_previousGradPointsHi[pointIndex].position + m_previousGradPointsHi[pointIndex].reach;
+      float upperPointLo  = m_previousGradPointsHi[pointIndex+1].position - m_previousGradPointsHi[pointIndex+1].reach;
       float ratioHi = (FULL_SCALE - newScalePosHi) / (FULL_SCALE - oldScalePosHi);
+
+      bool newOverlap = upperPointLo < newScalePosHi;
+
+      if(!newOverlap)
+      {
+         // No overlap, just restore the original values.
+         ratioHi = 1.0;
+         m_previousGradPointsHi[pointIndex] = m_gradPoints[pointIndex]; // Make sure this value is used if scaling needs to be applied.
+      }
+
       for(size_t i = pointIndex+1; i < m_gradPoints.size(); ++i)
       {
-         float reflectPos = FULL_SCALE - m_previousGradPoints[i].position;
+         float reflectPos = FULL_SCALE - m_previousGradPointsHi[i].position;
          m_gradPoints[i].position = FULL_SCALE - (reflectPos * ratioHi);
-         m_gradPoints[i].reach    = m_previousGradPoints[i].reach * ratioHi;
+         m_gradPoints[i].reach    = m_previousGradPointsHi[i].reach * ratioHi;
       }
    }
 
