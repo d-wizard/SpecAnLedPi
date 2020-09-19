@@ -37,7 +37,7 @@ ColorScale::ColorScale(std::vector<tColorPoint>& colorPoints, std::vector<tBrigh
       int32_t endPoint   = last ? FULL_SCALE : colorPoints[i+1].startPoint * FULL_SCALE;
 
       // endPoint should keep getting bigger.
-      assert( endPoint > startPoint );
+      assert( endPoint >= startPoint );
       assert( endPoint <= FULL_SCALE );
 
       // Store colors.

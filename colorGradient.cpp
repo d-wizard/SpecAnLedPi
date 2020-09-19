@@ -191,7 +191,13 @@ void ColorGradient::setPos(float value, size_t pointIndex)
 
 void ColorGradient::setReach(float value, size_t pointIndex)
 {
-   auto maxReach = (getHiLimit(pointIndex) - getLoLimit(pointIndex)) / 2.0;
+   bool first = (pointIndex == 0);
+   bool last  = (pointIndex == (m_gradPoints.size()-1));
+
+   auto maxReach = (getHiLimit(pointIndex) - getLoLimit(pointIndex));
+   if(!first && !last) 
+      maxReach /= 2.0;
+
    if(value < MIN_INCREMENT)
       value = MIN_INCREMENT;
    else if(value > maxReach)
@@ -205,40 +211,43 @@ void ColorGradient::setReach(float value, size_t pointIndex)
       float loLimit = getLoLimit(pointIndex);
       float hiLimit = getHiLimit(pointIndex);
 
-      bool loValid = false;
-      bool hiValid = false;
-
-      bool first = (pointIndex == 0);
-      bool last  = (pointIndex == (m_gradPoints.size()-1));
-
-      while(!loValid || !hiValid)
+      if( (position < hiLimit || last) && (position > loLimit || first) )
       {
-         loValid = hiValid = true;
-         float edgeLoNew = position - valueToUse;
-         if(edgeLoNew < loLimit && !first)
+         bool loValid = false;
+         bool hiValid = false;
+
+         while(!loValid || !hiValid)
          {
-            valueToUse = position - loLimit;
-            loValid = false;
+            loValid = hiValid = true;
+            float edgeLoNew = position - valueToUse;
+            if(edgeLoNew < loLimit && !first)
+            {
+               valueToUse = position - loLimit;
+               assert(valueToUse > 0);
+               loValid = false;
+            }
+
+            float edgeHiNew = position + valueToUse;
+            if(edgeHiNew > hiLimit && !last)
+            {
+               valueToUse = hiLimit - position;
+               assert(valueToUse > 0);
+               hiValid = false;
+            }
          }
 
-         float edgeHiNew = position + valueToUse;
-         if(edgeHiNew > hiLimit && !last)
-         {
-            valueToUse = hiLimit - position;
-            hiValid = false;
-         }
+         // Actually update the position of this point.
+         m_gradPoints[pointIndex].reach = valueToUse;
+         locationChanged(pointIndex);
       }
 
-      // Actually update the position of this point.
-      m_gradPoints[pointIndex].reach = valueToUse;
-      locationChanged(pointIndex);
    }
 }
 
 void ColorGradient::addPoint(int pointIndexToDuplicate)
 {
    bool validIndex = (pointIndexToDuplicate >= 0 && pointIndexToDuplicate < (int)m_gradPoints.size());
-   if(validIndex && getLoLimit(m_gradPoints.size()) < 1.0) // If 1.0 or greater, there is no room for another point.
+   if(validIndex && getLoLimit(m_gradPoints.size()*3) < 1.0) // If 1.0 or greater, there is no room for another point.
    {
       auto duplicateIter = m_gradPoints.begin();
       for(int i = 0; i < pointIndexToDuplicate; ++i)
@@ -248,6 +257,7 @@ void ColorGradient::addPoint(int pointIndexToDuplicate)
 
       m_gradPoints.insert(duplicateIter, newPoint);
       fixSpacing();
+      m_previousIndex = -1; // Just made a major change to the vector, make sure the previous version that is store off is not used again.
    }
 }
 
@@ -277,6 +287,7 @@ void ColorGradient::removePoint(int pointIndexToRemove)
       }
 
       fixSpacing();
+      m_previousIndex = -1; // Just made a major change to the vector, make sure the previous version that is store off is not used again.
    }
 }
 
@@ -339,18 +350,18 @@ void ColorGradient::locationChanged(size_t pointIndex)
       }
    }
 
-   fixSpacing();
 }
 
 void ColorGradient::fixSpacing()
 {
    bool done = false;
-   while(done == false)
+   int loopCount = 0;
+   while(done == false && loopCount < 10)
    {
       bool goodUp = fixSpacing(true);
       bool goodDn = fixSpacing(false);
       done = goodUp && goodDn;
-
+      ++loopCount;
    }
    assert(fixSpacing(true));
    assert(fixSpacing(false));
