@@ -106,8 +106,10 @@ void GradChangeThread::threadFunction()
          if(m_addPoint)
          {
             m_addPoint = false;
+            bool lastPoint = (m_gradPointIndex == (m_colorGrad->getNumPoints()-1));
             m_colorGrad->addPoint(m_gradPointIndex);
-            setGradientPointIndex(m_gradPointIndex+1);
+            if(!lastPoint)
+               setGradientPointIndex(m_gradPointIndex+1);
             updateLeds = true;
          }
 
