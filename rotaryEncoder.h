@@ -28,9 +28,15 @@ public:
       E_BACKWARD
    }eRotation;
 
-   RotaryEncoder(int forwardFirstGpio, int backwardFirstGpio);
-   RotaryEncoder(int buttonGpio);
-   RotaryEncoder(int forwardFirstGpio, int backwardFirstGpio, int buttonGpio);
+   typedef enum
+   {
+      E_HIGH,
+      E_LOW
+   }ePinDefault;
+
+   RotaryEncoder(ePinDefault pinDefault, int forwardFirstGpio, int backwardFirstGpio);
+   RotaryEncoder(ePinDefault pinDefault, int buttonGpio);
+   RotaryEncoder(ePinDefault pinDefault, int forwardFirstGpio, int backwardFirstGpio, int buttonGpio);
    virtual ~RotaryEncoder();
 
    bool checkButton(bool only1TruePerPress);
@@ -45,6 +51,8 @@ private:
    RotaryEncoder();
    RotaryEncoder(RotaryEncoder const&);
    void operator=(RotaryEncoder const&);
+
+   int toWiringPiPullUpDn(ePinDefault val);
 
    int m_forwardFirstGpio = -1;
    int m_backwardFirstGpio = -1;

@@ -19,34 +19,48 @@
 #include "wiringPi.h"
 #include "rotaryEncoder.h"
 
-
-RotaryEncoder::RotaryEncoder(int forwardFirstGpio, int backwardFirstGpio):
+int updn = PUD_UP;
+RotaryEncoder::RotaryEncoder(ePinDefault pinDefault, int forwardFirstGpio, int backwardFirstGpio):
    m_forwardFirstGpio(forwardFirstGpio),
    m_backwardFirstGpio(backwardFirstGpio)
 {
+   auto pullUpDn = toWiringPiPullUpDn(pinDefault);
    pinMode(m_forwardFirstGpio, INPUT);
    pinMode(m_backwardFirstGpio, INPUT);
+   pullUpDnControl(m_forwardFirstGpio, pullUpDn);
+   pullUpDnControl(m_backwardFirstGpio, pullUpDn);
 }
 
-RotaryEncoder::RotaryEncoder(int buttonGpio):
+RotaryEncoder::RotaryEncoder(ePinDefault pinDefault, int buttonGpio):
    m_buttonGpio(buttonGpio)
 {
+   auto pullUpDn = toWiringPiPullUpDn(pinDefault);
    pinMode(m_buttonGpio, INPUT);
+   pullUpDnControl(m_buttonGpio, pullUpDn);
 }
 
-RotaryEncoder::RotaryEncoder(int forwardFirstGpio, int backwardFirstGpio, int buttonGpio):
+RotaryEncoder::RotaryEncoder(ePinDefault pinDefault, int forwardFirstGpio, int backwardFirstGpio, int buttonGpio):
    m_forwardFirstGpio(forwardFirstGpio),
    m_backwardFirstGpio(backwardFirstGpio),
    m_buttonGpio(buttonGpio)
 {
+   auto pullUpDn = toWiringPiPullUpDn(pinDefault);
    pinMode(m_forwardFirstGpio, INPUT);
    pinMode(m_backwardFirstGpio, INPUT);
    pinMode(m_buttonGpio, INPUT);
+   pullUpDnControl(m_forwardFirstGpio, pullUpDn);
+   pullUpDnControl(m_backwardFirstGpio, pullUpDn);
+   pullUpDnControl(m_buttonGpio, pullUpDn);
 }
 
 RotaryEncoder::~RotaryEncoder()
 {
 
+}
+
+int RotaryEncoder::toWiringPiPullUpDn(ePinDefault val)
+{
+   return val == E_HIGH ? PUD_UP : PUD_DOWN;
 }
 
 bool RotaryEncoder::checkButton(bool only1TruePerPress)
