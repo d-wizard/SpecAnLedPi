@@ -50,10 +50,17 @@ static uint16_t magnatude(int16_t* complexSample)
 }
 
 
-SpecAnFft::SpecAnFft(int numTaps)
+SpecAnFft::SpecAnFft(int numTaps, bool window):
+   m_numTaps(numTaps),
+   m_window(window)
 {
    m_ne10Config = ne10_fft_alloc_r2c_int16(numTaps);
    m_tempComplex.resize(numTaps>>1);
+   if(m_window)
+   {
+      genWindowCoef(numTaps, false);
+      m_windowedInput.resize(numTaps);
+   }
 }
 
 SpecAnFft::~SpecAnFft()
@@ -63,7 +70,17 @@ SpecAnFft::~SpecAnFft()
 
 void SpecAnFft::runFft(int16_t* inSamp, uint16_t* outSamp)
 {
-   ne10_fft_r2c_1d_int16_neon(m_tempComplex.data(), inSamp, m_ne10Config, 1);
+   int16_t* sampToFft = inSamp;
+   if(m_window)
+   {
+      for(size_t i = 0; i < m_numTaps; ++i)
+      {
+         m_windowedInput[i] = ((int32_t)inSamp[i] * (int32_t)m_windowCoefs[i]) >> 15;
+      }
+      sampToFft = &m_windowedInput[0];
+   }
+
+   ne10_fft_r2c_1d_int16_neon(m_tempComplex.data(), sampToFft, m_ne10Config, 1);
 
    // Convert complex to real (i.e. do Pythagoras)
    size_t numComplexSamples = m_tempComplex.size();
@@ -73,3 +90,58 @@ void SpecAnFft::runFft(int16_t* inSamp, uint16_t* outSamp)
    }
 }
 
+
+void SpecAnFft::genWindowCoef(unsigned int numSamp, bool scale)
+{
+   std::vector<double> outSamp(numSamp);
+   double linearScaleFactor = 1.0;
+#if 1
+   // Blackman-Harris Window.
+   double denom = numSamp-1;
+   double twoPi  =  6.2831853071795864769252867665590057683943387987502116419;
+   double fourPi = 12.5663706143591729538505735331180115367886775975004232839;
+   double sixPi  = 18.8495559215387594307758602996770173051830163962506349258;
+
+   double cos1 = twoPi  / denom;
+   double cos2 = fourPi / denom;
+   double cos3 = sixPi  / denom;
+
+   for(unsigned int i = 0; i < numSamp; ++i)
+   {
+      double sampIndex = i;
+      outSamp[i] =   0.35875
+                   - 0.48829 * cos(cos1*sampIndex)
+                   + 0.14128 * cos(cos2*sampIndex)
+                   - 0.01168 * cos(cos3*sampIndex);
+   }
+   linearScaleFactor = 1.969124795; // Measured value.
+#else
+   // Standard Blackman Window.
+   for(unsigned int i = 0; i < numSamp; ++i)
+   {
+      outSamp[i] = ( 0.42 - 0.5 * cos (2.0*M_PI*(double)i/(double)(numSamp-1))
+         + 0.08 * cos (4.0*M_PI*(double)i/(double)(numSamp-1)) );
+   }
+   linearScaleFactor = 1.812030468; // Measured value.
+#endif
+
+   if(scale)
+   {
+      for(unsigned int i = 0; i < numSamp; ++i)
+      {
+         outSamp[i] *= linearScaleFactor;
+      }
+   }
+
+   // Finally, convert to Q15 values.
+   m_windowCoefs.resize(numSamp);
+   for(unsigned int i = 0; i < numSamp; ++i)
+   {
+      int32_t q15Val = outSamp[i] * 32768.0;
+      if(q15Val < 0)
+         q15Val = 0;
+      else if(q15Val > 0x7FFF)
+         q15Val = 0x7FFF;
+      m_windowCoefs[i] = q15Val;
+   }
+}

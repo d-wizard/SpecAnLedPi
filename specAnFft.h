@@ -25,7 +25,7 @@
 class SpecAnFft
 {
 public:
-   SpecAnFft(int numTaps);
+   SpecAnFft(int numTaps, bool window = true);
    virtual ~SpecAnFft();
 
    void runFft(int16_t* inSamp, uint16_t* outSamp);
@@ -37,5 +37,11 @@ private:
 
    ne10_fft_r2c_cfg_int16_t m_ne10Config;
    std::vector<ne10_fft_cpx_int16_t> m_tempComplex;
+
+   int m_numTaps;
+   bool m_window;
+   std::vector<int16_t> m_windowCoefs;
+   std::vector<int16_t> m_windowedInput;
+   void genWindowCoef(unsigned int numSamp, bool scale);
 };
 
