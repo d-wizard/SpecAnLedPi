@@ -66,7 +66,7 @@ int RotaryEncoder::toWiringPiPullUpDn(ePinDefault val)
 bool RotaryEncoder::checkButton(bool only1TruePerPress)
 {
    bool retVal = false;
-   if(m_buttonGpio > 0)
+   if(m_buttonGpio >= 0)
    {
       if(only1TruePerPress)
       {
