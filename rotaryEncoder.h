@@ -18,6 +18,8 @@
  */
 #pragma once
 
+#include <chrono>
+
 class RotaryEncoder
 {
 public:
@@ -27,6 +29,14 @@ public:
       E_FORWARD,
       E_BACKWARD
    }eRotation;
+
+   typedef enum
+   {
+      E_NO_CLICK,
+      E_SINGLE_CLICK,
+      E_DOUBLE_CLICK
+   }eButtonClick;
+
 
    typedef enum
    {
@@ -40,6 +50,7 @@ public:
    virtual ~RotaryEncoder();
 
    bool checkButton(bool only1TruePerPress);
+   eButtonClick checkButton();
 
    void updateRotation();
 
@@ -53,10 +64,15 @@ private:
    void operator=(RotaryEncoder const&);
 
    int toWiringPiPullUpDn(ePinDefault val);
+   int toWiringPiPullHiLo(ePinDefault val);
+
+   bool waitForButtonState(bool state, uint64_t timeBetweenChecksNs, uint32_t timeoutMs);
 
    int m_forwardFirstGpio = -1;
    int m_backwardFirstGpio = -1;
    int m_buttonGpio = -1;
+
+   int m_defaultButtonVal = -1;
 
    static constexpr int CIRC_BUFF_SIZE = 1024; // must be base 2 number
    static constexpr int CIRC_BUFF_MASK = CIRC_BUFF_SIZE-1;

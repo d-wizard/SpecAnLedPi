@@ -16,6 +16,8 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#include <chrono>
+#include <thread>
 #include "wiringPi.h"
 #include "rotaryEncoder.h"
 
@@ -25,6 +27,7 @@ RotaryEncoder::RotaryEncoder(ePinDefault pinDefault, int forwardFirstGpio, int b
    m_backwardFirstGpio(backwardFirstGpio)
 {
    auto pullUpDn = toWiringPiPullUpDn(pinDefault);
+   m_defaultButtonVal = toWiringPiPullHiLo(pinDefault);
    pinMode(m_forwardFirstGpio, INPUT);
    pinMode(m_backwardFirstGpio, INPUT);
    pullUpDnControl(m_forwardFirstGpio, pullUpDn);
@@ -35,6 +38,7 @@ RotaryEncoder::RotaryEncoder(ePinDefault pinDefault, int buttonGpio):
    m_buttonGpio(buttonGpio)
 {
    auto pullUpDn = toWiringPiPullUpDn(pinDefault);
+   m_defaultButtonVal = toWiringPiPullHiLo(pinDefault);
    pinMode(m_buttonGpio, INPUT);
    pullUpDnControl(m_buttonGpio, pullUpDn);
 }
@@ -45,6 +49,7 @@ RotaryEncoder::RotaryEncoder(ePinDefault pinDefault, int forwardFirstGpio, int b
    m_buttonGpio(buttonGpio)
 {
    auto pullUpDn = toWiringPiPullUpDn(pinDefault);
+   m_defaultButtonVal = toWiringPiPullHiLo(pinDefault);
    pinMode(m_forwardFirstGpio, INPUT);
    pinMode(m_backwardFirstGpio, INPUT);
    pinMode(m_buttonGpio, INPUT);
@@ -63,6 +68,11 @@ int RotaryEncoder::toWiringPiPullUpDn(ePinDefault val)
    return val == E_HIGH ? PUD_UP : PUD_DOWN;
 }
 
+int RotaryEncoder::toWiringPiPullHiLo(ePinDefault val)
+{
+   return val == E_HIGH ? HIGH : LOW;
+}
+
 bool RotaryEncoder::checkButton(bool only1TruePerPress)
 {
    bool retVal = false;
@@ -71,7 +81,7 @@ bool RotaryEncoder::checkButton(bool only1TruePerPress)
       if(only1TruePerPress)
       {
          // Only return true if this is a transition from unpressed to pressed.
-         bool curVal = digitalRead(m_buttonGpio);
+         bool curVal = digitalRead(m_buttonGpio) != m_defaultButtonVal;
          if(curVal != m_buttonPrevState)
          {
             retVal = curVal;
@@ -80,11 +90,57 @@ bool RotaryEncoder::checkButton(bool only1TruePerPress)
       }
       else
       {
-         retVal = digitalRead(m_buttonGpio);
+         retVal = digitalRead(m_buttonGpio) != m_defaultButtonVal;
          m_buttonPrevState = retVal;
       }
    }
    return retVal;
+}
+
+RotaryEncoder::eButtonClick RotaryEncoder::checkButton()
+{
+   eButtonClick retVal = E_NO_CLICK;
+
+   if(checkButton(true))
+   {
+      retVal = E_SINGLE_CLICK;
+
+      // Button Pressed. Wait for unpress.
+      if(waitForButtonState(false, 10*1000, 750))
+      {
+         // Button was unpressed. Check if it was repressed quickly.
+         if(waitForButtonState(true, 10*1000, 750))
+         {
+            retVal = E_DOUBLE_CLICK;
+         }
+      }
+   }
+
+   return retVal;
+}
+
+bool RotaryEncoder::waitForButtonState(bool state, uint64_t timeBetweenChecksNs, uint32_t timeoutMs)
+{
+   bool foundStateMatch = (checkButton(false) == state);
+   if(!foundStateMatch)
+   {
+      auto startTime = std::chrono::steady_clock::now();
+      auto nextTime = startTime;
+      auto timeout = startTime + std::chrono::milliseconds(timeoutMs);
+      auto timeBetweenChecks = std::chrono::nanoseconds(timeBetweenChecksNs);
+
+      while( !foundStateMatch && (std::chrono::steady_clock::now() < timeout) )
+      {
+         foundStateMatch = (checkButton(false) == state);
+         if(!foundStateMatch)
+         {
+            nextTime += timeBetweenChecks;
+            std::this_thread::sleep_until(nextTime);
+         }
+      }
+
+   }
+   return foundStateMatch;
 }
 
 void RotaryEncoder::updateRotation()
