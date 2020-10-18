@@ -17,46 +17,42 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-
-#include <thread>
-#include <atomic>
+#include <memory>
 #include "colorGradient.h"
 #include "ledStrip.h"
-#include "rotaryEncoder.h"
+#include "specAnLedPiTypes.h"
 
-class GradChangeThread
+
+class DisplayGradient
 {
 public:
-   typedef std::shared_ptr<RotaryEncoder> spre;
-   GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre bright, spre reach, spre pos, spre color, spre addRem);
-   virtual ~GradChangeThread();
+   DisplayGradient(std::shared_ptr<ColorGradient> grad, std::shared_ptr<LedStrip> ledStrip);
 
-   void setGradientOption(ColorGradient::eGradientOptions newOption);
-   void setGradientPointIndex(int newPointIndex);
+   void showGradient();
+
+   void blinkAll();
+   void blinkOne(int colorIndex);
+
+   void fadeIn(int colorIndex);
+
+   void fadeOut(int colorIndex);
 
 private:
    // Make uncopyable
-   GradChangeThread();
-   GradChangeThread(GradChangeThread const&);
-   void operator=(GradChangeThread const&);
+   DisplayGradient();
+   DisplayGradient(DisplayGradient const&);
+   void operator=(DisplayGradient const&);
 
-   void threadFunction();
+   void fillInLedStrip(float constBrightnessLevel = -1.0);
+   int colorIndexToLedIndex(int colorIndex);
+   SpecAnLedTypes::tRgbVector getBlankLedColors();
 
-   std::shared_ptr<ColorGradient> m_colorGrad;
+   void doBlink(SpecAnLedTypes::tRgbVector& ledBlink);
+   void doFade(SpecAnLedTypes::tRgbVector& ledFadeMax, bool fadeIn);
+
+   std::shared_ptr<ColorGradient> m_grad;
+   SpecAnLedTypes::tRgbVector m_ledColors;
    std::shared_ptr<LedStrip> m_ledStrip;
-   spre m_hueRotary;
-   spre m_satRotary;
-   spre m_brightRotary;
-   spre m_reachRotary;
-   spre m_posRotary;
-   spre m_colorButton;
-   spre m_addRemoveButton;
-
-   std::thread m_thread;
-   std::atomic<ColorGradient::eGradientOptions> m_gradOption;
-   std::atomic<int> m_gradPointIndex;
-   std::atomic<bool> m_threadLives;
 
 };
-
 
