@@ -23,6 +23,7 @@
 #include "colorScale.h"
 #include "DisplayGradient.h"
 #include "specAnLedPiTypes.h"
+#include "ThreadPriorities.h"
 
 GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre bright, spre reach, spre pos, spre color, spre addRem, std::shared_ptr<PotentiometerAdc> brightPot):
    m_colorGrad(colorGrad),
@@ -65,6 +66,9 @@ void GradChangeThread::setGradientPointIndex(int newPointIndex)
 
 void GradChangeThread::threadFunction()
 {
+   ThreadPriorities::setThisThreadPriorityPolicy(ThreadPriorities::GRADIENT_CHANGE_THREAD_PRIORITY, SCHED_FIFO);
+   ThreadPriorities::setThisThreadName("GradChange");
+
    bool updatedGradient = false;
    bool fineTune = false;
    

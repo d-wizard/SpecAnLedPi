@@ -18,6 +18,7 @@
  */
 #include <chrono>
 #include "GradientUserCues.h"
+#include "ThreadPriorities.h"
 
 
 GradientUserCues::GradientUserCues(std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<PotentiometerAdc> brightPot):
@@ -187,6 +188,9 @@ void GradientUserCues::doFade(std::shared_ptr<tCueThreads> thisCueThread, std::u
 
 void GradientUserCues::cueThread(std::shared_ptr<tCueThreads> thisCueThread)
 {
+   ThreadPriorities::setThisThreadPriorityPolicy(ThreadPriorities::USER_CUE_THREAD_PRIORITY, SCHED_FIFO);
+   ThreadPriorities::setThisThreadName("UserCue");
+
    std::unique_lock<std::mutex> lock(m_mutex);
    switch(thisCueThread->cueType)
    {
