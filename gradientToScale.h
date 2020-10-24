@@ -24,7 +24,6 @@
 namespace Convert
 {
    void convertGradientToScale( std::vector<ColorGradient::tGradientPoint>& gradPoints, 
-                                std::vector<ColorScale::tColorPoint>& colorPoints, 
-                                std::vector<ColorScale::tBrightnessPoint>& brightnessPoints );
+                                std::vector<ColorScale::tColorPoint>& colorPoints );
 }
 

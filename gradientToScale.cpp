@@ -32,15 +32,8 @@ static HsvColor gradientToHsv(ColorGradient::tGradientPoint grad)
 }
 
 void convertGradientToScale( std::vector<ColorGradient::tGradientPoint>& gradPoints, 
-                              std::vector<ColorScale::tColorPoint>& colorPoints, 
-                              std::vector<ColorScale::tBrightnessPoint>& brightnessPoints )
+                              std::vector<ColorScale::tColorPoint>& colorPoints )
 {
-   // TODO. Do I even need brightnessPoints? 
-   brightnessPoints.resize(2);
-   brightnessPoints[0].startPoint = 0;
-   brightnessPoints[0].brightness = 0;
-   brightnessPoints[1].brightness = 0.1;
-
    // Color Points.
    colorPoints.resize(gradPoints.size()*2);
    size_t outIndex = 0;
