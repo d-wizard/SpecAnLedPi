@@ -24,7 +24,7 @@
 #include "DisplayGradient.h"
 #include "specAnLedPiTypes.h"
 
-GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre bright, spre reach, spre pos, spre color, spre addRem):
+GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre bright, spre reach, spre pos, spre color, spre addRem, std::shared_ptr<PotentiometerAdc> brightPot):
    m_colorGrad(colorGrad),
    m_ledStrip(ledStrip),
    m_hueRotary(hue),
@@ -34,6 +34,7 @@ GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std
    m_posRotary(pos),
    m_colorButton(color),
    m_addRemoveButton(addRem),
+   m_brightPot(brightPot),
    m_gradOption(ColorGradient::E_GRAD_HUE),
    m_gradPointIndex(0),
    m_threadLives(true)
@@ -67,7 +68,7 @@ void GradChangeThread::threadFunction()
    bool updatedGradient = false;
    bool fineTune = false;
    
-   DisplayGradient display(m_colorGrad, m_ledStrip);
+   DisplayGradient display(m_colorGrad, m_ledStrip, m_brightPot);
    display.showGradient();
 
    while(m_threadLives)
@@ -80,32 +81,20 @@ void GradChangeThread::threadFunction()
 
       if(m_threadLives)
       {
+         bool blinking = false;
          bool updateLeds = false;
          if(m_hueRotary->checkButton(true) || m_satRotary->checkButton(true) || m_brightRotary->checkButton(true) || m_reachRotary->checkButton(true) || m_posRotary->checkButton(true) )
          {
             fineTune = !fineTune;
          }
 
-         switch(m_colorButton->checkButton())
+         if(m_colorButton->checkButton(true))
          {
-            case RotaryEncoder::E_SINGLE_CLICK:
-            {
-               auto newColorIndex = (m_gradPointIndex >= (m_colorGrad->getNumPoints()-1)) ? 0 : m_gradPointIndex+1;
-               setGradientPointIndex(newColorIndex);
-               display.blinkOne(m_gradPointIndex);
-               updateLeds = true;
-            }
-            break;
-            case RotaryEncoder::E_DOUBLE_CLICK:
-            {
-               auto newColorIndex = (m_gradPointIndex <= 0) ? m_colorGrad->getNumPoints()-1 : m_gradPointIndex-1;
-               setGradientPointIndex(newColorIndex);
-               display.blinkOne(m_gradPointIndex);
-               updateLeds = true;
-            }
-            break;
+            auto newColorIndex = (m_gradPointIndex >= (m_colorGrad->getNumPoints()-1)) ? 0 : m_gradPointIndex+1;
+            setGradientPointIndex(newColorIndex);
+            display.blinkOne(m_gradPointIndex);
+            blinking = true;
          }
-
          switch(m_addRemoveButton->checkButton())
          {
             case RotaryEncoder::E_SINGLE_CLICK:
@@ -115,7 +104,7 @@ void GradChangeThread::threadFunction()
                if(!lastPoint)
                   setGradientPointIndex(m_gradPointIndex+1);
                display.fadeIn(m_gradPointIndex);
-               updateLeds = true;
+               blinking = true;
             }
             break;
             case RotaryEncoder::E_DOUBLE_CLICK:
@@ -123,7 +112,7 @@ void GradChangeThread::threadFunction()
                display.fadeOut(m_gradPointIndex);
                m_colorGrad->removePoint(m_gradPointIndex);
                setGradientPointIndex(m_gradPointIndex-1);
-               updateLeds = true;
+               blinking = true;
             }
             break;
          }
@@ -173,7 +162,18 @@ void GradChangeThread::threadFunction()
             foundRotary = true;
          }
 
-         if(updateLeds)
+         if(display.userCueDone())
+         {
+            updateLeds = true;
+         }
+
+         float dummyBrightness;
+         if(m_brightPot->changedFlt(dummyBrightness, 0.01))
+         {
+            updateLeds = true;
+         }
+
+         if(!blinking && updateLeds)
          {
             display.showGradient();
             updatedGradient = true;

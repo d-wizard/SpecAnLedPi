@@ -21,12 +21,14 @@
 #include "colorGradient.h"
 #include "ledStrip.h"
 #include "specAnLedPiTypes.h"
+#include "potentiometerAdc.h"
+#include "GradientUserCues.h"
 
 
 class DisplayGradient
 {
 public:
-   DisplayGradient(std::shared_ptr<ColorGradient> grad, std::shared_ptr<LedStrip> ledStrip);
+   DisplayGradient(std::shared_ptr<ColorGradient> grad, std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<PotentiometerAdc> brightPot);
 
    void showGradient();
 
@@ -34,8 +36,9 @@ public:
    void blinkOne(int colorIndex);
 
    void fadeIn(int colorIndex);
-
    void fadeOut(int colorIndex);
+
+   bool userCueDone();
 
 private:
    // Make uncopyable
@@ -47,12 +50,12 @@ private:
    int colorIndexToLedIndex(int colorIndex);
    SpecAnLedTypes::tRgbVector getBlankLedColors();
 
-   void doBlink(SpecAnLedTypes::tRgbVector& ledBlink);
-   void doFade(SpecAnLedTypes::tRgbVector& ledFadeMax, bool fadeIn);
-
    std::shared_ptr<ColorGradient> m_grad;
    SpecAnLedTypes::tRgbVector m_ledColors;
    std::shared_ptr<LedStrip> m_ledStrip;
+   std::shared_ptr<PotentiometerAdc> m_brightPot;
+
+   std::unique_ptr<GradientUserCues> m_cues;
 
 };
 

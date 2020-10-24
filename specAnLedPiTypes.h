@@ -52,6 +52,7 @@ namespace SpecAnLedTypes
    static constexpr uint32_t COLOR_CYAN    = 0x00FFFF;
    static constexpr uint32_t COLOR_MAGENTA = 0xFF00FF;
    static constexpr uint32_t COLOR_WHITE   = 0xFFFFFF;
+   static constexpr uint32_t COLOR_BLACK   = 0x000000;
    static constexpr uint32_t COLOR_ORANGE  = 0xFF4500; // Orange is not as well defined as previous colors. Here is my best guess.
    static constexpr uint32_t COLOR_PURPLE  = 0x8A2BE2; // Purple is not as well defined as previous colors. Here is my best guess.
 

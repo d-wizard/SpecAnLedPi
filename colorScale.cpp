@@ -84,7 +84,7 @@ ColorScale::~ColorScale()
 }
 
 
-SpecAnLedTypes::tRgbColor ColorScale::getColor(uint16_t value)
+SpecAnLedTypes::tRgbColor ColorScale::getColor(uint16_t value, float brightness)
 {
    int colorIndex = pointIndex(m_colorPoints.data(), m_colorPoints.size(), value);
    int brghtIndex = pointIndex(m_brightnessPoints.data(), m_brightnessPoints.size(), value);
@@ -96,7 +96,7 @@ SpecAnLedTypes::tRgbColor ColorScale::getColor(uint16_t value)
    float blue  = getScaledValue( m_blue, m_colorPoints, colorIndex, value);
 
    float startBrightness = sqrtf(red*red + green*green + blue*blue);
-   float brightnessScalar = desiredBrightness / startBrightness;
+   float brightnessScalar = desiredBrightness * brightness / startBrightness;
 
    red   *= brightnessScalar;
    green *= brightnessScalar;

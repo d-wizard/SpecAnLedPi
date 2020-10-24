@@ -23,34 +23,40 @@
 
 
 
-DisplayGradient::DisplayGradient(std::shared_ptr<ColorGradient> grad, std::shared_ptr<LedStrip> ledStrip):
+DisplayGradient::DisplayGradient(std::shared_ptr<ColorGradient> grad, std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<PotentiometerAdc> brightPot):
    m_grad(grad),
-   m_ledStrip(ledStrip)
+   m_ledStrip(ledStrip),
+   m_brightPot(brightPot),
+   m_cues(new GradientUserCues(ledStrip, brightPot))
 {
 }
 
 void DisplayGradient::fillInLedStrip(float constBrightnessLevel)
 {
    std::vector<ColorScale::tColorPoint> colors;
-   std::vector<ColorScale::tBrightnessPoint> bright;
    auto numLeds = m_ledStrip->getNumLeds();
-
    m_ledColors.resize(numLeds);
-
    auto gradVect = m_grad->getGradient();
-   Convert::convertGradientToScale(gradVect, colors, bright);
-   
+   float brightnessPot = m_brightPot->getFlt();
+
    if(constBrightnessLevel >= 0.0 && constBrightnessLevel <= 1.0)
    {
-      bright[0].brightness = bright[bright.size()-1].brightness * constBrightnessLevel; // TODO, need final brightness solution.
+      for(auto& gradVal : gradVect)
+      {
+         gradVal.lightness = constBrightnessLevel;
+      }
+      brightnessPot = 1.0;
    }
 
-   ColorScale colorScale(colors, bright);
+   Convert::convertGradientToScale(gradVect, colors);
+   
+   std::vector<ColorScale::tBrightnessPoint> brightPoints{{1,0},{1,1}}; // Full brightness.
+   ColorScale colorScale(colors, brightPoints);
 
    float deltaBetweenPoints = (float)65535/(float)(numLeds-1);
    for(size_t i = 0 ; i < numLeds; ++i)
    {
-      m_ledColors[i] = colorScale.getColor((float)i * deltaBetweenPoints);
+      m_ledColors[i] = colorScale.getColor((float)i * deltaBetweenPoints, brightnessPot);
    }
 }
 
@@ -61,14 +67,14 @@ int DisplayGradient::colorIndexToLedIndex(int colorIndex)
    auto numLeds = m_ledStrip->getNumLeds();
    auto gradVect = m_grad->getGradient();
 
-   if(colorIndex >= 0 && colorIndex < gradVect.size())
+   if(colorIndex >= 0 && colorIndex < (signed)gradVect.size())
    {
       double colorPos = gradVect[colorIndex].position;
 
       retVal = (colorPos * (double)(numLeds-1)) + 0.5;
       if(retVal < 0)
          retVal = 0;
-      else if(retVal >= numLeds)
+      else if(retVal >= (signed)numLeds)
          retVal = numLeds - 1;
    }
 
@@ -103,7 +109,7 @@ void DisplayGradient::blinkAll()
       blink[ledIndex] = m_ledColors[ledIndex];
    }
 
-   doBlink(blink);
+   m_cues->startBlink(blink, (size_t)-1);
 }
 
 void DisplayGradient::blinkOne(int colorIndex)
@@ -114,30 +120,7 @@ void DisplayGradient::blinkOne(int colorIndex)
    auto ledIndex = colorIndexToLedIndex(colorIndex);
    blink[ledIndex] = m_ledColors[ledIndex];
 
-   doBlink(blink);
-}
-
-void DisplayGradient::doBlink(SpecAnLedTypes::tRgbVector& ledBlink)
-{
-   auto blank = getBlankLedColors();
-
-   int numBlinks = 3;
-   auto blinkTime = std::chrono::milliseconds(166);
-   
-   auto timerTime = std::chrono::steady_clock::now();
-   for(int i = 0; i < numBlinks; ++i)
-   {
-      // Blink Off.
-      m_ledStrip->set(blank);
-      timerTime += blinkTime;
-      std::this_thread::sleep_until(timerTime);
-
-      // Blink On.
-      m_ledStrip->set(ledBlink);
-      timerTime += blinkTime;
-      std::this_thread::sleep_until(timerTime);
-   }
-
+   m_cues->startBlink(blink, ledIndex);
 }
 
 void DisplayGradient::fadeIn(int colorIndex)
@@ -148,7 +131,7 @@ void DisplayGradient::fadeIn(int colorIndex)
    auto ledIndex = colorIndexToLedIndex(colorIndex);
    fade[ledIndex] = m_ledColors[ledIndex];
 
-   doFade(fade, true);
+   m_cues->startFade(fade, ledIndex, true);
 }
 
 void DisplayGradient::fadeOut(int colorIndex)
@@ -159,37 +142,13 @@ void DisplayGradient::fadeOut(int colorIndex)
    auto ledIndex = colorIndexToLedIndex(colorIndex);
    fade[ledIndex] = m_ledColors[ledIndex];
 
-   doFade(fade, false);
+   m_cues->startFade(fade, ledIndex, false);
 }
 
-void DisplayGradient::doFade(SpecAnLedTypes::tRgbVector& ledFadeMax, bool fadeIn)
+
+bool DisplayGradient::userCueDone()
 {
-   auto ledColor = ledFadeMax;
-   size_t numLeds = ledFadeMax.size();
-
-   int numIterations = 40;
-   auto fadeLen = std::chrono::nanoseconds(2*1000*1000*1000);
-
-   auto timeBetween = fadeLen / numIterations;
-
-   for(int i = 0; i < numIterations; ++i)
-   {
-      float doneness = (float)i / (float)(numIterations - 1);
-      float notDoneness = 1.0 - doneness;
-      float scaleFactor = fadeIn ? doneness : notDoneness;
-      if(scaleFactor < 0.0)
-         scaleFactor = 0.0;
-      else if(scaleFactor > 1.0)
-         scaleFactor = 1.0;
-      
-      for(size_t ledIndex = 0; ledIndex < numLeds; ++ledIndex)
-      {
-         ledColor[ledIndex].rgb.r = (float)ledFadeMax[ledIndex].rgb.r * scaleFactor;
-         ledColor[ledIndex].rgb.g = (float)ledFadeMax[ledIndex].rgb.g * scaleFactor;
-         ledColor[ledIndex].rgb.b = (float)ledFadeMax[ledIndex].rgb.b * scaleFactor;
-      }
-      m_ledStrip->set(ledColor);
-      std::this_thread::sleep_for(timeBetween);
-   }
-
+   return m_cues->userCueJustFinished();
 }
+
+

@@ -23,12 +23,13 @@
 #include "colorGradient.h"
 #include "ledStrip.h"
 #include "rotaryEncoder.h"
+#include "potentiometerAdc.h"
 
 class GradChangeThread
 {
 public:
    typedef std::shared_ptr<RotaryEncoder> spre;
-   GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre bright, spre reach, spre pos, spre color, spre addRem);
+   GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre bright, spre reach, spre pos, spre color, spre addRem, std::shared_ptr<PotentiometerAdc> brightPot);
    virtual ~GradChangeThread();
 
    void setGradientOption(ColorGradient::eGradientOptions newOption);
@@ -51,6 +52,7 @@ private:
    spre m_posRotary;
    spre m_colorButton;
    spre m_addRemoveButton;
+   std::shared_ptr<PotentiometerAdc> m_brightPot;
 
    std::thread m_thread;
    std::atomic<ColorGradient::eGradientOptions> m_gradOption;
