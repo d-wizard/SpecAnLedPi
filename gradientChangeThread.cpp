@@ -25,7 +25,7 @@
 #include "specAnLedPiTypes.h"
 #include "ThreadPriorities.h"
 
-GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre bright, spre reach, spre pos, spre color, spre addRem, std::shared_ptr<PotentiometerAdc> brightPot):
+GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre bright, spre reach, spre pos, spre color, spre addRem, std::shared_ptr<PotentiometerKnob> brightKnob):
    m_colorGrad(colorGrad),
    m_ledStrip(ledStrip),
    m_hueRotary(hue),
@@ -35,7 +35,7 @@ GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std
    m_posRotary(pos),
    m_colorButton(color),
    m_addRemoveButton(addRem),
-   m_brightPot(brightPot),
+   m_brightKnob(brightKnob),
    m_gradOption(ColorGradient::E_GRAD_HUE),
    m_gradPointIndex(0),
    m_threadLives(true)
@@ -72,7 +72,7 @@ void GradChangeThread::threadFunction()
    bool updatedGradient = false;
    bool fineTune = false;
    
-   DisplayGradient display(m_colorGrad, m_ledStrip, m_brightPot);
+   DisplayGradient display(m_colorGrad, m_ledStrip, m_brightKnob);
    display.showGradient();
 
    while(m_threadLives)
@@ -175,7 +175,7 @@ void GradChangeThread::threadFunction()
          }
 
          float dummyBrightness;
-         if(m_brightPot->changedFlt(dummyBrightness, 0.01))
+         if(m_brightKnob->getFlt(dummyBrightness))
          {
             updateLeds = true;
          }

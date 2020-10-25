@@ -24,7 +24,7 @@
 #include <condition_variable>
 #include "specAnLedPiTypes.h"
 #include "ledStrip.h"
-#include "potentiometerAdc.h"
+#include "potentiometerKnob.h"
 
 
 class GradientUserCues
@@ -46,7 +46,7 @@ private:
    }tCueThreads;
 
 public:
-   GradientUserCues(std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<PotentiometerAdc> brightPot);
+   GradientUserCues(std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<PotentiometerKnob> brightKnob);
    virtual ~GradientUserCues();
 
    void startBlink(SpecAnLedTypes::tRgbVector& fullScale, size_t ledIndex);
@@ -72,7 +72,7 @@ private:
    std::mutex m_mutex;
 
    std::shared_ptr<LedStrip> m_ledStrip;
-   std::shared_ptr<PotentiometerAdc> m_brightPot;
+   std::shared_ptr<PotentiometerKnob> m_brightKnob;
 
 
    std::shared_ptr<tCueThreads> m_activeCueThread;

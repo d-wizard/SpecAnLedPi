@@ -21,9 +21,9 @@
 #include "ThreadPriorities.h"
 
 
-GradientUserCues::GradientUserCues(std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<PotentiometerAdc> brightPot):
+GradientUserCues::GradientUserCues(std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<PotentiometerKnob> brightKnob):
    m_ledStrip(ledStrip),
-   m_brightPot(brightPot)
+   m_brightKnob(brightKnob)
 {
 
 }
@@ -96,12 +96,12 @@ SpecAnLedTypes::tRgbVector GradientUserCues::getBlankLedColors()
 SpecAnLedTypes::tRgbVector GradientUserCues::updateBrightness(SpecAnLedTypes::tRgbVector& fullScale)
 {
    auto retVal = fullScale;
-   int32_t brightness = m_brightPot->getRaw();
+   float brightness = m_brightKnob->getFlt();
    for(auto& led : retVal)
    {
-      led.rgb.r = ((int32_t)led.rgb.r * brightness) >> PotentiometerAdc::AdcResolution; // 12 bit ADC
-      led.rgb.g = ((int32_t)led.rgb.g * brightness) >> PotentiometerAdc::AdcResolution; // 12 bit ADC
-      led.rgb.b = ((int32_t)led.rgb.b * brightness) >> PotentiometerAdc::AdcResolution; // 12 bit ADC
+      led.rgb.r = (float)led.rgb.r * brightness;
+      led.rgb.g = (float)led.rgb.g * brightness;
+      led.rgb.b = (float)led.rgb.b * brightness;
    }
    return retVal;
 }
@@ -163,7 +163,7 @@ void GradientUserCues::doFade(std::shared_ptr<tCueThreads> thisCueThread, std::u
       float doneness = (float)i / (float)(numIterations - 1);
       float notDoneness = 1.0 - doneness;
       float scaleFactor = fadeIn ? doneness : notDoneness;
-      scaleFactor *= m_brightPot->getFlt();
+      scaleFactor *= m_brightKnob->getFlt();
       if(scaleFactor < 0.0)
          scaleFactor = 0.0;
       else if(scaleFactor > 1.0)

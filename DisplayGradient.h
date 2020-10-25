@@ -28,7 +28,7 @@
 class DisplayGradient
 {
 public:
-   DisplayGradient(std::shared_ptr<ColorGradient> grad, std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<PotentiometerAdc> brightPot);
+   DisplayGradient(std::shared_ptr<ColorGradient> grad, std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<PotentiometerKnob> brightKnob);
 
    void showGradient();
 
@@ -53,7 +53,7 @@ private:
    std::shared_ptr<ColorGradient> m_grad;
    SpecAnLedTypes::tRgbVector m_ledColors;
    std::shared_ptr<LedStrip> m_ledStrip;
-   std::shared_ptr<PotentiometerAdc> m_brightPot;
+   std::shared_ptr<PotentiometerKnob> m_brightKnob;
 
    std::unique_ptr<GradientUserCues> m_cues;
 

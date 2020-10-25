@@ -23,11 +23,11 @@
 
 
 
-DisplayGradient::DisplayGradient(std::shared_ptr<ColorGradient> grad, std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<PotentiometerAdc> brightPot):
+DisplayGradient::DisplayGradient(std::shared_ptr<ColorGradient> grad, std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<PotentiometerKnob> brightKnob):
    m_grad(grad),
    m_ledStrip(ledStrip),
-   m_brightPot(brightPot),
-   m_cues(new GradientUserCues(ledStrip, brightPot))
+   m_brightKnob(brightKnob),
+   m_cues(new GradientUserCues(ledStrip, brightKnob))
 {
 }
 
@@ -37,7 +37,7 @@ void DisplayGradient::fillInLedStrip(float constBrightnessLevel)
    auto numLeds = m_ledStrip->getNumLeds();
    m_ledColors.resize(numLeds);
    auto gradVect = m_grad->getGradient();
-   float brightnessPot = m_brightPot->getFlt();
+   float brightnessPot = m_brightKnob->getFlt();
 
    if(constBrightnessLevel >= 0.0 && constBrightnessLevel <= 1.0)
    {
