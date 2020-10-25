@@ -113,8 +113,8 @@ void* AlsaMic::micReadThreadFunction(void* inPtr)
 
    while(_this->m_running)
    {
-      int err = snd_pcm_readi(handle, buffer, numSamp); // TODO i at the end means interleaved, for 1 channel can I use other function??
-      if(err != numSamp)
+      auto err = snd_pcm_readi(handle, buffer, numSamp); // TODO i at the end means interleaved, for 1 channel can I use other function??
+      if(err != (signed)numSamp)
       {
          _this->m_running = false;
       }

@@ -52,7 +52,7 @@ SpecAnLedTypes::tFftVector* FftRunRate::run(SpecAnLedTypes::tPcmSample* samples,
    memcpy(&m_pcmBuffer[origSize], samples, numSamp*sizeof(samples[0]));
 
    // Run the FFT(s)
-   while(m_pcmBuffer.size() >= m_numSampNeededToDoFft)
+   while(m_pcmBuffer.size() >= (size_t)m_numSampNeededToDoFft)
    {
       m_fft.runFft(m_pcmBuffer.data(), m_fftResult.data());
       fftResults = &m_fftResult;

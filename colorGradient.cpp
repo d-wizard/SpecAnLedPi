@@ -263,11 +263,11 @@ void ColorGradient::addPoint(int pointIndexToDuplicate)
 
 void ColorGradient::removePoint(int pointIndexToRemove)
 {
-   bool validIndex = (pointIndexToRemove >= 0 && pointIndexToRemove < (int)m_gradPoints.size());
+   bool validIndex = (pointIndexToRemove >= 0 && pointIndexToRemove < (signed)m_gradPoints.size());
    if(validIndex && m_gradPoints.size() > 2)
    {
       bool first = (pointIndexToRemove == 0);
-      bool last  = (pointIndexToRemove == (m_gradPoints.size()-1));
+      bool last  = (pointIndexToRemove == ((signed)m_gradPoints.size()-1));
       
       auto toRemoveIter = m_gradPoints.begin();
       for(int i = 0; i < pointIndexToRemove; ++i)

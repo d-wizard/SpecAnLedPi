@@ -16,16 +16,11 @@
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g')
-
-# Determine if the Seeed 8 Channel - 12 bit ADC Hat is available
-seeddAdcHatAvailable = True
-if seeddAdcHatAvailable:
-   seeedAdcDevicAddr = 4 # I2C Address 0x04 appears to be the default address to the Seeed ADC Hat
-   gainAdcChannelNum = 7
+env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g -Wall -Werror -fdiagnostics-color=always')
 
 src = [ 'main.cpp',
         'alsaMic.cpp',
+        'DisplayGradient.cpp',
         'specAnFft.cpp',
         'fftModifier.cpp',
         'fftRunRate.cpp',
@@ -33,7 +28,10 @@ src = [ 'main.cpp',
         'colorScale.cpp',
         'colorGradient.cpp',
         'gradientToScale.cpp',
+        'GradientUserCues.cpp',
         'hsvrgb.cpp',
+        'gradientChangeThread.cpp',
+        'rotaryEncoder.cpp',
         'modules/plotperfectclient/sendMemoryToPlot.c', 
         'modules/plotperfectclient/smartPlotMessage.c' ]
 
@@ -43,15 +41,9 @@ inc = [ './modules/plotperfectclient',
         './modules/Ne10/inc', 
         './modules/rpi_ws281x' ]
 
-lib = ['rt', 'asound', 'fftw3', 'pthread', 'NE10', 'ws2811']
+lib = ['rt', 'asound', 'fftw3', 'pthread', 'NE10', 'ws2811', 'wiringPi']
 
 libpath = ['./modules/Ne10/build/modules', './modules/rpi_ws281x']
-
-# Add to the build if the Seeed ADC Hat is attached to the Raspberry SpecAnLedPi
-if seeddAdcHatAvailable:
-   defines += ['SEEED_ADC_DEV_ADDR=' + str(seeedAdcDevicAddr)]
-   defines += ['SEEED_ADC_GAIN_NUM=' + str(gainAdcChannelNum)]
-   lib += ['wiringPi']
 
 env.Program( source=src,
              CPPDEFINES=defines,

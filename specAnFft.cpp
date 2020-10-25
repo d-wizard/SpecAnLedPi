@@ -73,7 +73,7 @@ void SpecAnFft::runFft(int16_t* inSamp, uint16_t* outSamp)
    int16_t* sampToFft = inSamp;
    if(m_window)
    {
-      for(size_t i = 0; i < m_numTaps; ++i)
+      for(int i = 0; i < m_numTaps; ++i)
       {
          m_windowedInput[i] = ((int32_t)inSamp[i] * (int32_t)m_windowCoefs[i]) >> 15;
       }

@@ -94,7 +94,7 @@ void GradChangeThread::threadFunction()
 
          if(m_colorButton->checkButton(true))
          {
-            auto newColorIndex = (m_gradPointIndex >= (m_colorGrad->getNumPoints()-1)) ? 0 : m_gradPointIndex+1;
+            auto newColorIndex = (m_gradPointIndex >= ((signed)m_colorGrad->getNumPoints()-1)) ? 0 : m_gradPointIndex+1;
             setGradientPointIndex(newColorIndex);
             display.blinkOne(m_gradPointIndex);
             blinking = true;
@@ -103,7 +103,7 @@ void GradChangeThread::threadFunction()
          {
             case RotaryEncoder::E_SINGLE_CLICK:
             {
-               bool lastPoint = (m_gradPointIndex == (m_colorGrad->getNumPoints()-1));
+               bool lastPoint = (m_gradPointIndex == ((signed)m_colorGrad->getNumPoints()-1));
                m_colorGrad->addPoint(m_gradPointIndex);
                if(!lastPoint)
                   setGradientPointIndex(m_gradPointIndex+1);
@@ -118,6 +118,9 @@ void GradChangeThread::threadFunction()
                setGradientPointIndex(m_gradPointIndex-1);
                blinking = true;
             }
+            break;
+            default:
+               // Do nothing.
             break;
          }
 
