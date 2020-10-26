@@ -34,9 +34,9 @@ ColorGradient::ColorGradient(size_t numPoints)
       bool first = (i == 0);
       bool last  = (i == (m_gradPoints.size()-1));
 
-      m_gradPoints[i].hue = 0;
-      m_gradPoints[i].saturation = 0;
-      m_gradPoints[i].lightness = 0;
+      m_gradPoints[i].hue = 0.0f + deltaBetweenPoints * i;
+      m_gradPoints[i].saturation = 1.0;
+      m_gradPoints[i].lightness = 1.0;
       m_gradPoints[i].position = 0.0f + deltaBetweenPoints * i;
       m_gradPoints[i].reach = (first || last) ? reach * 2.0f : reach;
       assert(m_gradPoints[i].reach >= MIN_INCREMENT);
