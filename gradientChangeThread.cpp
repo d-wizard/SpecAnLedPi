@@ -25,14 +25,62 @@
 #include "specAnLedPiTypes.h"
 #include "ThreadPriorities.h"
 
+
+class RotEncGradObj
+{
+public:
+   RotEncGradObj(std::shared_ptr<RotaryEncoder> rotEnc, ColorGradient::eGradientOptions gradOption, float coarse, float fine):
+      m_rotEnc(rotEnc),
+      m_gradOption(gradOption),
+      m_coarse(coarse),
+      m_fine(fine)
+   {}
+
+   void updateCoarseFine()
+   {
+      if(m_rotEnc->checkButton(true))
+      {
+         m_isCoarse = !m_isCoarse;
+      }
+   } 
+
+   bool updateOption(std::shared_ptr<ColorGradient> colorGrad, int gradPointIndex)
+   {
+      bool changed = false;
+      auto dialValue = m_rotEnc->checkRotation();
+      if(dialValue != RotaryEncoder::E_NO_CHANGE)
+      {
+         float change = m_isCoarse ? m_coarse : m_fine;
+         float delta = (dialValue == RotaryEncoder::E_FORWARD) ? change : -change;
+         colorGrad->updateGradientDelta(m_gradOption, delta, gradPointIndex);
+         changed = true;
+      }
+      return changed;
+   }
+
+   // Delete constructors / operations that should not be allowed.
+   RotEncGradObj() = delete;
+   RotEncGradObj(RotEncGradObj const&) = delete;
+   void operator=(RotEncGradObj const&) = delete;
+
+private:
+   std::shared_ptr<RotaryEncoder> m_rotEnc;
+   ColorGradient::eGradientOptions m_gradOption;
+   float m_coarse;
+   float m_fine;
+
+   bool m_isCoarse = true;
+};
+
+
 GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre bright, spre reach, spre pos, spre color, spre addRem, std::shared_ptr<PotentiometerKnob> brightKnob):
    m_colorGrad(colorGrad),
    m_ledStrip(ledStrip),
-   m_hueRotary(hue),
-   m_satRotary(sat),
-   m_brightRotary(bright),
-   m_reachRotary(reach),
-   m_posRotary(pos),
+   m_hueRotary(   new RotEncGradObj(hue,    ColorGradient::E_GRAD_HUE,        0.1, 0.01)),
+   m_satRotary(   new RotEncGradObj(sat,    ColorGradient::E_GRAD_SATURATION, 0.1, 0.01)),
+   m_brightRotary(new RotEncGradObj(bright, ColorGradient::E_GRAD_LIGHTNESS,  0.1, 0.01)),
+   m_reachRotary( new RotEncGradObj(reach,  ColorGradient::E_GRAD_REACH,      0.1, 0.01)),
+   m_posRotary(   new RotEncGradObj(pos,    ColorGradient::E_GRAD_POSITION,   0.1, 0.01)),
    m_colorButton(color),
    m_addRemoveButton(addRem),
    m_brightKnob(brightKnob),
@@ -40,6 +88,12 @@ GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std
    m_gradPointIndex(0),
    m_threadLives(true)
 {
+   m_allGradRotaries.push_back(m_hueRotary);
+   m_allGradRotaries.push_back(m_satRotary);
+   m_allGradRotaries.push_back(m_brightRotary);
+   m_allGradRotaries.push_back(m_reachRotary);
+   m_allGradRotaries.push_back(m_posRotary);
+
    m_thread = std::thread(&GradChangeThread::threadFunction, this);
 }
 
@@ -70,7 +124,6 @@ void GradChangeThread::threadFunction()
    ThreadPriorities::setThisThreadName("GradChange");
 
    bool updatedGradient = false;
-   bool fineTune = false;
    
    DisplayGradient display(m_colorGrad, m_ledStrip, m_brightKnob);
    display.showGradient();
@@ -87,10 +140,6 @@ void GradChangeThread::threadFunction()
       {
          bool blinking = false;
          bool updateLeds = false;
-         if(m_hueRotary->checkButton(true) || m_satRotary->checkButton(true) || m_brightRotary->checkButton(true) || m_reachRotary->checkButton(true) || m_posRotary->checkButton(true) )
-         {
-            fineTune = !fineTune;
-         }
 
          if(m_colorButton->checkButton(true))
          {
@@ -124,49 +173,11 @@ void GradChangeThread::threadFunction()
             break;
          }
 
-         bool foundRotary = false;
-         RotaryEncoder::eRotation dialValue;
-         float change = fineTune ? 0.01 : 0.1;
-
-         dialValue = m_hueRotary->checkRotation();
-         if(!foundRotary && dialValue != RotaryEncoder::E_NO_CHANGE)
+         // Update Based on Rotary Encoder states.
+         for(auto& rotary : m_allGradRotaries)
          {
-            float delta = (dialValue == RotaryEncoder::E_FORWARD) ? change : -change;
-            m_colorGrad->updateGradientDelta(ColorGradient::E_GRAD_HUE, delta, m_gradPointIndex);
-            updateLeds = true;
-            foundRotary = true;
-         }
-         dialValue = m_satRotary->checkRotation();
-         if(!foundRotary && dialValue != RotaryEncoder::E_NO_CHANGE)
-         {
-            float delta = (dialValue == RotaryEncoder::E_FORWARD) ? change : -change;
-            m_colorGrad->updateGradientDelta(ColorGradient::E_GRAD_SATURATION, delta, m_gradPointIndex);
-            updateLeds = true;
-            foundRotary = true;
-         }
-         dialValue = m_brightRotary->checkRotation();
-         if(!foundRotary && dialValue != RotaryEncoder::E_NO_CHANGE)
-         {
-            float delta = (dialValue == RotaryEncoder::E_FORWARD) ? change : -change;
-            m_colorGrad->updateGradientDelta(ColorGradient::E_GRAD_LIGHTNESS, delta, m_gradPointIndex);
-            updateLeds = true;
-            foundRotary = true;
-         }
-         dialValue = m_reachRotary->checkRotation();
-         if(!foundRotary && dialValue != RotaryEncoder::E_NO_CHANGE)
-         {
-            float delta = (dialValue == RotaryEncoder::E_FORWARD) ? change : -change;
-            m_colorGrad->updateGradientDelta(ColorGradient::E_GRAD_REACH, delta, m_gradPointIndex);
-            updateLeds = true;
-            foundRotary = true;
-         }
-         dialValue = m_posRotary->checkRotation();
-         if(!foundRotary && dialValue != RotaryEncoder::E_NO_CHANGE)
-         {
-            float delta = (dialValue == RotaryEncoder::E_FORWARD) ? change : -change;
-            m_colorGrad->updateGradientDelta(ColorGradient::E_GRAD_POSITION, delta, m_gradPointIndex);
-            updateLeds = true;
-            foundRotary = true;
+            rotary->updateCoarseFine();
+            updateLeds = rotary->updateOption(m_colorGrad, m_gradPointIndex) || updateLeds;
          }
 
          if(display.userCueDone())

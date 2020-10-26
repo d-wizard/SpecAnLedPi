@@ -20,10 +20,13 @@
 
 #include <thread>
 #include <atomic>
+#include <vector>
 #include "colorGradient.h"
 #include "ledStrip.h"
 #include "rotaryEncoder.h"
 #include "potentiometerKnob.h"
+
+class RotEncGradObj; // Forward Declare (defined in cpp file)
 
 class GradChangeThread
 {
@@ -45,13 +48,17 @@ private:
 
    std::shared_ptr<ColorGradient> m_colorGrad;
    std::shared_ptr<LedStrip> m_ledStrip;
-   spre m_hueRotary;
-   spre m_satRotary;
-   spre m_brightRotary;
-   spre m_reachRotary;
-   spre m_posRotary;
+
+   std::shared_ptr<RotEncGradObj> m_hueRotary;
+   std::shared_ptr<RotEncGradObj> m_satRotary;
+   std::shared_ptr<RotEncGradObj> m_brightRotary;
+   std::shared_ptr<RotEncGradObj> m_reachRotary;
+   std::shared_ptr<RotEncGradObj> m_posRotary;
+   std::vector<std::shared_ptr<RotEncGradObj>> m_allGradRotaries;
+
    spre m_colorButton;
    spre m_addRemoveButton;
+
    std::shared_ptr<PotentiometerKnob> m_brightKnob;
 
    std::thread m_thread;
