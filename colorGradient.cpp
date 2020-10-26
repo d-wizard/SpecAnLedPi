@@ -261,10 +261,16 @@ void ColorGradient::addPoint(int pointIndexToDuplicate)
    }
 }
 
-void ColorGradient::removePoint(int pointIndexToRemove)
+bool ColorGradient::canRemovePoint()
 {
+   return m_gradPoints.size() > 2;
+}
+
+bool ColorGradient::removePoint(int pointIndexToRemove)
+{
+   bool pointWasActualyRemoved = false;
    bool validIndex = (pointIndexToRemove >= 0 && pointIndexToRemove < (signed)m_gradPoints.size());
-   if(validIndex && m_gradPoints.size() > 2)
+   if(validIndex && canRemovePoint())
    {
       bool first = (pointIndexToRemove == 0);
       bool last  = (pointIndexToRemove == ((signed)m_gradPoints.size()-1));
@@ -274,6 +280,7 @@ void ColorGradient::removePoint(int pointIndexToRemove)
          toRemoveIter++;
 
       m_gradPoints.erase(toRemoveIter);
+      pointWasActualyRemoved = true;
 
       if(first)
       {
@@ -289,6 +296,7 @@ void ColorGradient::removePoint(int pointIndexToRemove)
       fixSpacing();
       m_previousIndex = -1; // Just made a major change to the vector, make sure the previous version that is store off is not used again.
    }
+   return pointWasActualyRemoved;
 }
 
 float ColorGradient::getLoLimit(size_t pointIndex)

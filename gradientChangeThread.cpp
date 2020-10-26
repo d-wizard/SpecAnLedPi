@@ -165,10 +165,13 @@ void GradChangeThread::threadFunction()
          }
          if(m_removeButton->checkButton() == RotaryEncoder::E_DOUBLE_CLICK)
          {
-            display.fadeOut(m_gradPointIndex);
-            m_colorGrad->removePoint(m_gradPointIndex);
-            setGradientPointIndex(m_gradPointIndex-1);
-            blinking = true;
+            if(m_colorGrad->canRemovePoint())
+            {
+               display.fadeOut(m_gradPointIndex);
+               m_colorGrad->removePoint(m_gradPointIndex);
+               setGradientPointIndex(m_gradPointIndex-1);
+               blinking = true;
+            }
          }
 
          // Update Based on Rotary Encoder states.

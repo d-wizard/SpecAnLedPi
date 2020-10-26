@@ -52,7 +52,8 @@ public:
    void updateGradientDelta(eGradientOptions option, float delta, int pointIndex);
 
    void addPoint(int pointIndexToDuplicate);
-   void removePoint(int pointIndexToRemove);
+   bool canRemovePoint();
+   bool removePoint(int pointIndexToRemove); // Return whether a point was removed or not.
 
    std::vector<tGradientPoint> getGradient();
 
