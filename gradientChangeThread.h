@@ -32,11 +32,8 @@ class GradChangeThread
 {
 public:
    typedef std::shared_ptr<RotaryEncoder> spre;
-   GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre bright, spre reach, spre pos, spre color, spre addRem, std::shared_ptr<PotentiometerKnob> brightKnob);
+   GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre ledSelect, spre reach, spre pos, spre leftBut, spre rightBut, std::shared_ptr<PotentiometerKnob> brightKnob);
    virtual ~GradChangeThread();
-
-   void setGradientOption(ColorGradient::eGradientOptions newOption);
-   void setGradientPointIndex(int newPointIndex);
 
 private:
    // Make uncopyable
@@ -46,23 +43,25 @@ private:
 
    void threadFunction();
 
+   void setGradientPointIndex(int newPointIndex);
+
    std::shared_ptr<ColorGradient> m_colorGrad;
    std::shared_ptr<LedStrip> m_ledStrip;
 
    std::shared_ptr<RotEncGradObj> m_hueRotary;
    std::shared_ptr<RotEncGradObj> m_satRotary;
-   std::shared_ptr<RotEncGradObj> m_brightRotary;
    std::shared_ptr<RotEncGradObj> m_reachRotary;
    std::shared_ptr<RotEncGradObj> m_posRotary;
    std::vector<std::shared_ptr<RotEncGradObj>> m_allGradRotaries;
 
-   spre m_colorButton;
-   spre m_addRemoveButton;
+   spre m_ledSelector;
+
+   spre m_addButton;
+   spre m_removeButton;
 
    std::shared_ptr<PotentiometerKnob> m_brightKnob;
 
    std::thread m_thread;
-   std::atomic<ColorGradient::eGradientOptions> m_gradOption;
    std::atomic<int> m_gradPointIndex;
    std::atomic<bool> m_threadLives;
 

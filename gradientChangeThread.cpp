@@ -73,24 +73,22 @@ private:
 };
 
 
-GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre bright, spre reach, spre pos, spre color, spre addRem, std::shared_ptr<PotentiometerKnob> brightKnob):
+GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre ledSelect, spre reach, spre pos, spre leftBut, spre rightBut, std::shared_ptr<PotentiometerKnob> brightKnob):
    m_colorGrad(colorGrad),
    m_ledStrip(ledStrip),
    m_hueRotary(   new RotEncGradObj(hue,    ColorGradient::E_GRAD_HUE,        0.1, 0.01)),
    m_satRotary(   new RotEncGradObj(sat,    ColorGradient::E_GRAD_SATURATION, 0.1, 0.01)),
-   m_brightRotary(new RotEncGradObj(bright, ColorGradient::E_GRAD_LIGHTNESS,  0.1, 0.01)),
    m_reachRotary( new RotEncGradObj(reach,  ColorGradient::E_GRAD_REACH,      0.1, 0.01)),
    m_posRotary(   new RotEncGradObj(pos,    ColorGradient::E_GRAD_POSITION,   0.1, 0.01)),
-   m_colorButton(color),
-   m_addRemoveButton(addRem),
+   m_ledSelector(ledSelect),
+   m_addButton(leftBut),
+   m_removeButton(rightBut),
    m_brightKnob(brightKnob),
-   m_gradOption(ColorGradient::E_GRAD_HUE),
    m_gradPointIndex(0),
    m_threadLives(true)
 {
    m_allGradRotaries.push_back(m_hueRotary);
    m_allGradRotaries.push_back(m_satRotary);
-   m_allGradRotaries.push_back(m_brightRotary);
    m_allGradRotaries.push_back(m_reachRotary);
    m_allGradRotaries.push_back(m_posRotary);
 
@@ -104,11 +102,6 @@ GradChangeThread::~GradChangeThread()
       m_thread.join();
 }
 
-
-void GradChangeThread::setGradientOption(ColorGradient::eGradientOptions newOption)
-{
-   m_gradOption = newOption;
-}
 
 void GradChangeThread::setGradientPointIndex(int newPointIndex)
 {
@@ -141,36 +134,41 @@ void GradChangeThread::threadFunction()
          bool blinking = false;
          bool updateLeds = false;
 
-         if(m_colorButton->checkButton(true))
+         // Change selected LED / Blink selected LED
+         auto ledChange = m_ledSelector->checkRotation();
+         auto ledShow = m_ledSelector->checkButton(true);
+         if(ledChange != RotaryEncoder::E_NO_CHANGE || ledShow)
          {
-            auto newColorIndex = (m_gradPointIndex >= ((signed)m_colorGrad->getNumPoints()-1)) ? 0 : m_gradPointIndex+1;
+            int newColorIndex = m_gradPointIndex;
+            if(ledChange == RotaryEncoder::E_FORWARD)
+               newColorIndex--;
+            else if(ledChange == RotaryEncoder::E_BACKWARD)
+               newColorIndex++;
+            if(newColorIndex < 0)
+               newColorIndex = m_colorGrad->getNumPoints()-1;
+            else if(newColorIndex >= (signed)m_colorGrad->getNumPoints())
+               newColorIndex = 0;
             setGradientPointIndex(newColorIndex);
             display.blinkOne(m_gradPointIndex);
             blinking = true;
          }
-         switch(m_addRemoveButton->checkButton())
+
+         // Add / Remove LED
+         if(m_addButton->checkButton() == RotaryEncoder::E_DOUBLE_CLICK)
          {
-            case RotaryEncoder::E_SINGLE_CLICK:
-            {
-               bool lastPoint = (m_gradPointIndex == ((signed)m_colorGrad->getNumPoints()-1));
-               m_colorGrad->addPoint(m_gradPointIndex);
-               if(!lastPoint)
-                  setGradientPointIndex(m_gradPointIndex+1);
-               display.fadeIn(m_gradPointIndex);
-               blinking = true;
-            }
-            break;
-            case RotaryEncoder::E_DOUBLE_CLICK:
-            {
-               display.fadeOut(m_gradPointIndex);
-               m_colorGrad->removePoint(m_gradPointIndex);
-               setGradientPointIndex(m_gradPointIndex-1);
-               blinking = true;
-            }
-            break;
-            default:
-               // Do nothing.
-            break;
+            bool lastPoint = (m_gradPointIndex == ((signed)m_colorGrad->getNumPoints()-1));
+            m_colorGrad->addPoint(m_gradPointIndex);
+            if(!lastPoint)
+               setGradientPointIndex(m_gradPointIndex+1);
+            display.fadeIn(m_gradPointIndex);
+            blinking = true;
+         }
+         if(m_removeButton->checkButton() == RotaryEncoder::E_DOUBLE_CLICK)
+         {
+            display.fadeOut(m_gradPointIndex);
+            m_colorGrad->removePoint(m_gradPointIndex);
+            setGradientPointIndex(m_gradPointIndex-1);
+            blinking = true;
          }
 
          // Update Based on Rotary Encoder states.
