@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <unistd.h> // Needed for close
 #include <wiringPiI2C.h>
 
 class SeeedAdc8Ch12Bit
