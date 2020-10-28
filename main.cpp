@@ -31,10 +31,13 @@
 #include "fftModifier.h"
 #include "ledStrip.h"
 #include "colorScale.h"
-
-#ifdef SEEED_ADC_DEV_ADDR
-#include "seeed_adc_8chan_12bit.h"
-#endif
+#include "colorGradient.h"
+#include "gradientToScale.h"
+#include "gradientChangeThread.h"
+#include "rotaryEncoder.h"
+#include "potentiometerAdc.h"
+#include "potentiometerKnob.h"
+#include "ThreadPriorities.h"
 
 #include <thread>
 #include <mutex>
@@ -42,9 +45,10 @@
 
 
 #include "smartPlotMessage.h"
+#include "wiringPi.h"
 
 #define SAMPLE_RATE (44100)
-#define NUM_LEDS (20)
+#define NUM_LEDS (40)
 
 // Microphone Capture
 static std::unique_ptr<AlsaMic> mic;
@@ -63,20 +67,38 @@ static SpecAnLedTypes::tPcmBuffer pcmSampBuff;
 static bool procThreadLives = true;
 
 // LED Stuff
-static std::unique_ptr<LedStrip> ledStrip;
+static std::shared_ptr<LedStrip> ledStrip;
 static SpecAnLedTypes::tRgbVector ledColors;
 static std::unique_ptr<ColorScale> colorScale;
 
-#ifdef SEEED_ADC_DEV_ADDR
-// Gain Knob
-static std::unique_ptr<SeeedAdc8Ch12Bit> adc8Ch;
-#endif
+// Thread for Updating the Color Gradient
+static std::unique_ptr<GradChangeThread> gradChangeThread;
+
+
+static std::unique_ptr<std::thread> checkRotaryThread;
+
+static std::shared_ptr<RotaryEncoder> hueRotary;
+static std::shared_ptr<RotaryEncoder> satRotary;
+static std::shared_ptr<RotaryEncoder> brightRotary;
+static std::shared_ptr<RotaryEncoder> reachRotary;
+static std::shared_ptr<RotaryEncoder> posRotary;
+static std::shared_ptr<RotaryEncoder> leftButton;
+static std::shared_ptr<RotaryEncoder> rightButton;
+static std::vector<std::shared_ptr<RotaryEncoder>> rotaries;
+
+static std::shared_ptr<SeeedAdc8Ch12Bit> knobsAdcs;
+static std::shared_ptr<PotentiometerKnob> brightKnob;
+static std::shared_ptr<PotentiometerKnob> gainKnob;
+
+
+static std::atomic<bool> rotaryEncPollThreadActive;
+
 
 void processPcmSamples()
 {
    int16_t samples[FFT_SIZE];
    size_t numSamp = FFT_SIZE;
-   int gain = 16;
+   int32_t gain = 64;
    while(procThreadLives)
    {
       bool copySamples = false;
@@ -112,18 +134,20 @@ void processPcmSamples()
             SpecAnLedTypes::tFftVector* fftResult = fftRun->run(samples, numSamp);
             if(fftResult != nullptr)
             {
-               int numBins = fftModifier->modify(fftResult->data());
+               float brightness = brightKnob->getFlt();
+               gain = gainKnob->getInt()*40;
                for(int i = 0 ; i < NUM_LEDS; ++i)
                {
-                  ledColors[i] = colorScale->getColor(fftResult->data()[i]*gain);
+                  int32_t ledVal = (int32_t)fftResult->data()[i]*gain;
+                  if(ledVal > 65535)
+                  {
+                     ledVal = 65535;
+                  }
+                  ledColors[i] = colorScale->getColor(ledVal, brightness);
                }
                ledStrip->set(ledColors);
-               //smartPlot_1D(fftResult->data(), E_UINT_16, numBins, numBins, 0, "FFT", "re");
+               smartPlot_1D(&gain, E_UINT_16, 1, 1000, 100, "gain", "adc");
             }
-            
-#ifdef SEEED_ADC_DEV_ADDR
-            gain = adc8Ch->isActive() ? adc8Ch->getAdcValue(SEEED_ADC_GAIN_NUM) >> 5 : 16;
-#endif
          #endif
       }
    }
@@ -143,27 +167,25 @@ void alsaMicSamples(int16_t* samples, size_t numSamp)
 void defineColorScale()
 {
    std::vector<ColorScale::tColorPoint> colors;
-   std::vector<ColorScale::tBrightnessPoint> bright;
 
    int idx = 0;
    colors.resize(1);
-   bright.resize(1);
 
    // Patriotic colors: Red, White, Blue.
-   colors[idx].color.u32 = SpecAnLedTypes::COLOR_RED;
+   colors[idx].color.u32 = SpecAnLedTypes::COLOR_PURPLE;
    colors[idx].startPoint  = 0.00;
    idx++; colors.resize(idx+1);
 
    colors[idx].color.u32 = colors[idx-1].color.u32; // Repeat previous color.
-   colors[idx].startPoint  = 0.08;
+   colors[idx].startPoint  = 0.04;
    idx++; colors.resize(idx+1);
 
-   colors[idx].color.u32 = SpecAnLedTypes::COLOR_WHITE;
-   colors[idx].startPoint  = 0.09;
+   colors[idx].color.u32 = SpecAnLedTypes::COLOR_CYAN;
+   colors[idx].startPoint  = 0.05;
    idx++; colors.resize(idx+1);
 
    colors[idx].color.u32 = colors[idx-1].color.u32; // Repeat previous color.
-   colors[idx].startPoint  = 0.20;
+   colors[idx].startPoint  = 0.12;
    idx++; colors.resize(idx+1);
 
    colors[idx].color.u32 = SpecAnLedTypes::COLOR_BLUE;
@@ -172,18 +194,14 @@ void defineColorScale()
 
    colors[idx].color.u32 = colors[idx-1].color.u32; // Repeat previous color.
 
-   idx = 0;
-   bright[idx].brightness = 0.0;
-   bright[idx].startPoint = 0;
-   idx++; bright.resize(idx+1);
-
-   bright[idx].brightness = 0.25;
-
-   colorScale.reset(new ColorScale(colors, bright));
+   std::vector<ColorScale::tBrightnessPoint> brightPoints{{0,0},{1,1}}; // Scale brightness.
+   colorScale.reset(new ColorScale(colors, brightPoints));
 }
 
 void cleanUpBeforeExit()
 {
+   gradChangeThread.reset();
+
    // Stop getting samples from the microphone.
    mic.reset();
 
@@ -196,6 +214,7 @@ void cleanUpBeforeExit()
 
    // Turn off all the LEDs in the LED strip.
    ledStrip.reset();
+
 }
 
 void signalHandler(int signum)
@@ -203,13 +222,28 @@ void signalHandler(int signum)
    cleanUpBeforeExit();
 }
 
+void RotaryUpdateFunction()
+{
+   ThreadPriorities::setThisThreadPriorityPolicy(ThreadPriorities::ROTORY_ENCODER_POLL_THREAD_PRIORITY, SCHED_FIFO);
+   ThreadPriorities::setThisThreadName("RotEncPoll");
+   while(rotaryEncPollThreadActive)
+   {
+      for(auto& rotary : rotaries)
+      {
+         rotary->updateRotation();
+      }
+      usleep(1*1000);
+   }
+}
+
 int main (int argc, char *argv[])
 {
+   wiringPiSetup();
    fftRun.reset(new FftRunRate(SAMPLE_RATE, FFT_SIZE, 150.0));
 
    tFftModifiers mod;
    mod.startFreq = 300;
-   mod.stopFreq = 12000;
+   mod.stopFreq = 16000;
    mod.clipMin = 0;
    mod.clipMax = 5000;
    mod.logScale = false;
@@ -223,6 +257,7 @@ int main (int argc, char *argv[])
    // Setup LED strip.
    ledColors.resize(NUM_LEDS);
    ledStrip.reset(new LedStrip(NUM_LEDS, LedStrip::GRB));
+   ledStrip->clear();
 
    // Define the Color Scale Gradient.
    defineColorScale();
@@ -233,9 +268,83 @@ int main (int argc, char *argv[])
 #ifdef SEEED_ADC_DEV_ADDR
    adc8Ch.reset(new SeeedAdc8Ch12Bit(SEEED_ADC_DEV_ADDR));
 #endif
-   
-   // Start capturing from the microphone.
-   mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE, 1, alsaMicSamples));
+
+   constexpr int numColorPoints = 3;
+   std::shared_ptr<ColorGradient> grad(new ColorGradient(numColorPoints));
+
+   hueRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 12, 13, 14));
+   satRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH,  0,  2,  3));
+   brightRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 21, 22, 23));
+   reachRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 27, 28, 29));
+   posRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 10, 11, 31));
+   leftButton.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 25));
+   rightButton.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 24));
+
+   knobsAdcs.reset(new SeeedAdc8Ch12Bit());
+   brightKnob.reset(new PotentiometerKnob(knobsAdcs, 7, 100));
+   gainKnob.reset(new PotentiometerKnob(knobsAdcs, 6, 100));
+
+   rotaries.push_back(hueRotary);
+   rotaries.push_back(satRotary);
+   rotaries.push_back(brightRotary);
+   rotaries.push_back(reachRotary);
+   rotaries.push_back(posRotary);
+
+   while(1)
+   {
+      // Gradient Edit Mode
+      {
+         rotaryEncPollThreadActive = true;
+         checkRotaryThread.reset(new std::thread(RotaryUpdateFunction));
+         gradChangeThread.reset(new GradChangeThread(
+            grad, 
+            ledStrip, 
+            hueRotary,
+            satRotary,
+            brightRotary,
+            reachRotary,
+            posRotary,
+            leftButton,
+            rightButton,
+            brightKnob));
+
+         // Wait for User to Exit Gradient Edit Mode.
+         gradChangeThread->waitForThreadDone();
+         gradChangeThread.reset();
+
+         // Kill the Rotary Polling Thread.
+         rotaryEncPollThreadActive = false;
+         checkRotaryThread->join();
+         checkRotaryThread.reset();
+      }
+
+      // Configure for FFT Audio Mode.
+      {
+         std::vector<ColorScale::tColorPoint> colors;
+         std::vector<ColorGradient::tGradientPoint> gradVect = grad->getGradient();
+         Convert::convertGradientToScale(gradVect, colors);
+
+         std::vector<ColorScale::tBrightnessPoint> brightPoints{{0,0},{1,1}}; // Scale brightness.
+         colorScale.reset(new ColorScale(colors, brightPoints));
+
+         // Start capturing from the microphone.
+         mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE, 1, alsaMicSamples));
+
+         // Perioidically check if the user want to enter Gradient Edit Mode.
+         bool toggleBackToGradientDefine = false;
+         while(toggleBackToGradientDefine == false)
+         {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if(leftButton->checkButton(false) && rightButton->checkButton(false))
+            {
+               while(leftButton->checkButton(false) && rightButton->checkButton(false)){std::this_thread::sleep_for(std::chrono::milliseconds(1));} // Wait for both to be release.
+               toggleBackToGradientDefine = true;
+            }
+         }
+         mic.reset();
+      }
+
+   }
 
    sleep(0x7FFFFFFF);
 

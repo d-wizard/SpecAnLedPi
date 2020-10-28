@@ -35,6 +35,8 @@ public:
    GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre ledSelect, spre reach, spre pos, spre leftBut, spre rightBut, std::shared_ptr<PotentiometerKnob> brightKnob);
    virtual ~GradChangeThread();
 
+   void waitForThreadDone();
+
 private:
    // Make uncopyable
    GradChangeThread();

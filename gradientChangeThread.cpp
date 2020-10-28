@@ -102,6 +102,10 @@ GradChangeThread::~GradChangeThread()
       m_thread.join();
 }
 
+void GradChangeThread::waitForThreadDone()
+{
+   m_thread.join();
+}
 
 void GradChangeThread::setGradientPointIndex(int newPointIndex)
 {
@@ -128,6 +132,13 @@ void GradChangeThread::threadFunction()
          usleep(10*1000);
       }
       updatedGradient = false;
+
+      // Check for exit condition (i.e. add and remove buttons pressed at the same time).
+      if(m_addButton->checkButton(false) && m_removeButton->checkButton(false))
+      {
+         while(m_addButton->checkButton(false) && m_removeButton->checkButton(false) && m_threadLives){std::this_thread::sleep_for(std::chrono::milliseconds(1));} // Wait for both to be release.
+         m_threadLives = false;
+      }
 
       if(m_threadLives)
       {
@@ -163,7 +174,7 @@ void GradChangeThread::threadFunction()
             display.fadeIn(m_gradPointIndex);
             blinking = true;
          }
-         if(m_removeButton->checkButton() == RotaryEncoder::E_DOUBLE_CLICK)
+         else if(m_removeButton->checkButton() == RotaryEncoder::E_DOUBLE_CLICK)
          {
             if(m_colorGrad->canRemovePoint())
             {
@@ -181,17 +192,20 @@ void GradChangeThread::threadFunction()
             updateLeds = rotary->updateOption(m_colorGrad, m_gradPointIndex) || updateLeds;
          }
 
+         // If the special User Cue Display has finished, set the LEDs back to displaying the gradient.
          if(display.userCueDone())
          {
             updateLeds = true;
          }
 
+         // Check if the brightness knob has been changed.
          float dummyBrightness;
          if(m_brightKnob->getFlt(dummyBrightness))
          {
             updateLeds = true;
          }
 
+         // Update the LEDs (if needed)
          if(!blinking && updateLeds)
          {
             display.showGradient();
