@@ -74,7 +74,6 @@ static std::unique_ptr<ColorScale> colorScale;
 // Thread for Updating the Color Gradient
 static std::unique_ptr<GradChangeThread> gradChangeThread;
 
-
 static std::unique_ptr<std::thread> checkRotaryThread;
 
 static std::shared_ptr<RotaryEncoder> hueRotary;
@@ -92,8 +91,11 @@ static std::shared_ptr<PotentiometerKnob> gainKnob;
 
 
 static std::atomic<bool> rotaryEncPollThreadActive;
+static std::atomic<bool> exitThisApp;
 
+static std::shared_ptr<std::thread> runThread;
 
+// Processes PCM samples whenever the Microphone Capture object (mic) is instantiated.
 void processPcmSamples()
 {
    int16_t samples[FFT_SIZE];
@@ -200,7 +202,20 @@ void defineColorScale()
 
 void cleanUpBeforeExit()
 {
-   gradChangeThread.reset();
+   exitThisApp = true;
+  
+   // Kill the Rotary Polling Thread.
+   rotaryEncPollThreadActive = false;
+   if(checkRotaryThread.get() != nullptr)
+   {
+      checkRotaryThread->join();
+      checkRotaryThread.reset();
+   }
+
+   if(gradChangeThread.get() != nullptr)
+   {
+      gradChangeThread->endThread();
+   }
 
    // Stop getting samples from the microphone.
    mic.reset();
@@ -215,11 +230,14 @@ void cleanUpBeforeExit()
    // Turn off all the LEDs in the LED strip.
    ledStrip.reset();
 
+   runThread->join();
+   runThread.reset();
 }
 
 void signalHandler(int signum)
 {
    cleanUpBeforeExit();
+   exit(signum); 
 }
 
 void RotaryUpdateFunction()
@@ -235,6 +253,8 @@ void RotaryUpdateFunction()
       usleep(1*1000);
    }
 }
+
+void altThread();
 
 int main (int argc, char *argv[])
 {
@@ -269,9 +289,6 @@ int main (int argc, char *argv[])
    adc8Ch.reset(new SeeedAdc8Ch12Bit(SEEED_ADC_DEV_ADDR));
 #endif
 
-   constexpr int numColorPoints = 3;
-   std::shared_ptr<ColorGradient> grad(new ColorGradient(numColorPoints));
-
    hueRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 12, 13, 14));
    satRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH,  0,  2,  3));
    brightRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 21, 22, 23));
@@ -290,9 +307,24 @@ int main (int argc, char *argv[])
    rotaries.push_back(reachRotary);
    rotaries.push_back(posRotary);
 
-   while(1)
+   runThread.reset(new std::thread(altThread));
+
+   sleep(0x7FFFFFFF);
+
+   return 0;
+}
+
+
+void altThread()
+{
+   constexpr int numColorPoints = 3;
+   std::shared_ptr<ColorGradient> grad(new ColorGradient(numColorPoints));
+
+   exitThisApp = false;
+   while(!exitThisApp)
    {
       // Gradient Edit Mode
+      if(!exitThisApp)
       {
          rotaryEncPollThreadActive = true;
          checkRotaryThread.reset(new std::thread(RotaryUpdateFunction));
@@ -314,11 +346,15 @@ int main (int argc, char *argv[])
 
          // Kill the Rotary Polling Thread.
          rotaryEncPollThreadActive = false;
-         checkRotaryThread->join();
-         checkRotaryThread.reset();
+         if(checkRotaryThread.get() != nullptr)
+         {
+            checkRotaryThread->join();
+            checkRotaryThread.reset();
+         }
       }
 
       // Configure for FFT Audio Mode.
+      if(!exitThisApp)
       {
          std::vector<ColorScale::tColorPoint> colors;
          std::vector<ColorGradient::tGradientPoint> gradVect = grad->getGradient();
@@ -330,9 +366,9 @@ int main (int argc, char *argv[])
          // Start capturing from the microphone.
          mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE, 1, alsaMicSamples));
 
-         // Perioidically check if the user want to enter Gradient Edit Mode.
+         // Perioidically check if the user wants to enter Gradient Edit Mode.
          bool toggleBackToGradientDefine = false;
-         while(toggleBackToGradientDefine == false)
+         while(toggleBackToGradientDefine == false && !exitThisApp)
          {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             if(leftButton->checkButton(false) && rightButton->checkButton(false))
@@ -345,8 +381,4 @@ int main (int argc, char *argv[])
       }
 
    }
-
-   sleep(0x7FFFFFFF);
-
-   return 0;
 }

@@ -107,6 +107,11 @@ void GradChangeThread::waitForThreadDone()
    m_thread.join();
 }
 
+void GradChangeThread::endThread()
+{
+   m_threadLives = false;
+}
+
 void GradChangeThread::setGradientPointIndex(int newPointIndex)
 {
    if(newPointIndex >= 0 && newPointIndex < (int)m_colorGrad->getNumPoints())

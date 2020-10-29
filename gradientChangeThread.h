@@ -36,6 +36,7 @@ public:
    virtual ~GradChangeThread();
 
    void waitForThreadDone();
+   void endThread();
 
 private:
    // Make uncopyable
