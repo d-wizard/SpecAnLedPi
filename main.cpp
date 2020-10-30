@@ -74,8 +74,11 @@ static std::unique_ptr<ColorScale> colorScale;
 // Thread for Updating the Color Gradient
 static std::unique_ptr<GradChangeThread> gradChangeThread;
 
+// Thread for Polling the Current state of the Rotary Encoders.
+static std::atomic<bool> rotaryEncPollThreadActive;
 static std::unique_ptr<std::thread> checkRotaryThread;
 
+// The Rotary Encoders.
 static std::shared_ptr<RotaryEncoder> hueRotary;
 static std::shared_ptr<RotaryEncoder> satRotary;
 static std::shared_ptr<RotaryEncoder> brightRotary;
@@ -85,15 +88,17 @@ static std::shared_ptr<RotaryEncoder> leftButton;
 static std::shared_ptr<RotaryEncoder> rightButton;
 static std::vector<std::shared_ptr<RotaryEncoder>> rotaries;
 
+// The Potentiometer Knobs.
 static std::shared_ptr<SeeedAdc8Ch12Bit> knobsAdcs;
 static std::shared_ptr<PotentiometerKnob> brightKnob;
 static std::shared_ptr<PotentiometerKnob> gainKnob;
 
-
-static std::atomic<bool> rotaryEncPollThreadActive;
+// The Main Thread (i.e. This App's Thread)
 static std::atomic<bool> exitThisApp;
+static std::shared_ptr<std::thread> thisAppThread;
+static void thisAppForeverFunction();
 
-static std::shared_ptr<std::thread> runThread;
+
 
 // Processes PCM samples whenever the Microphone Capture object (mic) is instantiated.
 void processPcmSamples()
@@ -166,42 +171,9 @@ void alsaMicSamples(int16_t* samples, size_t numSamp)
    bufferReadyCondVar.notify_all();
 }
 
-void defineColorScale()
-{
-   std::vector<ColorScale::tColorPoint> colors;
-
-   int idx = 0;
-   colors.resize(1);
-
-   // Patriotic colors: Red, White, Blue.
-   colors[idx].color.u32 = SpecAnLedTypes::COLOR_PURPLE;
-   colors[idx].startPoint  = 0.00;
-   idx++; colors.resize(idx+1);
-
-   colors[idx].color.u32 = colors[idx-1].color.u32; // Repeat previous color.
-   colors[idx].startPoint  = 0.04;
-   idx++; colors.resize(idx+1);
-
-   colors[idx].color.u32 = SpecAnLedTypes::COLOR_CYAN;
-   colors[idx].startPoint  = 0.05;
-   idx++; colors.resize(idx+1);
-
-   colors[idx].color.u32 = colors[idx-1].color.u32; // Repeat previous color.
-   colors[idx].startPoint  = 0.12;
-   idx++; colors.resize(idx+1);
-
-   colors[idx].color.u32 = SpecAnLedTypes::COLOR_BLUE;
-   colors[idx].startPoint  = 0.25;
-   idx++; colors.resize(idx+1);
-
-   colors[idx].color.u32 = colors[idx-1].color.u32; // Repeat previous color.
-
-   std::vector<ColorScale::tBrightnessPoint> brightPoints{{0,0},{1,1}}; // Scale brightness.
-   colorScale.reset(new ColorScale(colors, brightPoints));
-}
-
 void cleanUpBeforeExit()
 {
+   // Let this app's thread know that it needs to exit.
    exitThisApp = true;
   
    // Kill the Rotary Polling Thread.
@@ -212,6 +184,7 @@ void cleanUpBeforeExit()
       checkRotaryThread.reset();
    }
 
+   // The Gradient Change Thread might be active. If so get it to end.
    if(gradChangeThread.get() != nullptr)
    {
       gradChangeThread->endThread();
@@ -230,8 +203,9 @@ void cleanUpBeforeExit()
    // Turn off all the LEDs in the LED strip.
    ledStrip.reset();
 
-   runThread->join();
-   runThread.reset();
+   // Join this app's thread.
+   thisAppThread->join();
+   thisAppThread.reset();
 }
 
 void signalHandler(int signum)
@@ -253,8 +227,6 @@ void RotaryUpdateFunction()
       usleep(1*1000);
    }
 }
-
-void altThread();
 
 int main (int argc, char *argv[])
 {
@@ -279,15 +251,8 @@ int main (int argc, char *argv[])
    ledStrip.reset(new LedStrip(NUM_LEDS, LedStrip::GRB));
    ledStrip->clear();
 
-   // Define the Color Scale Gradient.
-   defineColorScale();
-
    // Setup Signal Handler for ctrl+c
    signal(SIGINT, signalHandler);
-
-#ifdef SEEED_ADC_DEV_ADDR
-   adc8Ch.reset(new SeeedAdc8Ch12Bit(SEEED_ADC_DEV_ADDR));
-#endif
 
    hueRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 12, 13, 14));
    satRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH,  0,  2,  3));
@@ -307,7 +272,7 @@ int main (int argc, char *argv[])
    rotaries.push_back(reachRotary);
    rotaries.push_back(posRotary);
 
-   runThread.reset(new std::thread(altThread));
+   thisAppThread.reset(new std::thread(thisAppForeverFunction));
 
    sleep(0x7FFFFFFF);
 
@@ -315,7 +280,7 @@ int main (int argc, char *argv[])
 }
 
 
-void altThread()
+void thisAppForeverFunction()
 {
    constexpr int numColorPoints = 3;
    std::shared_ptr<ColorGradient> grad(new ColorGradient(numColorPoints));
