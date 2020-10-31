@@ -81,7 +81,7 @@ static std::unique_ptr<std::thread> checkRotaryThread;
 // The Rotary Encoders.
 static std::shared_ptr<RotaryEncoder> hueRotary;
 static std::shared_ptr<RotaryEncoder> satRotary;
-static std::shared_ptr<RotaryEncoder> brightRotary;
+static std::shared_ptr<RotaryEncoder> ledSelected;
 static std::shared_ptr<RotaryEncoder> reachRotary;
 static std::shared_ptr<RotaryEncoder> posRotary;
 static std::shared_ptr<RotaryEncoder> leftButton;
@@ -256,9 +256,9 @@ int main (int argc, char *argv[])
 
    hueRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 12, 13, 14));
    satRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH,  0,  2,  3));
-   brightRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 21, 22, 23));
+   ledSelected.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 21, 22, 23));
    reachRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 27, 28, 29));
-   posRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 10, 11, 31));
+   posRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 11, 10, 31));
    leftButton.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 25));
    rightButton.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 24));
 
@@ -268,7 +268,7 @@ int main (int argc, char *argv[])
 
    rotaries.push_back(hueRotary);
    rotaries.push_back(satRotary);
-   rotaries.push_back(brightRotary);
+   rotaries.push_back(ledSelected);
    rotaries.push_back(reachRotary);
    rotaries.push_back(posRotary);
 
@@ -298,7 +298,7 @@ void thisAppForeverFunction()
             ledStrip, 
             hueRotary,
             satRotary,
-            brightRotary,
+            ledSelected,
             reachRotary,
             posRotary,
             leftButton,
