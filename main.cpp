@@ -257,7 +257,7 @@ int main (int argc, char *argv[])
    hueRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 12, 13, 14));
    satRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH,  0,  2,  3));
    ledSelected.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 21, 22, 23));
-   reachRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 27, 28, 29));
+   reachRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 28, 27, 29));
    posRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 11, 10, 31));
    leftButton.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 25));
    rightButton.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 24));

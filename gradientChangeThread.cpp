@@ -54,7 +54,7 @@ public:
          float delta = (dialValue == RotaryEncoder::E_FORWARD) ? change : -change;
 
          // Make Reach change more intuitive for the end user.
-         if(m_gradOption == ColorGradient::E_GRAD_REACH && gradPointIndex >= ((signed)colorGrad->getNumPoints()-1))
+         if(m_gradOption == ColorGradient::E_GRAD_REACH && gradPointIndex == 0)
          {
             // Make the color's reach direction match the orientation of the dial movement. 
             delta = -delta;
