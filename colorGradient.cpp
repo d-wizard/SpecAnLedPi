@@ -24,6 +24,26 @@
 
 ColorGradient::ColorGradient(size_t numPoints)
 {
+   init(numPoints);
+}
+
+ColorGradient::ColorGradient(std::vector<ColorGradient::tGradientPoint>& points)
+{
+   init(points.size());
+   for(size_t i = 0; i < m_gradPoints.size(); ++i)
+   {
+      m_gradPoints[i].hue = points[i].hue;
+      m_gradPoints[i].saturation = points[i].saturation;
+   }
+}
+
+ColorGradient::~ColorGradient()
+{
+
+}
+
+void ColorGradient::init(size_t numPoints)
+{
    m_numZones = numPoints * 2 - 1;
    float reach = 0.5f / (float)m_numZones;
    float deltaBetweenPoints = 1.0f / (float)(numPoints-1);
@@ -41,11 +61,6 @@ ColorGradient::ColorGradient(size_t numPoints)
       m_gradPoints[i].reach = (first || last) ? reach * 2.0f : reach;
       assert(m_gradPoints[i].reach >= MIN_INCREMENT);
    }
-}
-
-ColorGradient::~ColorGradient()
-{
-
 }
 
 std::vector<ColorGradient::tGradientPoint> ColorGradient::getGradient()

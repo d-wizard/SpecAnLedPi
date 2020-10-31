@@ -132,7 +132,7 @@ void processPcmSamples()
       {
          #if 0
             // Now we can process the samples outside of the mutex lock.
-            smartPlot_1D(samples, E_INT_16, numSamp, SAMPLE_RATE, SAMPLE_RATE/4, "Mic", "Samp");
+            smartPlot_1D(samples, E_INT_16, numSamp, SAMPLE_RATE, SAMPLE_RATE/49, "Mic", "Samp");
          #elif 0
             fft->runFft(samples, fftSamp.data());
             int numBins = fftModifier->modify(fftSamp.data());//numSamp/2;//
@@ -141,8 +141,10 @@ void processPcmSamples()
             SpecAnLedTypes::tFftVector* fftResult = fftRun->run(samples, numSamp);
             if(fftResult != nullptr)
             {
+               int numBins = fftModifier->modify(fftResult->data());
+
                float brightness = brightKnob->getFlt();
-               gain = gainKnob->getInt()*40;
+               gain = gainKnob->getInt()*10;
                for(int i = 0 ; i < NUM_LEDS; ++i)
                {
                   int32_t ledVal = (int32_t)fftResult->data()[i]*gain;
@@ -235,7 +237,7 @@ int main (int argc, char *argv[])
 
    tFftModifiers mod;
    mod.startFreq = 300;
-   mod.stopFreq = 16000;
+   mod.stopFreq = 12000;
    mod.clipMin = 0;
    mod.clipMax = 5000;
    mod.logScale = false;
@@ -283,7 +285,15 @@ int main (int argc, char *argv[])
 void thisAppForeverFunction()
 {
    constexpr int numColorPoints = 3;
-   std::shared_ptr<ColorGradient> grad(new ColorGradient(numColorPoints));
+   std::vector<ColorGradient::tGradientPoint> gradColors(numColorPoints);
+   gradColors[0].hue = 0;
+   gradColors[0].saturation = 1.0;
+   gradColors[1].hue = 0.5;
+   gradColors[1].saturation = 0.0;
+   gradColors[2].hue = 0.65;
+   gradColors[2].saturation = 1.0;
+
+   std::shared_ptr<ColorGradient> grad(new ColorGradient(gradColors));
 
    exitThisApp = false;
    while(!exitThisApp)

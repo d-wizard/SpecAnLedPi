@@ -46,6 +46,7 @@ public:
    }tGradientPoint;
    
    ColorGradient(size_t numPoints);
+   ColorGradient(std::vector<tGradientPoint>& points); // Note only Hue and Saturation will be used.
    virtual ~ColorGradient();
 
    void updateGradient(eGradientOptions option, float value, int pointIndex);
@@ -65,6 +66,8 @@ private:
 
    std::vector<tGradientPoint> m_gradPoints;
    int m_numZones;
+
+   void init(size_t numPoints);
 
    void setHue(  float value, size_t pointIndex);
    void setSat(  float value, size_t pointIndex);
