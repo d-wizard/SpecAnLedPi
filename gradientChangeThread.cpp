@@ -44,7 +44,7 @@ public:
       }
    } 
 
-   bool updateOption(std::shared_ptr<ColorGradient> colorGrad, int gradPointIndex)
+   bool update(std::shared_ptr<ColorGradient> colorGrad, int gradPointIndex)
    {
       bool changed = false;
       auto dialValue = m_rotEnc->checkRotation();
@@ -52,6 +52,14 @@ public:
       {
          float change = m_isCoarse ? m_coarse : m_fine;
          float delta = (dialValue == RotaryEncoder::E_FORWARD) ? change : -change;
+
+         // Make Reach change more intuitive for the end user.
+         if(m_gradOption == ColorGradient::E_GRAD_REACH && gradPointIndex >= ((signed)colorGrad->getNumPoints()-1))
+         {
+            // Make the color's reach direction match the orientation of the dial movement. 
+            delta = -delta;
+         }
+
          colorGrad->updateGradientDelta(m_gradOption, delta, gradPointIndex);
          changed = true;
       }
@@ -194,7 +202,7 @@ void GradChangeThread::threadFunction()
          for(auto& rotary : m_allGradRotaries)
          {
             rotary->updateCoarseFine();
-            updateLeds = rotary->updateOption(m_colorGrad, m_gradPointIndex) || updateLeds;
+            updateLeds = rotary->update(m_colorGrad, m_gradPointIndex) || updateLeds;
          }
 
          // If the special User Cue Display has finished, set the LEDs back to displaying the gradient.
