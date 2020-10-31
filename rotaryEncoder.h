@@ -84,4 +84,6 @@ private:
    int m_rotaryWriteIndex = 0;
 
    bool m_buttonPrevState = false;
+
+   bool m_waitForBothOff = false;
 };

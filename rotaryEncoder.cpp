@@ -159,14 +159,27 @@ RotaryEncoder::eRotation RotaryEncoder::checkRotation()
 
    while(m_rotaryReadIndex != m_rotaryWriteIndex && retVal == E_NO_CHANGE)
    {
-      bool bothOn = (m_forwardFirstBuff[m_rotaryReadIndex] == 1 && m_backwardFirstBuff[m_rotaryReadIndex] == 1);
-      if(m_forwardPrevState == 1 && m_backwardPrevState == 0 && bothOn)
+      if(m_waitForBothOff)
       {
-         retVal = E_FORWARD;
+         bool bothOff = (m_forwardFirstBuff[m_rotaryReadIndex] == 0 && m_backwardFirstBuff[m_rotaryReadIndex] == 0);
+         if(bothOff)
+         {
+            m_waitForBothOff = false;
+         }
       }
-      else if(m_forwardPrevState == 0 && m_backwardPrevState == 1 && bothOn)
+      else
       {
-         retVal = E_BACKWARD;
+         bool bothOn = (m_forwardFirstBuff[m_rotaryReadIndex] == 1 && m_backwardFirstBuff[m_rotaryReadIndex] == 1);
+         if(m_forwardPrevState == 1 && m_backwardPrevState == 0 && bothOn)
+         {
+            retVal = E_FORWARD;
+            m_waitForBothOff = true;
+         }
+         else if(m_forwardPrevState == 0 && m_backwardPrevState == 1 && bothOn)
+         {
+            retVal = E_BACKWARD;
+            m_waitForBothOff = true;
+         }
       }
       m_forwardPrevState = m_forwardFirstBuff[m_rotaryReadIndex];
       m_backwardPrevState = m_backwardFirstBuff[m_rotaryReadIndex];
@@ -183,7 +196,10 @@ RotaryEncoder::eRotation RotaryEncoder::checkRotation()
          bothOff = (m_forwardFirstBuff[m_rotaryReadIndex] == 0 && m_backwardFirstBuff[m_rotaryReadIndex] == 0);
          m_forwardPrevState = m_forwardFirstBuff[m_rotaryReadIndex];
          m_backwardPrevState = m_backwardFirstBuff[m_rotaryReadIndex];
+
+         m_waitForBothOff = m_waitForBothOff && !bothOff;
       }
+      m_waitForBothOff = m_waitForBothOff && !bothOff;
 
       while(m_rotaryReadIndex != m_rotaryWriteIndex && bothOff == true)
       {
@@ -191,7 +207,10 @@ RotaryEncoder::eRotation RotaryEncoder::checkRotation()
          bothOff = (m_forwardFirstBuff[m_rotaryReadIndex] == 0 && m_backwardFirstBuff[m_rotaryReadIndex] == 0);
          m_forwardPrevState = m_forwardFirstBuff[m_rotaryReadIndex];
          m_backwardPrevState = m_backwardFirstBuff[m_rotaryReadIndex];
+
+         m_waitForBothOff = m_waitForBothOff && !bothOff;
       }
+      m_waitForBothOff = m_waitForBothOff && !bothOff;
    }
 
    return retVal;
