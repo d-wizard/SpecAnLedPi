@@ -141,7 +141,7 @@ void processPcmSamples()
             SpecAnLedTypes::tFftVector* fftResult = fftRun->run(samples, numSamp);
             if(fftResult != nullptr)
             {
-               int numBins = fftModifier->modify(fftResult->data());
+               fftModifier->modify(fftResult->data());
 
                float brightness = brightKnob->getFlt();
                gain = gainKnob->getInt()*10;
