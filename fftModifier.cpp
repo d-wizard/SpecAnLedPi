@@ -21,10 +21,12 @@
 
 
 FftModifier::FftModifier(float samplesRate, int fftSize, int numOutputValues, tFftModifiers& modifiers):
+   m_freqRange(samplesRate / 2.0),
+   m_hzPerBin(samplesRate/((float)fftSize)),
    m_logScale(modifiers.logScale)
 {
    initIndexMap(samplesRate, fftSize, numOutputValues, modifiers);
-   initScale(modifiers);
+   initScale(modifiers, numOutputValues);
 }
 
 FftModifier::~FftModifier()
@@ -37,7 +39,7 @@ int FftModifier::modify(uint16_t* inOut)
    int numOuts = m_indexMap.size()-1;
    for(int outIndex = 0; outIndex < numOuts; ++outIndex)
    {
-      int64_t sum = 0;
+      int32_t sum = 0;
       int numInSum = 0;
       for(int inIndex = m_indexMap[outIndex]; inIndex < m_indexMap[outIndex+1]; ++inIndex)
       {
@@ -46,7 +48,7 @@ int FftModifier::modify(uint16_t* inOut)
       }
       sum /= numInSum;
 
-      sum = ((sum - m_offset) * m_scalar) >> 15;
+      sum = ((sum - m_offset) * m_scalar[outIndex]) >> 15;
       
       if(sum > 0xFFFF) sum = 0xFFFF;
       else if(sum < 0) sum = 0;
@@ -81,17 +83,15 @@ float FftModifier::spliceToFreq(float splice, float range, bool isStop)
 
 void FftModifier::initIndexMap(float samplesRate, int fftSize, int numOutputValues, tFftModifiers& modifiers)
 {
-   float freqRange = samplesRate / 2.0;
-   float hzPerBin = samplesRate/((float)fftSize);
    m_indexMap.resize(numOutputValues+1);
 
-   float startFreq = spliceToFreq(modifiers.startFreq, freqRange, false);
-   float stopFreq  = spliceToFreq(modifiers.stopFreq,  freqRange, true);
+   float startFreq = spliceToFreq(modifiers.startFreq, m_freqRange, false);
+   float stopFreq  = spliceToFreq(modifiers.stopFreq,  m_freqRange, true);
 
    float hzPerOutput = (stopFreq-startFreq) / numOutputValues;
 
-   float binsPerOutput = hzPerOutput / hzPerBin;
-   float startBin = startFreq / hzPerBin;
+   float binsPerOutput = hzPerOutput / m_hzPerBin;
+   float startBin = startFreq / m_hzPerBin;
 
    for(int i = 0; i < (numOutputValues+1); ++i)
    {
@@ -99,15 +99,44 @@ void FftModifier::initIndexMap(float samplesRate, int fftSize, int numOutputValu
    }
 }
 
-void FftModifier::initScale(tFftModifiers& modifiers)
+void FftModifier::initScale(tFftModifiers& modifiers, int numOutputValues)
 {
    // Map modifiers clip range to 0 to 0xFFFF
    float rangeIn = modifiers.clipMax - modifiers.clipMin;
    float rangeOut = (float)(0xFFFF);
 
    float scalar = rangeOut / rangeIn;
-   m_scalar = scalar * 32768.0; // Q15
    m_offset = modifiers.clipMin;
+
+   // Compute the scalar value per output.
+   int stopAttenOutIndex = 0;
+   m_scalar.resize(numOutputValues);
+   if(modifiers.attenLowFreqs)
+   {
+      // Determine which Output Index to stop attenuating at.
+      int stopFftBin = modifiers.attenLowStopFreq / m_hzPerBin;
+      while(m_indexMap[stopAttenOutIndex] < stopFftBin)
+      {
+         stopAttenOutIndex++;
+      }
+
+      // Attenuate linearly across the output values.
+      float minY = modifiers.attenLowStartLevel;
+      float deltaY = 1.0 - minY;
+      float maxX = (float)stopAttenOutIndex;
+
+      for(int i = 0; i < stopAttenOutIndex; ++i)
+      {
+         float attenScalar = minY + (float)i * deltaY / maxX;
+         m_scalar[i] = attenScalar * scalar * 32768.0; // Q15
+      }
+   }
+   // Fill in the non-attenuating output values.
+   for(int i = stopAttenOutIndex; i < numOutputValues; ++i)
+   {
+      m_scalar[i] = scalar * 32768.0; // Q15
+   }
+
 }
 
 

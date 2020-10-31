@@ -30,8 +30,12 @@ typedef struct tFftModifiers
 
    bool logScale;
 
+   bool attenLowFreqs;
+   float attenLowStartLevel;
+   float attenLowStopFreq;
+
    // Constructor. Initialize to a Do Nothing state (i.e. do not modify the FFT)
-   tFftModifiers():startFreq(0.0), stopFreq(0.0), clipMax(0xFFFF), clipMin(0), logScale(false){}
+   tFftModifiers():startFreq(0.0), stopFreq(0.0), clipMax(0xFFFF), clipMin(0), logScale(false), attenLowFreqs(false){}
 }tFftModifiers;
 
 
@@ -49,17 +53,20 @@ private:
    FftModifier(FftModifier const&);
    void operator=(FftModifier const&);
 
+   float m_freqRange;
+   float m_hzPerBin;
+
    std::vector<int> m_indexMap;
 
    // Used to shift result back to 0 to 0xFFFF.
-   int32_t m_scalar;
+   std::vector<int32_t> m_scalar;
    int32_t m_offset;
 
    bool m_logScale;
 
    float spliceToFreq(float splice, float range, bool isStop);
    void initIndexMap(float samplesRate, int fftSize, int numOutputValues, tFftModifiers& modifiers);
-   void initScale(tFftModifiers& modifiers);
+   void initScale(tFftModifiers& modifiers, int numOutputValues);
 
    void logScale(uint16_t* inOut, int num);
 };

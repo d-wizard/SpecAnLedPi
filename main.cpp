@@ -241,6 +241,9 @@ int main (int argc, char *argv[])
    mod.clipMin = 0;
    mod.clipMax = 5000;
    mod.logScale = false;
+   mod.attenLowFreqs = true;
+   mod.attenLowStartLevel = 0.2;
+   mod.attenLowStopFreq = 6000;
    fftModifier.reset(new FftModifier(SAMPLE_RATE, FFT_SIZE, NUM_LEDS, mod));
 
    pcmSampBuff.reserve(5000);
