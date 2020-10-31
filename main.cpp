@@ -254,7 +254,7 @@ int main (int argc, char *argv[])
    // Setup Signal Handler for ctrl+c
    signal(SIGINT, signalHandler);
 
-   hueRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 12, 13, 14));
+   hueRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 13, 12, 14));
    satRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH,  0,  2,  3));
    ledSelected.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 21, 22, 23));
    reachRotary.reset(new RotaryEncoder(RotaryEncoder::E_HIGH, 28, 27, 29));
@@ -338,7 +338,7 @@ void thisAppForeverFunction()
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             if(leftButton->checkButton(false) && rightButton->checkButton(false))
             {
-               while(leftButton->checkButton(false) && rightButton->checkButton(false)){std::this_thread::sleep_for(std::chrono::milliseconds(1));} // Wait for both to be release.
+               while(leftButton->checkButton(false) && rightButton->checkButton(false)){std::this_thread::sleep_for(std::chrono::milliseconds(1));} // Wait for both to be released.
                toggleBackToGradientDefine = true;
             }
          }
