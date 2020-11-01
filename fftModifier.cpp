@@ -127,7 +127,8 @@ void FftModifier::initScale(tFftModifiers& modifiers, int numOutputValues)
 
       for(int i = 0; i < stopAttenOutIndex; ++i)
       {
-         float attenScalar = minY + (float)i * deltaY / maxX;
+         float attenZeroToOne = atten_quarterCircle((float)i / maxX);
+         float attenScalar = minY + attenZeroToOne * deltaY;
          m_scalar[i] = attenScalar * scalar * 32768.0; // Q15
       }
    }
@@ -139,4 +140,14 @@ void FftModifier::initScale(tFftModifiers& modifiers, int numOutputValues)
 
 }
 
+float FftModifier::atten_linear(float zeroToOne)
+{
+   return zeroToOne;
+}
+
+float FftModifier::atten_quarterCircle(float zeroToOne)
+{
+   float oneToZero = 1.0f - zeroToOne;
+   return sqrtf(1.0f - oneToZero*oneToZero);
+}
 

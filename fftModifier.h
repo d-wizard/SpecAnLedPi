@@ -69,5 +69,8 @@ private:
    void initScale(tFftModifiers& modifiers, int numOutputValues);
 
    void logScale(uint16_t* inOut, int num);
+
+   float atten_quarterCircle(float zeroToOne);
+   float atten_linear(float zeroToOne);
 };
 
