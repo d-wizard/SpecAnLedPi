@@ -34,8 +34,10 @@ typedef struct tFftModifiers
    float attenLowStartLevel;
    float attenLowStopFreq;
 
+   int fadeAwayAmount;
+
    // Constructor. Initialize to a Do Nothing state (i.e. do not modify the FFT)
-   tFftModifiers():startFreq(0.0), stopFreq(0.0), clipMax(0xFFFF), clipMin(0), logScale(false), attenLowFreqs(false){}
+   tFftModifiers():startFreq(0.0), stopFreq(0.0), clipMax(0xFFFF), clipMin(0), logScale(false), attenLowFreqs(false), fadeAwayAmount(0){}
 }tFftModifiers;
 
 
@@ -63,6 +65,13 @@ private:
    int32_t m_offset;
 
    bool m_logScale;
+
+   // Fade Away Parameters
+   std::vector<int32_t> m_fadeAwayPeak;
+   std::vector<int> m_fadeAwayCountDown;
+   int m_fadeAwayAmount;
+   
+   void fadeAway(uint16_t* inOut, int num);
 
    float spliceToFreq(float splice, float range, bool isStop);
    void initIndexMap(float samplesRate, int fftSize, int numOutputValues, tFftModifiers& modifiers);

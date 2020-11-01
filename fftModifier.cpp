@@ -23,7 +23,10 @@
 FftModifier::FftModifier(float samplesRate, int fftSize, int numOutputValues, tFftModifiers& modifiers):
    m_freqRange(samplesRate / 2.0),
    m_hzPerBin(samplesRate/((float)fftSize)),
-   m_logScale(modifiers.logScale)
+   m_logScale(modifiers.logScale),
+   m_fadeAwayPeak(numOutputValues, 0),
+   m_fadeAwayCountDown(numOutputValues, 0),
+   m_fadeAwayAmount(modifiers.fadeAwayAmount)
 {
    initIndexMap(samplesRate, fftSize, numOutputValues, modifiers);
    initScale(modifiers, numOutputValues);
@@ -57,9 +60,38 @@ int FftModifier::modify(uint16_t* inOut)
    if(m_logScale)
       logScale(inOut, numOuts);
 
+   if(m_fadeAwayAmount > 0)
+      fadeAway(inOut, numOuts);
+
    return numOuts;
 }
 
+void FftModifier::fadeAway(uint16_t* inOut, int num)
+{
+   for(int i = 0; i < num; ++i)
+   {
+      uint16_t fadeValue = 0;
+      if(m_fadeAwayCountDown[i] > 0)
+      {
+         if(m_fadeAwayPeak[i] > inOut[i])
+         {
+            fadeValue = m_fadeAwayPeak[i] * m_fadeAwayCountDown[i] / m_fadeAwayAmount;
+         }
+         // Else no need to calculate fadeValue, it will be less than the new value.
+         m_fadeAwayCountDown[i]--;
+      }
+
+      if(fadeValue > inOut[i])
+      {
+         inOut[i] = fadeValue;
+      }
+      else
+      {
+         m_fadeAwayPeak[i] = inOut[i];
+         m_fadeAwayCountDown[i] = m_fadeAwayAmount - 1;
+      }
+   }
+}
 
 void FftModifier::logScale(uint16_t* inOut, int num)
 {

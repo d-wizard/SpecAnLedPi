@@ -243,6 +243,7 @@ int main (int argc, char *argv[])
    mod.attenLowFreqs = true;
    mod.attenLowStartLevel = 0.2;
    mod.attenLowStopFreq = 6000;
+   mod.fadeAwayAmount = 15;
    fftModifier.reset(new FftModifier(SAMPLE_RATE, FFT_SIZE, NUM_LEDS, mod));
 
    pcmSampBuff.reserve(5000);
