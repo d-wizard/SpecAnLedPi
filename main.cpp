@@ -24,6 +24,9 @@
 #include <signal.h>
 #include <math.h>
 #include <memory> // unique_ptr
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 #include "specAnLedPiTypes.h"
 #include "alsaMic.h"
 #include "specAnFft.h"
@@ -38,14 +41,9 @@
 #include "potentiometerAdc.h"
 #include "potentiometerKnob.h"
 #include "ThreadPriorities.h"
-
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-
-
-#include "smartPlotMessage.h"
 #include "wiringPi.h"
+
+//#include "smartPlotMessage.h"
 
 #define SAMPLE_RATE (44100)
 #define NUM_LEDS (40)
@@ -105,7 +103,6 @@ void processPcmSamples()
 {
    int16_t samples[FFT_SIZE];
    size_t numSamp = FFT_SIZE;
-   int32_t gain = 64;
    while(procThreadLives)
    {
       bool copySamples = false;
@@ -134,9 +131,12 @@ void processPcmSamples()
             // Now we can process the samples outside of the mutex lock.
             smartPlot_1D(samples, E_INT_16, numSamp, SAMPLE_RATE, SAMPLE_RATE/49, "Mic", "Samp");
          #elif 0
-            fft->runFft(samples, fftSamp.data());
-            int numBins = fftModifier->modify(fftSamp.data());//numSamp/2;//
-            smartPlot_1D(fftSamp.data(), E_UINT_16, numBins, numBins, 0, "FFT", "re");
+            SpecAnLedTypes::tFftVector* fftResult = fftRun->run(samples, numSamp);
+            if(fftResult != nullptr)
+            {
+               fftModifier->modify(fftResult->data());
+               smartPlot_1D(fftResult->data(), E_UINT_16, NUM_LEDS, NUM_LEDS, 0, "FFT", "re");
+            }
          #else
             SpecAnLedTypes::tFftVector* fftResult = fftRun->run(samples, numSamp);
             if(fftResult != nullptr)
@@ -144,7 +144,7 @@ void processPcmSamples()
                fftModifier->modify(fftResult->data());
 
                float brightness = brightKnob->getFlt();
-               gain = gainKnob->getInt()*10;
+               auto gain = gainKnob->getInt()*10;
                for(int i = 0 ; i < NUM_LEDS; ++i)
                {
                   int32_t ledVal = (int32_t)fftResult->data()[i]*gain;
@@ -155,7 +155,6 @@ void processPcmSamples()
                   ledColors[i] = colorScale->getColor(ledVal, brightness);
                }
                ledStrip->set(ledColors);
-               smartPlot_1D(&gain, E_UINT_16, 1, 1000, 100, "gain", "adc");
             }
          #endif
       }
