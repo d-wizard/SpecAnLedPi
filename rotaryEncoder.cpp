@@ -91,7 +91,6 @@ bool RotaryEncoder::checkButton(bool only1TruePerPress)
       else
       {
          retVal = digitalRead(m_buttonGpio) != m_defaultButtonVal;
-         m_buttonPrevState = retVal;
       }
    }
    return retVal;
