@@ -48,6 +48,8 @@ private:
 
    void setGradientPointIndex(int newPointIndex);
 
+   void waitForButtonUnpress(spre& button);
+
    std::shared_ptr<ColorGradient> m_colorGrad;
    std::shared_ptr<LedStrip> m_ledStrip;
 

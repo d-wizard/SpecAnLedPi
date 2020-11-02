@@ -128,6 +128,11 @@ void GradChangeThread::setGradientPointIndex(int newPointIndex)
    }
 }
 
+void GradChangeThread::waitForButtonUnpress(spre& button)
+{
+   while(button->checkButton(false) && m_threadLives) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+}
+
 void GradChangeThread::threadFunction()
 {
    ThreadPriorities::setThisThreadPriorityPolicy(ThreadPriorities::GRADIENT_CHANGE_THREAD_PRIORITY, SCHED_FIFO);
@@ -180,6 +185,8 @@ void GradChangeThread::threadFunction()
          auto addButtonState = m_addButton->checkButton(); // Check Add Button.
          if(addButtonState == RotaryEncoder::E_DOUBLE_CLICK)
          {
+            waitForButtonUnpress(m_addButton); // Don't do anything until the user releases the button.
+            
             bool lastPoint = (m_gradPointIndex == ((signed)m_colorGrad->getNumPoints()-1));
             m_colorGrad->addPoint(m_gradPointIndex);
             if(!lastPoint)
@@ -194,6 +201,8 @@ void GradChangeThread::threadFunction()
             {
                if(m_colorGrad->canRemovePoint())
                {
+                  waitForButtonUnpress(m_removeButton); // Don't do anything until the user releases the button.
+            
                   display.fadeOut(m_gradPointIndex);
                   m_colorGrad->removePoint(m_gradPointIndex);
                   setGradientPointIndex(m_gradPointIndex-1);
