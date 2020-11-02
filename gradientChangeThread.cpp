@@ -149,7 +149,6 @@ void GradChangeThread::threadFunction()
       // Check for exit condition (i.e. add and remove buttons pressed at the same time).
       if(m_addButton->checkButton(false) && m_removeButton->checkButton(false))
       {
-         while(m_addButton->checkButton(false) && m_removeButton->checkButton(false) && m_threadLives){std::this_thread::sleep_for(std::chrono::milliseconds(1));} // Wait for both to be release.
          m_threadLives = false;
       }
 
@@ -178,7 +177,8 @@ void GradChangeThread::threadFunction()
          }
 
          // Add / Remove LED
-         if(m_addButton->checkButton() == RotaryEncoder::E_DOUBLE_CLICK)
+         auto addButtonState = m_addButton->checkButton(); // Check Add Button.
+         if(addButtonState == RotaryEncoder::E_DOUBLE_CLICK)
          {
             bool lastPoint = (m_gradPointIndex == ((signed)m_colorGrad->getNumPoints()-1));
             m_colorGrad->addPoint(m_gradPointIndex);
@@ -187,14 +187,18 @@ void GradChangeThread::threadFunction()
             display.fadeIn(m_gradPointIndex);
             blinking = true;
          }
-         else if(m_removeButton->checkButton() == RotaryEncoder::E_DOUBLE_CLICK)
+         else if(addButtonState == RotaryEncoder::E_NO_CLICK) // Only check Remove LED button if Add Button was unclicked.
          {
-            if(m_colorGrad->canRemovePoint())
+            // Check Remove Button.
+            if(m_removeButton->checkButton() == RotaryEncoder::E_DOUBLE_CLICK)
             {
-               display.fadeOut(m_gradPointIndex);
-               m_colorGrad->removePoint(m_gradPointIndex);
-               setGradientPointIndex(m_gradPointIndex-1);
-               blinking = true;
+               if(m_colorGrad->canRemovePoint())
+               {
+                  display.fadeOut(m_gradPointIndex);
+                  m_colorGrad->removePoint(m_gradPointIndex);
+                  setGradientPointIndex(m_gradPointIndex-1);
+                  blinking = true;
+               }
             }
          }
 

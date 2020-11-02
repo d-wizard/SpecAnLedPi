@@ -201,12 +201,13 @@ void cleanUpBeforeExit()
    bufferMutex.unlock();
    processingThread->join();
 
-   // Turn off all the LEDs in the LED strip.
-   ledStrip.reset();
-
    // Join this app's thread.
    thisAppThread->join();
    thisAppThread.reset();
+
+   // Turn off all the LEDs in the LED strip.
+   ledStrip.reset();
+
 }
 
 void signalHandler(int signum)
@@ -331,6 +332,12 @@ void thisAppForeverFunction()
          }
       }
 
+      // Set the LEDs to Black.
+      ledStrip->clear();
+
+      // Wait for both to be unpressed.
+      while(leftButton->checkButton(false) && rightButton->checkButton(false) && !exitThisApp){std::this_thread::sleep_for(std::chrono::milliseconds(1));}
+
       // Configure for FFT Audio Mode.
       if(!exitThisApp)
       {
@@ -351,6 +358,13 @@ void thisAppForeverFunction()
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             if(leftButton->checkButton(false) && rightButton->checkButton(false))
             {
+               // Stop getting MIC samples.
+               {
+                  std::unique_lock<std::mutex> lock(bufferMutex);
+                  mic.reset();
+                  pcmSampBuff.clear();
+               }
+               ledStrip->clear(); // Set the LEDs to Black.
                while(leftButton->checkButton(false) && rightButton->checkButton(false)){std::this_thread::sleep_for(std::chrono::milliseconds(1));} // Wait for both to be released.
                toggleBackToGradientDefine = true;
             }
