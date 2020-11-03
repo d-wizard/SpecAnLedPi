@@ -84,7 +84,7 @@ private:
 GradChangeThread::GradChangeThread(std::shared_ptr<ColorGradient> colorGrad, std::shared_ptr<LedStrip> ledStrip, spre hue, spre sat, spre ledSelect, spre reach, spre pos, spre leftBut, spre rightBut, std::shared_ptr<PotentiometerKnob> brightKnob):
    m_colorGrad(colorGrad),
    m_ledStrip(ledStrip),
-   m_hueRotary(   new RotEncGradObj(hue,    ColorGradient::E_GRAD_HUE,        0.1, 0.003)),
+   m_hueRotary(   new RotEncGradObj(hue,    ColorGradient::E_GRAD_HUE,        0.05, 0.003)),
    m_satRotary(   new RotEncGradObj(sat,    ColorGradient::E_GRAD_SATURATION, 0.1, 0.01)),
    m_reachRotary( new RotEncGradObj(reach,  ColorGradient::E_GRAD_REACH,      0.1, 0.01)),
    m_posRotary(   new RotEncGradObj(pos,    ColorGradient::E_GRAD_POSITION,   0.1, 0.01)),
