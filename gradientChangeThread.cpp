@@ -139,6 +139,7 @@ void GradChangeThread::threadFunction()
    ThreadPriorities::setThisThreadName("GradChange");
 
    bool updatedGradient = false;
+   bool needToBlinkAfterFade = false;
    
    DisplayGradient display(m_colorGrad, m_ledStrip, m_brightKnob);
    display.showGradient();
@@ -159,7 +160,7 @@ void GradChangeThread::threadFunction()
 
       if(m_threadLives)
       {
-         bool blinking = false;
+         bool blinking_fading = false;
          bool updateLeds = false;
 
          // Change selected LED / Blink selected LED
@@ -178,7 +179,8 @@ void GradChangeThread::threadFunction()
                newColorIndex = 0;
             setGradientPointIndex(newColorIndex);
             display.blinkOne(m_gradPointIndex);
-            blinking = true;
+            blinking_fading = true;
+            needToBlinkAfterFade = false;
          }
 
          // Add / Remove LED
@@ -194,7 +196,8 @@ void GradChangeThread::threadFunction()
                if(!lastPoint)
                   setGradientPointIndex(m_gradPointIndex+1);
                display.fadeIn(m_gradPointIndex);
-               blinking = true;
+               blinking_fading = true;
+               needToBlinkAfterFade = false;
             }
          }
          else if(addButtonState == RotaryEncoder::E_NO_CLICK) // Only check Remove LED button if Add Button was unclicked.
@@ -209,7 +212,8 @@ void GradChangeThread::threadFunction()
                   display.fadeOut(m_gradPointIndex);
                   m_colorGrad->removePoint(m_gradPointIndex);
                   setGradientPointIndex(m_gradPointIndex-1);
-                  blinking = true;
+                  blinking_fading = true;
+                  needToBlinkAfterFade = true;
                }
             }
          }
@@ -225,6 +229,12 @@ void GradChangeThread::threadFunction()
          if(display.userCueDone())
          {
             updateLeds = true;
+            if(needToBlinkAfterFade)
+            {
+               needToBlinkAfterFade = false;
+               display.blinkOne(m_gradPointIndex);
+               blinking_fading = true;
+            }
          }
 
          // Check if the brightness knob has been changed.
@@ -235,7 +245,7 @@ void GradChangeThread::threadFunction()
          }
 
          // Update the LEDs (if needed)
-         if(!blinking && updateLeds)
+         if(!blinking_fading && updateLeds)
          {
             display.showGradient();
             updatedGradient = true;
