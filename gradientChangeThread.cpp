@@ -185,14 +185,17 @@ void GradChangeThread::threadFunction()
          auto addButtonState = m_addButton->checkButton(); // Check Add Button.
          if(addButtonState == RotaryEncoder::E_DOUBLE_CLICK)
          {
-            waitForButtonUnpress(m_addButton); // Don't do anything until the user releases the button.
-            
-            bool lastPoint = (m_gradPointIndex == ((signed)m_colorGrad->getNumPoints()-1));
-            m_colorGrad->addPoint(m_gradPointIndex);
-            if(!lastPoint)
-               setGradientPointIndex(m_gradPointIndex+1);
-            display.fadeIn(m_gradPointIndex);
-            blinking = true;
+            if(m_colorGrad->canAddPoint())
+            {
+               waitForButtonUnpress(m_addButton); // Don't do anything until the user releases the button.
+
+               bool lastPoint = (m_gradPointIndex == ((signed)m_colorGrad->getNumPoints()-1));
+               m_colorGrad->addPoint(m_gradPointIndex);
+               if(!lastPoint)
+                  setGradientPointIndex(m_gradPointIndex+1);
+               display.fadeIn(m_gradPointIndex);
+               blinking = true;
+            }
          }
          else if(addButtonState == RotaryEncoder::E_NO_CLICK) // Only check Remove LED button if Add Button was unclicked.
          {
