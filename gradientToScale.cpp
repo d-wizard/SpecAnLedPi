@@ -83,4 +83,15 @@ void convertGradientToScale( std::vector<ColorGradient::tGradientPoint>& gradPoi
 
 }
 
+SpecAnLedTypes::tRgbColor convertGradientPointToRGB(ColorGradient::tGradientPoint in)
+{
+   auto rgb = HsvToRgb(gradientToHsv(in));
+   SpecAnLedTypes::tRgbColor retVal;
+   retVal.u32 = 0; // Set to 0, then fill in RGB values.
+   retVal.rgb.r = rgb.r;
+   retVal.rgb.g = rgb.g;
+   retVal.rgb.b = rgb.b;
+   return retVal;
+}
+
 }

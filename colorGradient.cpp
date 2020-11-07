@@ -68,6 +68,16 @@ std::vector<ColorGradient::tGradientPoint> ColorGradient::getGradient()
    return m_gradPoints;
 }
 
+ColorGradient::tGradientPoint ColorGradient::getGradientPoint(int pointIndex)
+{
+   if(pointIndex >= 0 && pointIndex < (int)m_gradPoints.size())
+   {
+      return m_gradPoints[pointIndex];
+   }
+   tGradientPoint retVal;
+   return retVal;
+}
+
 void ColorGradient::updateGradient(ColorGradient::eGradientOptions option, float value, int pointIndex)
 {
    if(pointIndex >= 0 && pointIndex < (int)m_gradPoints.size())
@@ -259,10 +269,15 @@ void ColorGradient::setReach(float value, size_t pointIndex)
    }
 }
 
+bool ColorGradient::canAddPoint()
+{
+   return getLoLimit(m_gradPoints.size()*3) < 1.0; // If 1.0 or greater, there is no room for another point.
+}
+
 void ColorGradient::addPoint(int pointIndexToDuplicate)
 {
    bool validIndex = (pointIndexToDuplicate >= 0 && pointIndexToDuplicate < (int)m_gradPoints.size());
-   if(validIndex && getLoLimit(m_gradPoints.size()*3) < 1.0) // If 1.0 or greater, there is no room for another point.
+   if(validIndex && canAddPoint())
    {
       auto duplicateIter = m_gradPoints.begin();
       for(int i = 0; i < pointIndexToDuplicate; ++i)

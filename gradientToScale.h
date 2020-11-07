@@ -25,5 +25,7 @@ namespace Convert
 {
    void convertGradientToScale( std::vector<ColorGradient::tGradientPoint>& gradPoints, 
                                 std::vector<ColorScale::tColorPoint>& colorPoints );
+
+   SpecAnLedTypes::tRgbColor convertGradientPointToRGB(ColorGradient::tGradientPoint in);
 }
 

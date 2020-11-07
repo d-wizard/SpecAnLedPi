@@ -49,6 +49,7 @@ private:
    void fillInLedStrip(float constBrightnessLevel = -1.0);
    int colorIndexToLedIndex(int colorIndex);
    SpecAnLedTypes::tRgbVector getBlankLedColors();
+   SpecAnLedTypes::tRgbColor getColorFromGrad(int index);
 
    std::shared_ptr<ColorGradient> m_grad;
    SpecAnLedTypes::tRgbVector m_ledColors;

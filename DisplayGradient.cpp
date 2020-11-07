@@ -71,7 +71,7 @@ int DisplayGradient::colorIndexToLedIndex(int colorIndex)
    {
       double colorPos = gradVect[colorIndex].position;
 
-      retVal = (colorPos * (double)(numLeds-1)) + 0.5;
+      retVal = (colorPos * (double)(numLeds-1));
       if(retVal < 0)
          retVal = 0;
       else if(retVal >= (signed)numLeds)
@@ -91,6 +91,11 @@ SpecAnLedTypes::tRgbVector DisplayGradient::getBlankLedColors()
    return retVal;
 }
 
+SpecAnLedTypes::tRgbColor DisplayGradient::getColorFromGrad(int index)
+{
+   return Convert::convertGradientPointToRGB(m_grad->getGradientPoint(index));
+}
+
 void DisplayGradient::showGradient()
 {
    fillInLedStrip();
@@ -100,13 +105,12 @@ void DisplayGradient::showGradient()
 void DisplayGradient::blinkAll()
 {
    auto blink = getBlankLedColors();
-   fillInLedStrip(1.0);
 
    auto numPoints = m_grad->getNumPoints();
    for(size_t i = 0; i < numPoints; ++i)
    {
-      auto ledIndex = colorIndexToLedIndex(i);
-      blink[ledIndex] = m_ledColors[ledIndex];
+      int ledIndex = colorIndexToLedIndex(i);
+      blink[ledIndex] = getColorFromGrad(i);
    }
 
    m_cues->startBlink(blink, (size_t)-1);
@@ -115,10 +119,9 @@ void DisplayGradient::blinkAll()
 void DisplayGradient::blinkOne(int colorIndex)
 {
    auto blink = getBlankLedColors();
-   fillInLedStrip(1.0);
 
-   auto ledIndex = colorIndexToLedIndex(colorIndex);
-   blink[ledIndex] = m_ledColors[ledIndex];
+   int ledIndex = colorIndexToLedIndex(colorIndex);
+   blink[ledIndex] = getColorFromGrad(colorIndex);
 
    m_cues->startBlink(blink, ledIndex);
 }
@@ -126,10 +129,9 @@ void DisplayGradient::blinkOne(int colorIndex)
 void DisplayGradient::fadeIn(int colorIndex)
 {
    auto fade = getBlankLedColors();
-   fillInLedStrip(1.0);
 
-   auto ledIndex = colorIndexToLedIndex(colorIndex);
-   fade[ledIndex] = m_ledColors[ledIndex];
+   int ledIndex = colorIndexToLedIndex(colorIndex);
+   fade[ledIndex] = getColorFromGrad(colorIndex);
 
    m_cues->startFade(fade, ledIndex, true);
 }
@@ -137,10 +139,9 @@ void DisplayGradient::fadeIn(int colorIndex)
 void DisplayGradient::fadeOut(int colorIndex)
 {
    auto fade = getBlankLedColors();
-   fillInLedStrip(1.0);
 
-   auto ledIndex = colorIndexToLedIndex(colorIndex);
-   fade[ledIndex] = m_ledColors[ledIndex];
+   int ledIndex = colorIndexToLedIndex(colorIndex);
+   fade[ledIndex] = getColorFromGrad(colorIndex);
 
    m_cues->startFade(fade, ledIndex, false);
 }

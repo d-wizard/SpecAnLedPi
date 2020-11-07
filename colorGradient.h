@@ -36,13 +36,16 @@ public:
       E_GRAD_INVALID
    }eGradientOptions;
 
-   typedef struct
+   typedef struct tGradientPoint
    {
       float hue;
       float saturation;
       float lightness;
       float position; // Note: first must be position 0, last must be position 1
       float reach;
+
+      // Constructor.
+      tGradientPoint():hue(0.0), saturation(0.0), lightness(0.0), position(0.0), reach(0.0){}
    }tGradientPoint;
    
    ColorGradient(size_t numPoints);
@@ -52,11 +55,13 @@ public:
    void updateGradient(eGradientOptions option, float value, int pointIndex);
    void updateGradientDelta(eGradientOptions option, float delta, int pointIndex);
 
+   bool canAddPoint();
    void addPoint(int pointIndexToDuplicate);
    bool canRemovePoint();
    bool removePoint(int pointIndexToRemove); // Return whether a point was removed or not.
 
    std::vector<tGradientPoint> getGradient();
+   tGradientPoint getGradientPoint(int pointIndex);
 
    size_t getNumPoints() {return m_gradPoints.size();}
 private:
