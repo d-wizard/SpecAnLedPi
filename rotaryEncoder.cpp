@@ -151,67 +151,133 @@ void RotaryEncoder::updateRotation()
    m_rotaryWriteIndex = (m_rotaryWriteIndex + 1) & CIRC_BUFF_MASK;
 }
 
+RotaryEncoder::tWaitState RotaryEncoder::getNextState(eWaitState changingState, eRotation rotationFromOff)
+{
+   RotaryEncoder::tWaitState retVal;
+   switch(changingState)
+   {
+      default:
+      case E_WAIT_EITHER:
+         retVal.waitEnum = rotationFromOff == E_FORWARD ? E_FORWARD_WAIT_BOTH : E_BACK_WAIT_BOTH;
+         retVal.desiredForwardVal = !m_defaultButtonVal;
+         retVal.desiredBackwardVal = !m_defaultButtonVal;
+      break;
+      case E_FORWARD_WAIT_BOTH:
+         retVal.waitEnum = E_FORWARD_WAIT_BACK;
+         retVal.desiredForwardVal = m_defaultButtonVal;
+         retVal.desiredBackwardVal = !m_defaultButtonVal;
+      break;
+      case E_FORWARD_WAIT_BACK:
+         retVal.waitEnum = E_FORWARD_WAIT_OFF;
+         retVal.desiredForwardVal = m_defaultButtonVal;
+         retVal.desiredBackwardVal = m_defaultButtonVal;
+      break;
+      case E_FORWARD_WAIT_OFF:
+         retVal.waitEnum = E_WAIT_EITHER; // Desired values don't matter.
+      break;
+      case E_BACK_WAIT_BOTH:
+         retVal.waitEnum = E_BACK_WAIT_FORWARD;
+         retVal.desiredForwardVal = !m_defaultButtonVal;
+         retVal.desiredBackwardVal = m_defaultButtonVal;
+      break;
+      case E_BACK_WAIT_FORWARD:
+         retVal.waitEnum = E_BACK_WAIT_OFF;
+         retVal.desiredForwardVal = m_defaultButtonVal;
+         retVal.desiredBackwardVal = m_defaultButtonVal;
+      break;
+      case E_BACK_WAIT_OFF:
+         retVal.waitEnum = E_WAIT_EITHER; // Desired values don't matter.
+      break;
+   }
+   return retVal;
+}
+
+// Loops through the saved Forward and Backward samples until either there are not more
+// sample to process or a state transition has occurred. 
+// The return value will be true if there are no more sample to process.
+// If a state transition has occurred and it represent the end of the rotation 'finishedRotation'
+// will be filled in with the rotation direction.
+bool RotaryEncoder::waitForStateChange(eRotation& finishedRotation)
+{
+   bool empty = m_rotaryReadIndex == m_rotaryWriteIndex;
+   finishedRotation = E_NO_CHANGE;
+
+   if(m_curWaitState.waitEnum == E_WAIT_EITHER)
+   {
+      // Keep reading until 1 bit is set and the other isn't.
+      bool newRotationFound = false;
+      eRotation rotationForNextState;
+
+      while(!empty && !newRotationFound)
+      {
+         if(m_forwardFirstBuff[m_rotaryReadIndex] != m_backwardFirstBuff[m_rotaryReadIndex])
+         {
+            newRotationFound = true;
+            rotationForNextState = m_forwardFirstBuff[m_rotaryReadIndex] != m_defaultButtonVal ? E_FORWARD : E_BACKWARD;
+         }
+
+         m_rotaryReadIndex = (m_rotaryReadIndex + 1) & CIRC_BUFF_MASK;
+         empty = m_rotaryReadIndex == m_rotaryWriteIndex;
+      }
+      
+      if(newRotationFound)
+      {
+         m_curWaitState = getNextState(m_curWaitState.waitEnum, rotationForNextState);
+      }
+   }
+   else
+   {
+      // Keep reading until the Next State is detected or a reset is detected.
+      bool nextStateFound = false;
+      bool resetFound = false;
+
+      while(!empty && !nextStateFound && !resetFound)
+      {
+         nextStateFound = m_forwardFirstBuff[m_rotaryReadIndex] == m_curWaitState.desiredForwardVal && 
+                          m_backwardFirstBuff[m_rotaryReadIndex] == m_curWaitState.desiredBackwardVal;
+         resetFound = m_forwardFirstBuff[m_rotaryReadIndex] == m_defaultButtonVal && m_backwardFirstBuff[m_rotaryReadIndex] == m_defaultButtonVal;
+
+         m_rotaryReadIndex = (m_rotaryReadIndex + 1) & CIRC_BUFF_MASK;
+         empty = m_rotaryReadIndex == m_rotaryWriteIndex;
+      }
+
+      if(nextStateFound)
+      {
+         // Check for finished rotation.
+         if(m_curWaitState.waitEnum == E_FORWARD_WAIT_OFF)
+            finishedRotation = E_FORWARD; // Finsihed Forward Rotation.
+         else if(m_curWaitState.waitEnum == E_BACK_WAIT_OFF)
+            finishedRotation = E_BACKWARD; // Finsihed Backward Rotation.
+
+         // Advance the next state.
+         m_curWaitState = getNextState(m_curWaitState.waitEnum);
+      }
+      else if(resetFound)
+      {
+         // Reset
+         m_curWaitState.waitEnum = E_WAIT_EITHER;
+      }
+   }
+
+   return empty;
+}
 
 RotaryEncoder::eRotation RotaryEncoder::checkRotation()
 {
    eRotation retVal = E_NO_CHANGE;
+   bool empty = false;
 
-   while(m_rotaryReadIndex != m_rotaryWriteIndex && retVal == E_NO_CHANGE)
+   // Keep checking until either we found a Forward or Backward pulse or the buffers are empty.
+   while(retVal == E_NO_CHANGE && !empty)
    {
-      if(m_waitForBothOff)
-      {
-         bool bothOff = (m_forwardFirstBuff[m_rotaryReadIndex] == 0 && m_backwardFirstBuff[m_rotaryReadIndex] == 0);
-         if(bothOff)
-         {
-            m_waitForBothOff = false;
-         }
-      }
-      else
-      {
-         bool bothOn = (m_forwardFirstBuff[m_rotaryReadIndex] == 1 && m_backwardFirstBuff[m_rotaryReadIndex] == 1);
-         if(m_forwardPrevState == 1 && m_backwardPrevState == 0 && bothOn)
-         {
-            retVal = E_FORWARD;
-            m_waitForBothOff = true;
-         }
-         else if(m_forwardPrevState == 0 && m_backwardPrevState == 1 && bothOn)
-         {
-            retVal = E_BACKWARD;
-            m_waitForBothOff = true;
-         }
-      }
-      m_forwardPrevState = m_forwardFirstBuff[m_rotaryReadIndex];
-      m_backwardPrevState = m_backwardFirstBuff[m_rotaryReadIndex];
-      m_rotaryReadIndex = (m_rotaryReadIndex + 1) & CIRC_BUFF_MASK;
+      empty = waitForStateChange(retVal);
    }
 
-   if(retVal != E_NO_CHANGE)
+   // If the buffers aren't empty, try to remove as much as possible (without removing a new pulse)
+   while(!empty && m_curWaitState.waitEnum == E_WAIT_EITHER)
    {
-      // Try to remove as much from the buffer as possible (without removing the a new pulse)
-      bool bothOff = (m_forwardFirstBuff[m_rotaryReadIndex] == 0 && m_backwardFirstBuff[m_rotaryReadIndex] == 0);
-      while(m_rotaryReadIndex != m_rotaryWriteIndex && bothOff == false)
-      {
-         m_rotaryReadIndex = (m_rotaryReadIndex + 1) & CIRC_BUFF_MASK;
-         bothOff = (m_forwardFirstBuff[m_rotaryReadIndex] == 0 && m_backwardFirstBuff[m_rotaryReadIndex] == 0);
-         m_forwardPrevState = m_forwardFirstBuff[m_rotaryReadIndex];
-         m_backwardPrevState = m_backwardFirstBuff[m_rotaryReadIndex];
-
-         m_waitForBothOff = m_waitForBothOff && !bothOff;
-      }
-      m_waitForBothOff = m_waitForBothOff && !bothOff;
-
-      while(m_rotaryReadIndex != m_rotaryWriteIndex && bothOff == true)
-      {
-         m_rotaryReadIndex = (m_rotaryReadIndex + 1) & CIRC_BUFF_MASK;
-         bothOff = (m_forwardFirstBuff[m_rotaryReadIndex] == 0 && m_backwardFirstBuff[m_rotaryReadIndex] == 0);
-         m_forwardPrevState = m_forwardFirstBuff[m_rotaryReadIndex];
-         m_backwardPrevState = m_backwardFirstBuff[m_rotaryReadIndex];
-
-         m_waitForBothOff = m_waitForBothOff && !bothOff;
-      }
-      m_waitForBothOff = m_waitForBothOff && !bothOff;
+      eRotation dummy = E_NO_CHANGE;
+      empty = waitForStateChange(dummy);
    }
-
    return retVal;
 }
-

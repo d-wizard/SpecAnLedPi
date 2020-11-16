@@ -68,6 +68,31 @@ private:
 
    bool waitForButtonState(bool state, uint64_t timeBetweenChecksNs, uint32_t timeoutMs);
 
+   // Types, variables, and funtions for detecting a Forward or Backward change in the Rotary Encoder.
+   typedef enum
+   {
+      E_WAIT_EITHER,
+      E_FORWARD_WAIT_BOTH,
+      E_FORWARD_WAIT_BACK,
+      E_FORWARD_WAIT_OFF,
+      E_BACK_WAIT_BOTH,
+      E_BACK_WAIT_FORWARD,
+      E_BACK_WAIT_OFF,
+   }eWaitState;
+
+   typedef struct tWaitState
+   {
+      eWaitState waitEnum;
+      int desiredForwardVal;
+      int desiredBackwardVal;
+      tWaitState():waitEnum(E_WAIT_EITHER), desiredForwardVal(0), desiredBackwardVal(0){}
+   }tWaitState;
+   
+   tWaitState getNextState(eWaitState changingState, eRotation rotationFromOff = E_NO_CHANGE);
+   bool waitForStateChange(eRotation& finishedRotation);
+
+   tWaitState m_curWaitState;
+
    int m_forwardFirstGpio = -1;
    int m_backwardFirstGpio = -1;
    int m_buttonGpio = -1;
@@ -78,12 +103,9 @@ private:
    static constexpr int CIRC_BUFF_MASK = CIRC_BUFF_SIZE-1;
    int m_forwardFirstBuff[CIRC_BUFF_SIZE];
    int m_backwardFirstBuff[CIRC_BUFF_SIZE];
-   int m_forwardPrevState = 0;
-   int m_backwardPrevState = 0;
    int m_rotaryReadIndex = 0;
    int m_rotaryWriteIndex = 0;
 
    bool m_buttonPrevState = false;
 
-   bool m_waitForBothOff = false;
 };
