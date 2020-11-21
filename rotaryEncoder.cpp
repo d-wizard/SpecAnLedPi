@@ -105,10 +105,10 @@ RotaryEncoder::eButtonClick RotaryEncoder::checkButton()
       retVal = E_SINGLE_CLICK;
 
       // Button Pressed. Wait for unpress.
-      if(waitForButtonState(false, 10*1000, 750))
+      if(waitForButtonState(false, std::chrono::microseconds(100), std::chrono::milliseconds(750)))
       {
          // Button was unpressed. Check if it was repressed quickly.
-         if(waitForButtonState(true, 10*1000, 750))
+         if(waitForButtonState(true, std::chrono::microseconds(100), std::chrono::milliseconds(750)))
          {
             retVal = E_DOUBLE_CLICK;
          }
@@ -118,17 +118,17 @@ RotaryEncoder::eButtonClick RotaryEncoder::checkButton()
    return retVal;
 }
 
-bool RotaryEncoder::waitForButtonState(bool state, uint64_t timeBetweenChecksNs, uint32_t timeoutMs)
+template <class Rep1, class Period1, class Rep2, class Period2>
+bool RotaryEncoder::waitForButtonState(bool state, const std::chrono::duration<Rep1,Period1>& timeBetweenChecks, const std::chrono::duration<Rep2,Period2>& timeout)
 {
    bool foundStateMatch = (checkButton(false) == state);
    if(!foundStateMatch)
    {
       auto startTime = std::chrono::steady_clock::now();
       auto nextTime = startTime;
-      auto timeout = startTime + std::chrono::milliseconds(timeoutMs);
-      auto timeBetweenChecks = std::chrono::nanoseconds(timeBetweenChecksNs);
+      auto timeoutAbs = startTime + timeout;
 
-      while( !foundStateMatch && (std::chrono::steady_clock::now() < timeout) )
+      while( !foundStateMatch && (std::chrono::steady_clock::now() < timeoutAbs) )
       {
          foundStateMatch = (checkButton(false) == state);
          if(!foundStateMatch)

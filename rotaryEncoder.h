@@ -66,7 +66,8 @@ private:
    int toWiringPiPullUpDn(ePinDefault val);
    int toWiringPiPullHiLo(ePinDefault val);
 
-   bool waitForButtonState(bool state, uint64_t timeBetweenChecksNs, uint32_t timeoutMs);
+   template <class Rep1, class Period1, class Rep2, class Period2>
+   bool waitForButtonState(bool state, const std::chrono::duration<Rep1,Period1>& timeBetweenChecksNs, const std::chrono::duration<Rep2,Period2>& timeoutMs);
 
    // Types, variables, and funtions for detecting a Forward or Backward change in the Rotary Encoder.
    typedef enum
