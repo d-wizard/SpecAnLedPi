@@ -39,7 +39,7 @@ public:
    ColorScale(std::vector<tColorPoint>& colorPoints, std::vector<tBrightnessPoint>& brightnessPoints);
    virtual ~ColorScale();
 
-   SpecAnLedTypes::tRgbColor getColor(uint16_t value, float brightness);
+   SpecAnLedTypes::tRgbColor getColor(uint16_t value, float brightness, bool skipBrightnessNomalization = false);
 
 private:
    // Make uncopyable

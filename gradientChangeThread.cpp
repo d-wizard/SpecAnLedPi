@@ -36,12 +36,24 @@ public:
       m_fine(fine)
    {}
 
-   void updateCoarseFine()
+   bool updateCoarseFine()
    {
-      if(m_rotEnc->checkButton(true))
+      bool buttonJustUnpressed = false;
+      bool buttonPressed = m_rotEnc->checkButton(false);
+      if(buttonPressed != m_buttonPressed)
       {
-         m_isCoarse = !m_isCoarse;
+         // State changed.
+         if(!m_rotationActive && m_buttonPressed)
+         {
+            // Button unpressed while not rotating. Toggle Coarse / Fine.
+            m_isCoarse = !m_isCoarse;
+         }
+
+         m_rotationActive = false; // Reset on state change.
+         m_buttonPressed = buttonPressed;
+         buttonJustUnpressed = !m_buttonPressed;
       }
+      return buttonJustUnpressed;
    } 
 
    bool update(std::shared_ptr<ColorGradient> colorGrad, int gradPointIndex)
@@ -62,8 +74,14 @@ public:
 
          colorGrad->updateGradientDelta(m_gradOption, delta, gradPointIndex);
          changed = true;
+         m_rotationActive = true;
       }
       return changed;
+   }
+
+   bool isButtonPressed()
+   {
+      return m_buttonPressed;
    }
 
    // Delete constructors / operations that should not be allowed.
@@ -78,6 +96,9 @@ private:
    float m_fine;
 
    bool m_isCoarse = true;
+
+   bool m_buttonPressed = false;
+   bool m_rotationActive = false;
 };
 
 
@@ -140,6 +161,8 @@ void GradChangeThread::threadFunction()
 
    bool updatedGradient = false;
    bool needToBlinkAfterFade = false;
+
+   bool onlyShowOneColor = false;
    
    DisplayGradient display(m_colorGrad, m_ledStrip, m_brightKnob);
    display.showGradient();
@@ -221,8 +244,19 @@ void GradChangeThread::threadFunction()
          // Update Based on Rotary Encoder states.
          for(auto& rotary : m_allGradRotaries)
          {
-            rotary->updateCoarseFine();
-            updateLeds = rotary->update(m_colorGrad, m_gradPointIndex) || updateLeds;
+            // See if Coarse / Fine need to change. Keep track of whether a button was just unpressed.
+            bool buttonUnpressed = rotary->updateCoarseFine();
+
+            // Check if the rotary encoder change position.
+            bool rotaryChanged = rotary->update(m_colorGrad, m_gradPointIndex);
+
+            // Determine whether only one color should be displayed based on the button position.
+            if(buttonUnpressed)
+               onlyShowOneColor = false; // If only one color was being displayed, make sure the original display is done.
+            else if(rotaryChanged)
+               onlyShowOneColor = rotary->isButtonPressed(); // If the button is press when rotation is detected, only display the current color on the gradient.
+
+            updateLeds = rotaryChanged || buttonUnpressed || updateLeds;
          }
 
          // If the special User Cue Display has finished, set the LEDs back to displaying the gradient.
@@ -247,7 +281,7 @@ void GradChangeThread::threadFunction()
          // Update the LEDs (if needed)
          if(!blinking_fading && updateLeds)
          {
-            display.showGradient();
+            display.showGradient(onlyShowOneColor, m_gradPointIndex);
             updatedGradient = true;
          }
 

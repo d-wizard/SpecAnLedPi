@@ -31,7 +31,7 @@ DisplayGradient::DisplayGradient(std::shared_ptr<ColorGradient> grad, std::share
 {
 }
 
-void DisplayGradient::fillInLedStrip(float constBrightnessLevel)
+void DisplayGradient::fillInLedStrip(int onlyColorToShow, float constBrightnessLevel)
 {
    std::vector<ColorScale::tColorPoint> colors;
    auto numLeds = m_ledStrip->getNumLeds();
@@ -39,6 +39,7 @@ void DisplayGradient::fillInLedStrip(float constBrightnessLevel)
    auto gradVect = m_grad->getGradient();
    float brightnessPot = m_brightKnob->getFlt();
 
+   // Force brightness level, if specified.
    if(constBrightnessLevel >= 0.0 && constBrightnessLevel <= 1.0)
    {
       for(auto& gradVal : gradVect)
@@ -46,6 +47,21 @@ void DisplayGradient::fillInLedStrip(float constBrightnessLevel)
          gradVal.lightness = constBrightnessLevel;
       }
       brightnessPot = 1.0;
+   }
+
+   // See if we need to set all other colors to black.
+   int gradSize = gradVect.size();
+   bool blackOtherColors = false;
+   if(onlyColorToShow >= 0 && onlyColorToShow < gradSize)
+   {
+      blackOtherColors = true;
+      for(int i = 0; i < gradSize; ++i)
+      {
+         if(i != onlyColorToShow)
+         {
+            gradVect[i].lightness = 0;
+         }
+      }
    }
 
    Convert::convertGradientToScale(gradVect, colors);
@@ -56,7 +72,7 @@ void DisplayGradient::fillInLedStrip(float constBrightnessLevel)
    float deltaBetweenPoints = (float)65535/(float)(numLeds-1);
    for(size_t i = 0 ; i < numLeds; ++i)
    {
-      m_ledColors[i] = colorScale.getColor((float)i * deltaBetweenPoints, brightnessPot);
+      m_ledColors[i] = colorScale.getColor((float)i * deltaBetweenPoints, brightnessPot, blackOtherColors);
    }
 }
 
@@ -96,9 +112,9 @@ SpecAnLedTypes::tRgbColor DisplayGradient::getColorFromGrad(int index)
    return Convert::convertGradientPointToRGB(m_grad->getGradientPoint(index));
 }
 
-void DisplayGradient::showGradient()
+void DisplayGradient::showGradient(bool onlyShowOneColor, int onlyColorToShow)
 {
-   fillInLedStrip();
+   fillInLedStrip(onlyShowOneColor ? onlyColorToShow : -1);
    m_ledStrip->set(m_ledColors);
 }
 

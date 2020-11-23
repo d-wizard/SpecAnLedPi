@@ -30,7 +30,7 @@ class DisplayGradient
 public:
    DisplayGradient(std::shared_ptr<ColorGradient> grad, std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<PotentiometerKnob> brightKnob);
 
-   void showGradient();
+   void showGradient(bool onlyShowOneColor = false, int onlyColorToShow = -1);
 
    void blinkAll();
    void blinkOne(int colorIndex);
@@ -46,7 +46,7 @@ private:
    DisplayGradient(DisplayGradient const&);
    void operator=(DisplayGradient const&);
 
-   void fillInLedStrip(float constBrightnessLevel = -1.0);
+   void fillInLedStrip(int onlyColorToShow = -1, float constBrightnessLevel = -1.0);
    int colorIndexToLedIndex(int colorIndex);
    SpecAnLedTypes::tRgbVector getBlankLedColors();
    SpecAnLedTypes::tRgbColor getColorFromGrad(int index);
