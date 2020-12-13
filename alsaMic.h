@@ -28,9 +28,9 @@
 class AlsaMic
 {
 public:
-   typedef void (*alsaMicFunctr)(int16_t*, size_t); // variables are (int16_t* samples, size_t numSamples)
+   typedef void (*alsaMicFunctr)(void*, int16_t*, size_t); // variables are (void* usrPtr, int16_t* samples, size_t numSamples)
 
-   AlsaMic(const char* micName, unsigned int sampleRate, size_t sampPer, size_t numChannels, alsaMicFunctr callback);
+   AlsaMic(const char* micName, unsigned int sampleRate, size_t sampPer, size_t numChannels, alsaMicFunctr callbackFunc, void* callbackUsrPtr);
    virtual ~AlsaMic();
 
 private:
@@ -55,7 +55,8 @@ private:
    unsigned int m_sampleRate;
    size_t m_sampPer;
    size_t m_numChannels;
-   alsaMicFunctr m_callback;
+   alsaMicFunctr m_callbackFunc;
+   void* m_callbackUsrPtr;
    std::vector<int16_t> m_buffer;
 
    bool m_running = false;

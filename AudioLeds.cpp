@@ -69,9 +69,14 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
 
    ledColors.resize(NUM_LEDS);
 
+   // Create the Button / Rotary Enocoder monitoring thread.
+   buttonMonitorThreadLives = true;
+   buttonMonitorThread = std::thread(&AudioLeds::buttonMonitorThreadFunc, this);
+
    // Create the processing thread.
    pcmSampBuff.reserve(5000);
-   processingThread.reset(new std::thread(&AudioLeds::processPcmSamples, this));
+   procThreadLives = true;
+   processingThread = std::thread(&AudioLeds::processPcmSamples, this);
 
    // Start capturing from the microphone.
    mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE, 1, alsaMicSamples, this));
@@ -87,9 +92,31 @@ AudioLeds::~AudioLeds()
    bufferMutex.lock();
    bufferReadyCondVar.notify_all();
    bufferMutex.unlock();
-   processingThread->join();
+   processingThread.join();
 }
 
+void AudioLeds::waitForThreadDone()
+{
+   buttonMonitorThread.join();
+}
+
+void AudioLeds::endThread()
+{
+   buttonMonitorThreadLives = false;
+}
+
+
+void AudioLeds::buttonMonitorThreadFunc()
+{
+   while(buttonMonitorThreadLives)
+   {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      if(m_leftButton->checkButton(false) && m_rightButton->checkButton(false))
+      {
+         buttonMonitorThreadLives = false;
+      }
+   }
+}
 
 // Processes PCM samples from the Microphone Capture object.
 void AudioLeds::processPcmSamples()

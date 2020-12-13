@@ -21,14 +21,15 @@
 
 #define ALSA_ERR(printStr, err) if(err < 0) {printf("%s - %s\n", printStr, snd_strerror(err)); return err;}
 
-AlsaMic::AlsaMic(const char* micName, unsigned int sampleRate, size_t sampPer, size_t numChannels, alsaMicFunctr callback):
+AlsaMic::AlsaMic(const char* micName, unsigned int sampleRate, size_t sampPer, size_t numChannels, alsaMicFunctr callbackFunc, void* callbackUsrPtr):
    m_micName(micName),
    m_sampleRate(sampleRate),
    m_sampPer(sampPer),
    m_numChannels(numChannels),
-   m_callback(callback)
+   m_callbackFunc(callbackFunc),
+   m_callbackUsrPtr(callbackUsrPtr)
 {
-   if(m_callback != nullptr)
+   if(callbackFunc != nullptr)
    {
       int err = init();
       if(err >= 0)
@@ -108,6 +109,7 @@ void* AlsaMic::micReadThreadFunction(void* inPtr)
    _this->m_buffer.resize(_this->m_sampPer*_this->m_numChannels);
 
    snd_pcm_t* handle = _this->m_alsaHandle;
+   void* usrPtr = _this->m_callbackUsrPtr;
    int16_t* buffer = &_this->m_buffer[0];
    size_t numSamp = _this->m_sampPer;
 
@@ -120,7 +122,7 @@ void* AlsaMic::micReadThreadFunction(void* inPtr)
       }
       else
       {
-         _this->m_callback(buffer, numSamp); // Send to callback.
+         _this->m_callbackFunc(usrPtr, buffer, numSamp); // Send to callback.
       }
       
    }

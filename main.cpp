@@ -28,15 +28,9 @@
 #include <mutex>
 #include <condition_variable>
 #include "specAnLedPiTypes.h"
-#include "alsaMic.h"
-#include "specAnFft.h"
-#include "fftRunRate.h"
-#include "fftModifier.h"
 #include "ledStrip.h"
-#include "colorScale.h"
-#include "colorGradient.h"
-#include "gradientToScale.h"
 #include "gradientChangeThread.h"
+#include "AudioLeds.h"
 #include "rotaryEncoder.h"
 #include "potentiometerAdc.h"
 #include "potentiometerKnob.h"
@@ -44,34 +38,15 @@
 #include "wiringPi.h"
 #include "SaveRestoreGrad.h"
 
-//#include "smartPlotMessage.h"
-
-#define SAMPLE_RATE (44100)
-#define NUM_LEDS (40)
-
-// Microphone Capture
-static std::unique_ptr<AlsaMic> mic;
-
-// FFT Stuff
-#define FFT_SIZE (256) // Base 2 number
-
-static std::unique_ptr<FftRunRate> fftRun;
-static std::unique_ptr<FftModifier> fftModifier;
-
-// Processing Thread Stuff.
-static std::unique_ptr<std::thread> processingThread;
-static std::mutex bufferMutex;
-static std::condition_variable bufferReadyCondVar;
-static SpecAnLedTypes::tPcmBuffer pcmSampBuff;
-static bool procThreadLives = true;
 
 // LED Stuff
+#define NUM_LEDS (40)
 static std::shared_ptr<LedStrip> ledStrip;
-static SpecAnLedTypes::tRgbVector ledColors;
-static std::unique_ptr<ColorScale> colorScale;
 
 // Thread for Updating the Color Gradient
 static std::unique_ptr<GradChangeThread> gradChangeThread;
+
+static std::unique_ptr<AudioLeds> audioLed;
 
 // Thread for Polling the Current state of the Rotary Encoders.
 static std::atomic<bool> rotaryEncPollThreadActive;
@@ -99,80 +74,6 @@ static void thisAppForeverFunction();
 
 static std::unique_ptr<SaveRestoreGrad> saveRestoreGrad;
 
-// Processes PCM samples whenever the Microphone Capture object (mic) is instantiated.
-void processPcmSamples()
-{
-   int16_t samples[FFT_SIZE];
-   size_t numSamp = FFT_SIZE;
-   while(procThreadLives)
-   {
-      bool copySamples = false;
-      {
-         std::unique_lock<std::mutex> lock(bufferMutex);
-
-         // Check if we have samples right now or if we need to wait.
-         copySamples = (pcmSampBuff.size() >= numSamp);
-         if(!copySamples)
-         {
-            bufferReadyCondVar.wait(lock);
-            copySamples = (pcmSampBuff.size() >= numSamp);
-         }
-
-         copySamples = copySamples && procThreadLives;
-         if(copySamples)
-         {
-            memcpy(samples, pcmSampBuff.data(), sizeof(samples));
-            pcmSampBuff.erase(pcmSampBuff.begin(),pcmSampBuff.begin()+numSamp);
-         }
-      }
-
-      if(copySamples)
-      {
-         #if 0
-            // Now we can process the samples outside of the mutex lock.
-            smartPlot_1D(samples, E_INT_16, numSamp, SAMPLE_RATE, SAMPLE_RATE/49, "Mic", "Samp");
-         #elif 0
-            SpecAnLedTypes::tFftVector* fftResult = fftRun->run(samples, numSamp);
-            if(fftResult != nullptr)
-            {
-               fftModifier->modify(fftResult->data());
-               smartPlot_1D(fftResult->data(), E_UINT_16, NUM_LEDS, NUM_LEDS, 0, "FFT", "re");
-            }
-         #else
-            SpecAnLedTypes::tFftVector* fftResult = fftRun->run(samples, numSamp);
-            if(fftResult != nullptr)
-            {
-               fftModifier->modify(fftResult->data());
-
-               float brightness = brightKnob->getFlt();
-               auto gain = gainKnob->getInt()*10;
-               for(int i = 0 ; i < NUM_LEDS; ++i)
-               {
-                  int32_t ledVal = (int32_t)fftResult->data()[i]*gain;
-                  if(ledVal > 65535)
-                  {
-                     ledVal = 65535;
-                  }
-                  ledColors[i] = colorScale->getColor(ledVal, brightness);
-               }
-               ledStrip->set(ledColors);
-            }
-         #endif
-      }
-   }
-}
-
-
-void alsaMicSamples(int16_t* samples, size_t numSamp)
-{
-   // Move to buffer and return ASAP.
-   std::unique_lock<std::mutex> lock(bufferMutex);
-   auto origSize = pcmSampBuff.size();
-   pcmSampBuff.resize(origSize+numSamp);
-   memcpy(&pcmSampBuff[origSize], samples, numSamp*sizeof(samples[0]));
-   bufferReadyCondVar.notify_all();
-}
-
 void cleanUpBeforeExit()
 {
    // Let this app's thread know that it needs to exit.
@@ -192,15 +93,11 @@ void cleanUpBeforeExit()
       gradChangeThread->endThread();
    }
 
-   // Stop getting samples from the microphone.
-   mic.reset();
-
-   // Kill the proc thread and join.
-   procThreadLives = false;
-   bufferMutex.lock();
-   bufferReadyCondVar.notify_all();
-   bufferMutex.unlock();
-   processingThread->join();
+   // Cleanup AudioLeds Object
+   if(audioLed.get() != nullptr)
+   {
+      audioLed->endThread();
+   }
 
    // Join this app's thread.
    thisAppThread->join();
@@ -208,7 +105,6 @@ void cleanUpBeforeExit()
 
    // Turn off all the LEDs in the LED strip.
    ledStrip.reset();
-
 }
 
 void signalHandler(int signum)
@@ -234,29 +130,11 @@ void RotaryUpdateFunction()
 int main (int argc, char *argv[])
 {
    wiringPiSetup();
-   fftRun.reset(new FftRunRate(SAMPLE_RATE, FFT_SIZE, 150.0));
 
-   tFftModifiers mod;
-   mod.startFreq = 300;
-   mod.stopFreq = 12000;
-   mod.clipMin = 0;
-   mod.clipMax = 5000;
-   mod.logScale = false;
-   mod.attenLowFreqs = true;
-   mod.attenLowStartLevel = 0.2;
-   mod.attenLowStopFreq = 6000;
-   mod.fadeAwayAmount = 15;
-   fftModifier.reset(new FftModifier(SAMPLE_RATE, FFT_SIZE, NUM_LEDS, mod));
-
+   // This is used to save / restore Color Gradients.
    saveRestoreGrad.reset(new SaveRestoreGrad());
 
-   pcmSampBuff.reserve(5000);
-
-   // Create the processing thread.
-   processingThread.reset(new std::thread(processPcmSamples));
-
    // Setup LED strip.
-   ledColors.resize(NUM_LEDS);
    ledStrip.reset(new LedStrip(NUM_LEDS, LedStrip::GRB));
    ledStrip->clear();
 
@@ -288,7 +166,6 @@ int main (int argc, char *argv[])
    return 0;
 }
 
-
 void thisAppForeverFunction()
 {
    // Set initial gradient. Try to restore, set to default if restore fails.
@@ -306,7 +183,6 @@ void thisAppForeverFunction()
       gradColors[2].hue = 0.65;
       gradColors[2].saturation = 1.0;
    }
-
    std::shared_ptr<ColorGradient> grad(new ColorGradient(gradColors, failedRestore));
 
    exitThisApp = false;
@@ -354,35 +230,26 @@ void thisAppForeverFunction()
       // Configure for FFT Audio Mode.
       if(!exitThisApp)
       {
-         std::vector<ColorScale::tColorPoint> colors;
-         Convert::convertGradientToScale(gradVect, colors);
-
-         std::vector<ColorScale::tBrightnessPoint> brightPoints{{0,0},{1,1}}; // Scale brightness.
-         colorScale.reset(new ColorScale(colors, brightPoints));
-
-         // Start capturing from the microphone.
-         mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE, 1, alsaMicSamples));
-
-         // Perioidically check if the user wants to enter Gradient Edit Mode.
-         bool toggleBackToGradientDefine = false;
-         while(toggleBackToGradientDefine == false && !exitThisApp)
-         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            if(leftButton->checkButton(false) && rightButton->checkButton(false))
-            {
-               // Stop getting MIC samples.
-               {
-                  std::unique_lock<std::mutex> lock(bufferMutex);
-                  mic.reset();
-                  pcmSampBuff.clear();
-               }
-               ledStrip->clear(); // Set the LEDs to Black.
-               while(leftButton->checkButton(false) && rightButton->checkButton(false)){std::this_thread::sleep_for(std::chrono::milliseconds(1));} // Wait for both to be released.
-               toggleBackToGradientDefine = true;
-            }
-         }
-         mic.reset();
+         audioLed.reset(new AudioLeds(
+            grad,
+            ledStrip,
+            ledSelected,
+            leftButton,
+            leftButton,
+            rightButton,
+            brightKnob,
+            gainKnob ));
+         
+         // Wait for User to Exit Gradient Edit Mode.
+         audioLed->waitForThreadDone();
+         audioLed.reset();
       }
+      
+      // Set the LEDs to Black.
+      ledStrip->clear();
 
+      // Wait for both to be unpressed.
+      while(leftButton->checkButton(false) && rightButton->checkButton(false) && !exitThisApp){std::this_thread::sleep_for(std::chrono::milliseconds(1));}
    }
+   
 }

@@ -46,30 +46,36 @@ public:
 
    virtual ~AudioLeds();
 
+   void waitForThreadDone();
+   void endThread();
+
 private:
    // Make uncopyable
    AudioLeds();
    AudioLeds(AudioLeds const&);
    void operator=(AudioLeds const&);
 
-   // Processes PCM samples from the Microphone Capture object.
-   void processPcmSamples();
-
-   static void alsaMicSamples(void* usrPtr, int16_t* samples, size_t numSamp);
-
    // Microphone Capture
    std::unique_ptr<AlsaMic> mic;
+   static void alsaMicSamples(void* usrPtr, int16_t* samples, size_t numSamp);
 
    // FFT Stuff
    std::unique_ptr<FftRunRate> fftRun;
    std::unique_ptr<FftModifier> fftModifier;
 
-   // Processing Thread Stuff.
-   std::unique_ptr<std::thread> processingThread;
+   // PCM Sample Processing Thread Stuff.
+   std::thread processingThread;
    std::mutex bufferMutex;
    std::condition_variable bufferReadyCondVar;
    SpecAnLedTypes::tPcmBuffer pcmSampBuff;
-   bool procThreadLives = true;
+   std::atomic<bool> procThreadLives;
+   void processPcmSamples();
+
+   // Button Monitor Thread Stuff.
+   std::thread buttonMonitorThread;
+   std::atomic<bool> buttonMonitorThreadLives;
+   void buttonMonitorThreadFunc();
+
 
    // LED Stuff
    std::shared_ptr<LedStrip> m_ledStrip;
