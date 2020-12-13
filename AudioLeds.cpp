@@ -46,7 +46,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    auto NUM_LEDS = m_ledStrip->getNumLeds();
 
    // FFT Stuff
-   fftRun.reset(new FftRunRate(SAMPLE_RATE, FFT_SIZE, 150.0));
+   m_fftRun.reset(new FftRunRate(SAMPLE_RATE, FFT_SIZE, 150.0));
 
    tFftModifiers mod;
    mod.startFreq = 300;
@@ -58,91 +58,91 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    mod.attenLowStartLevel = 0.2;
    mod.attenLowStopFreq = 6000;
    mod.fadeAwayAmount = 15;
-   fftModifier.reset(new FftModifier(SAMPLE_RATE, FFT_SIZE, NUM_LEDS, mod));
+   m_fftModifier.reset(new FftModifier(SAMPLE_RATE, FFT_SIZE, NUM_LEDS, mod));
    
    // Set Color Scale that will be used to turn Audio into Colors.
    auto gradVect = colorGrad->getGradient();
    std::vector<ColorScale::tColorPoint> colors;
    Convert::convertGradientToScale(gradVect, colors);
    std::vector<ColorScale::tBrightnessPoint> brightPoints{{0,0},{1,1}}; // Scale brightness.
-   colorScale.reset(new ColorScale(colors, brightPoints));
+   m_colorScale.reset(new ColorScale(colors, brightPoints));
 
-   ledColors.resize(NUM_LEDS);
+   m_ledColors.resize(NUM_LEDS);
 
    // Create the Button / Rotary Enocoder monitoring thread.
-   buttonMonitorThreadLives = true;
-   buttonMonitorThread = std::thread(&AudioLeds::buttonMonitorThreadFunc, this);
+   m_buttonMonitorThread_active = true;
+   m_buttonMonitor_thread = std::thread(&AudioLeds::buttonMonitorFunc, this);
 
    // Create the processing thread.
-   pcmSampBuff.reserve(5000);
-   procThreadLives = true;
-   processingThread = std::thread(&AudioLeds::processPcmSamples, this);
+   m_pcmProc_buff.reserve(5000);
+   m_pcmProc_active = true;
+   m_pcmProc_thread = std::thread(&AudioLeds::pcmProcFunc, this);
 
    // Start capturing from the microphone.
-   mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE, 1, alsaMicSamples, this));
+   m_mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE, 1, alsaMicSamples, this));
 }
 
 AudioLeds::~AudioLeds()
 {
    // Stop getting samples from the microphone.
-   mic.reset();
+   m_mic.reset();
 
    // Kill the proc thread and join.
-   procThreadLives = false;
-   bufferMutex.lock();
-   bufferReadyCondVar.notify_all();
-   bufferMutex.unlock();
-   processingThread.join();
+   m_pcmProc_active = false;
+   m_pcmProc_mutex.lock();
+   m_pcmProc_bufferReadyCondVar.notify_all();
+   m_pcmProc_mutex.unlock();
+   m_pcmProc_thread.join();
 }
 
 void AudioLeds::waitForThreadDone()
 {
-   buttonMonitorThread.join();
+   m_buttonMonitor_thread.join();
 }
 
 void AudioLeds::endThread()
 {
-   buttonMonitorThreadLives = false;
+   m_buttonMonitorThread_active = false;
 }
 
 
-void AudioLeds::buttonMonitorThreadFunc()
+void AudioLeds::buttonMonitorFunc()
 {
-   while(buttonMonitorThreadLives)
+   while(m_buttonMonitorThread_active)
    {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       if(m_leftButton->checkButton(false) && m_rightButton->checkButton(false))
       {
-         buttonMonitorThreadLives = false;
+         m_buttonMonitorThread_active = false;
       }
    }
 }
 
 // Processes PCM samples from the Microphone Capture object.
-void AudioLeds::processPcmSamples()
+void AudioLeds::pcmProcFunc()
 {
    auto NUM_LEDS = m_ledStrip->getNumLeds();
    int16_t samples[FFT_SIZE];
    size_t numSamp = FFT_SIZE;
-   while(procThreadLives)
+   while(m_pcmProc_active)
    {
       bool copySamples = false;
       {
-         std::unique_lock<std::mutex> lock(bufferMutex);
+         std::unique_lock<std::mutex> lock(m_pcmProc_mutex);
 
          // Check if we have samples right now or if we need to wait.
-         copySamples = (pcmSampBuff.size() >= numSamp);
+         copySamples = (m_pcmProc_buff.size() >= numSamp);
          if(!copySamples)
          {
-            bufferReadyCondVar.wait(lock);
-            copySamples = (pcmSampBuff.size() >= numSamp);
+            m_pcmProc_bufferReadyCondVar.wait(lock);
+            copySamples = (m_pcmProc_buff.size() >= numSamp);
          }
 
-         copySamples = copySamples && procThreadLives;
+         copySamples = copySamples && m_pcmProc_active;
          if(copySamples)
          {
-            memcpy(samples, pcmSampBuff.data(), sizeof(samples));
-            pcmSampBuff.erase(pcmSampBuff.begin(),pcmSampBuff.begin()+numSamp);
+            memcpy(samples, m_pcmProc_buff.data(), sizeof(samples));
+            m_pcmProc_buff.erase(m_pcmProc_buff.begin(),m_pcmProc_buff.begin()+numSamp);
          }
       }
 
@@ -159,10 +159,10 @@ void AudioLeds::processPcmSamples()
                smartPlot_1D(fftResult->data(), E_UINT_16, NUM_LEDS, NUM_LEDS, 0, "FFT", "re");
             }
          #else
-            SpecAnLedTypes::tFftVector* fftResult = fftRun->run(samples, numSamp);
+            SpecAnLedTypes::tFftVector* fftResult = m_fftRun->run(samples, numSamp);
             if(fftResult != nullptr)
             {
-               fftModifier->modify(fftResult->data());
+               m_fftModifier->modify(fftResult->data());
 
                float brightness = m_brightKnob->getFlt();
                auto gain = m_gainKnob->getInt()*10;
@@ -173,9 +173,9 @@ void AudioLeds::processPcmSamples()
                   {
                      ledVal = 65535;
                   }
-                  ledColors[i] = colorScale->getColor(ledVal, brightness);
+                  m_ledColors[i] = m_colorScale->getColor(ledVal, brightness);
                }
-               m_ledStrip->set(ledColors);
+               m_ledStrip->set(m_ledColors);
             }
          #endif
       }
@@ -187,9 +187,9 @@ void AudioLeds::alsaMicSamples(void* usrPtr, int16_t* samples, size_t numSamp)
 {
    // Move to buffer and return ASAP.
    auto _this = (AudioLeds*)usrPtr;
-   std::unique_lock<std::mutex> lock(_this->bufferMutex);
-   auto origSize = _this->pcmSampBuff.size();
-   _this->pcmSampBuff.resize(origSize+numSamp);
-   memcpy(&_this->pcmSampBuff[origSize], samples, numSamp*sizeof(samples[0]));
-   _this->bufferReadyCondVar.notify_all();
+   std::unique_lock<std::mutex> lock(_this->m_pcmProc_mutex);
+   auto origSize = _this->m_pcmProc_buff.size();
+   _this->m_pcmProc_buff.resize(origSize+numSamp);
+   memcpy(&_this->m_pcmProc_buff[origSize], samples, numSamp*sizeof(samples[0]));
+   _this->m_pcmProc_bufferReadyCondVar.notify_all();
 }
