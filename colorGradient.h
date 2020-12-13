@@ -46,10 +46,19 @@ public:
 
       // Constructor.
       tGradientPoint():hue(0.0), saturation(0.0), lightness(0.0), position(0.0), reach(0.0){}
+
+      bool operator==(const tGradientPoint& rhs) const
+      {
+         return hue == rhs.hue && saturation == rhs.saturation && lightness == rhs.lightness && position == rhs.position && reach == rhs.reach;
+      }
+      bool operator!=(const tGradientPoint& rhs) const
+      {
+         return !(*this == rhs);
+      }
    }tGradientPoint;
    
    ColorGradient(size_t numPoints);
-   ColorGradient(std::vector<tGradientPoint>& points); // Note only Hue and Saturation will be used.
+   ColorGradient(std::vector<tGradientPoint>& points, bool onlyHueAndSat = true); // Note only Hue and Saturation will be used by default
    virtual ~ColorGradient();
 
    void updateGradient(eGradientOptions option, float value, int pointIndex);
@@ -70,7 +79,6 @@ private:
    static constexpr float MIN_INCREMENT = 0.0078125; // 1/128
 
    std::vector<tGradientPoint> m_gradPoints;
-   int m_numZones;
 
    void init(size_t numPoints);
 

@@ -42,6 +42,7 @@
 #include "potentiometerKnob.h"
 #include "ThreadPriorities.h"
 #include "wiringPi.h"
+#include "SaveRestoreGrad.h"
 
 //#include "smartPlotMessage.h"
 
@@ -96,7 +97,7 @@ static std::atomic<bool> exitThisApp;
 static std::shared_ptr<std::thread> thisAppThread;
 static void thisAppForeverFunction();
 
-
+static std::unique_ptr<SaveRestoreGrad> saveRestoreGrad;
 
 // Processes PCM samples whenever the Microphone Capture object (mic) is instantiated.
 void processPcmSamples()
@@ -247,6 +248,8 @@ int main (int argc, char *argv[])
    mod.fadeAwayAmount = 15;
    fftModifier.reset(new FftModifier(SAMPLE_RATE, FFT_SIZE, NUM_LEDS, mod));
 
+   saveRestoreGrad.reset(new SaveRestoreGrad());
+
    pcmSampBuff.reserve(5000);
 
    // Create the processing thread.
@@ -288,16 +291,23 @@ int main (int argc, char *argv[])
 
 void thisAppForeverFunction()
 {
-   constexpr int numColorPoints = 3;
-   std::vector<ColorGradient::tGradientPoint> gradColors(numColorPoints);
-   gradColors[0].hue = 0;
-   gradColors[0].saturation = 1.0;
-   gradColors[1].hue = 0.5;
-   gradColors[1].saturation = 0.0;
-   gradColors[2].hue = 0.65;
-   gradColors[2].saturation = 1.0;
+   // Set initial gradient. Try to restore, set to default if restore fails.
+   auto gradColors = saveRestoreGrad->restore();
+   bool failedRestore = (gradColors.size() <= 0);
+   if(failedRestore)
+   {
+      // Restore didn't have anything. Set to Red, White and Blue
+      constexpr int numColorPoints = 3;
+      gradColors.resize(numColorPoints);
+      gradColors[0].hue = 0;
+      gradColors[0].saturation = 1.0;
+      gradColors[1].hue = 0.5;
+      gradColors[1].saturation = 0.0;
+      gradColors[2].hue = 0.65;
+      gradColors[2].saturation = 1.0;
+   }
 
-   std::shared_ptr<ColorGradient> grad(new ColorGradient(gradColors));
+   std::shared_ptr<ColorGradient> grad(new ColorGradient(gradColors, failedRestore));
 
    exitThisApp = false;
    while(!exitThisApp)
@@ -338,11 +348,13 @@ void thisAppForeverFunction()
       // Wait for both to be unpressed.
       while(leftButton->checkButton(false) && rightButton->checkButton(false) && !exitThisApp){std::this_thread::sleep_for(std::chrono::milliseconds(1));}
 
+      std::vector<ColorGradient::tGradientPoint> gradVect = grad->getGradient();
+      saveRestoreGrad->save(gradVect);
+
       // Configure for FFT Audio Mode.
       if(!exitThisApp)
       {
          std::vector<ColorScale::tColorPoint> colors;
-         std::vector<ColorGradient::tGradientPoint> gradVect = grad->getGradient();
          Convert::convertGradientToScale(gradVect, colors);
 
          std::vector<ColorScale::tBrightnessPoint> brightPoints{{0,0},{1,1}}; // Scale brightness.

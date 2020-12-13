@@ -16,7 +16,7 @@
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g -Wall -Werror -fdiagnostics-color=always')
+env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g -Wall -Werror -fdiagnostics-color=always', CXXFLAGS='--std=c++17')
 
 src = [ 'main.cpp',
         'alsaMic.cpp',
@@ -32,6 +32,7 @@ src = [ 'main.cpp',
         'hsvrgb.cpp',
         'gradientChangeThread.cpp',
         'rotaryEncoder.cpp',
+        'SaveRestoreGrad.cpp',
         'modules/plotperfectclient/sendMemoryToPlot.c', 
         'modules/plotperfectclient/smartPlotMessage.c' ]
 
@@ -41,7 +42,7 @@ inc = [ './modules/plotperfectclient',
         './modules/Ne10/inc', 
         './modules/rpi_ws281x' ]
 
-lib = ['rt', 'asound', 'fftw3', 'pthread', 'NE10', 'ws2811', 'wiringPi']
+lib = ['rt', 'stdc++fs', 'asound', 'fftw3', 'pthread', 'NE10', 'ws2811', 'wiringPi']
 
 libpath = ['./modules/Ne10/build/modules', './modules/rpi_ws281x']
 
