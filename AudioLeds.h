@@ -56,31 +56,31 @@ private:
    void operator=(AudioLeds const&);
 
    // Microphone Capture
-   std::unique_ptr<AlsaMic> mic;
+   std::unique_ptr<AlsaMic> m_mic;
    static void alsaMicSamples(void* usrPtr, int16_t* samples, size_t numSamp);
 
    // FFT Stuff
-   std::unique_ptr<FftRunRate> fftRun;
-   std::unique_ptr<FftModifier> fftModifier;
+   std::unique_ptr<FftRunRate> m_fftRun;
+   std::unique_ptr<FftModifier> m_fftModifier;
 
    // PCM Sample Processing Thread Stuff.
-   std::thread processingThread;
-   std::mutex bufferMutex;
-   std::condition_variable bufferReadyCondVar;
-   SpecAnLedTypes::tPcmBuffer pcmSampBuff;
-   std::atomic<bool> procThreadLives;
-   void processPcmSamples();
+   std::thread m_pcmProc_thread;
+   std::mutex m_pcmProc_mutex;
+   std::condition_variable m_pcmProc_bufferReadyCondVar;
+   SpecAnLedTypes::tPcmBuffer m_pcmProc_buff;
+   std::atomic<bool> m_pcmProc_active;
+   void pcmProcFunc();
 
    // Button Monitor Thread Stuff.
-   std::thread buttonMonitorThread;
-   std::atomic<bool> buttonMonitorThreadLives;
-   void buttonMonitorThreadFunc();
+   std::thread m_buttonMonitor_thread;
+   std::atomic<bool> m_buttonMonitorThread_active;
+   void buttonMonitorFunc();
 
 
    // LED Stuff
    std::shared_ptr<LedStrip> m_ledStrip;
-   SpecAnLedTypes::tRgbVector ledColors;
-   std::unique_ptr<ColorScale> colorScale;
+   SpecAnLedTypes::tRgbVector m_ledColors;
+   std::unique_ptr<ColorScale> m_colorScale;
 
    // Knobs and Buttons
    std::shared_ptr<RotaryEncoder> m_cycleGrads;
