@@ -21,6 +21,7 @@
 #include <fstream>
 #include <sstream>
 #include <assert.h>
+#include <algorithm>
 #include <filesystem>
 #include "SaveRestoreGrad.h"
 
@@ -48,40 +49,101 @@ std::vector<std::string> SaveRestoreGrad::getAllFiles()
          }
       }
    }
+   std::sort(retVal.begin(), retVal.end(), sortPathFunc);
    return retVal;
+}
+
+void SaveRestoreGrad::splitNumFromName(std::string& fileName, std::string& namePart, int& numPart)
+{
+   namePart = fileName;
+   numPart = 0;
+   int numX = 1;
+   while(namePart.size() > 0)
+   {
+      char ch = *(namePart.c_str()+namePart.size()-1);
+      if(ch >= '0' && ch <= '9')
+      {
+         numPart += (numX * (int)(ch-'0'));
+         numX *= 10;
+         namePart.pop_back();
+      }
+      else
+      {
+         break;
+      }
+   }
+}
+
+bool SaveRestoreGrad::sortPathFunc(std::string path0, std::string path1)
+{
+   auto p0 = std::filesystem::path(path0);
+   auto p1 = std::filesystem::path(path1);
+
+   std::string dir0 = p0.parent_path();
+   std::string dir1 = p1.parent_path();
+
+   if(dir0 != dir1)
+   {
+      return dir0 < dir1;
+   }
+   else
+   {
+      std::string fn0 = p0.filename();
+      std::string fn1 = p1.filename();
+      std::string name0, name1;
+      int num0, num1;
+      splitNumFromName(fn0, name0, num0);
+      splitNumFromName(fn1, name1, num1);
+
+      if(num0 == num1)
+      {
+         return name0 < name1;
+      }
+      else
+      {
+         return num0 < num1;
+      }
+   }
 }
 
 
 void SaveRestoreGrad::save(std::vector<ColorGradient::tGradientPoint>& gradToSave)
 {
-   int saveFileNum = 0;
    bool saved = false;
 
-   do
+   // Check for match with existing file.
+   auto existing = getAllFiles();
+   for(auto& path : existing)
    {
-      std::stringstream saveFileName;
-      saveFileName << m_saveRestoreDir << "/" << "colors" << saveFileNum;
-      if(!std::filesystem::exists(saveFileName.str()))
+      auto readGrad = read(path);
+      if(match(readGrad, gradToSave))
       {
-         write(saveFileName.str(), gradToSave);
-         saved = true;
+         saved = true; // Already matchs a saved file. Exit loop
       }
-      else
+   }
+
+   if(!saved)
+   {
+      // Determine which number to use
+      std::string fileName = std::filesystem::path(existing[existing.size()-1]).filename();
+      std::string name;
+      int saveFileNum = 0;
+      splitNumFromName(fileName, name, saveFileNum);
+      saveFileNum++;
+
+      do
       {
-         // Check for match.
-         auto readGrad = read(saveFileName.str());
-         if(match(readGrad, gradToSave))
+         std::stringstream saveFileName;
+         saveFileName << m_saveRestoreDir << "/" << "colors" << saveFileNum;
+         if(!std::filesystem::exists(saveFileName.str()))
          {
-            saved = true; // Already matchs a saved file. Exit loop
+            write(saveFileName.str(), gradToSave);
+            setLatestPath(saveFileName.str());
+            saved = true;
          }
          saveFileNum++;
-      }
-
-      if(saved)
-      {
-         setLatestPath(saveFileName.str());
-      }
-   } while(!saved);
+      } while(!saved);
+   }
 
 }
 

@@ -39,6 +39,10 @@ private:
    const std::string LATEST_NAME = "latest";
    std::string m_saveRestoreDir;
    std::string m_latestFileSavePath;
+   
+   static void splitNumFromName(std::string& fileName, std::string& namePart, int& numPart);
+
+   static bool sortPathFunc(std::string path0, std::string path1);
 
    std::vector<ColorGradient::tGradientPoint> restore(int index);
 
