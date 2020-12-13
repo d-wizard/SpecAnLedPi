@@ -31,11 +31,13 @@
 #include "specAnFft.h"
 #include "fftRunRate.h"
 #include "fftModifier.h"
+#include "SaveRestoreGrad.h"
 
 class AudioLeds
 {
 public:
    AudioLeds( std::shared_ptr<ColorGradient> colorGrad, 
+              std::shared_ptr<SaveRestoreGrad> saveRestorGrad,
               std::shared_ptr<LedStrip> ledStrip, 
               std::shared_ptr<RotaryEncoder> cycleGrads,
               std::shared_ptr<RotaryEncoder> deleteButton,
@@ -76,11 +78,14 @@ private:
    std::atomic<bool> m_buttonMonitorThread_active;
    void buttonMonitorFunc();
 
+   // Save Restore Gradient object
+   std::shared_ptr<SaveRestoreGrad> m_saveRestorGrad;
 
    // LED Stuff
    std::shared_ptr<LedStrip> m_ledStrip;
    SpecAnLedTypes::tRgbVector m_ledColors;
    std::unique_ptr<ColorScale> m_colorScale;
+   std::mutex m_colorScaleMutex;
 
    // Knobs and Buttons
    std::shared_ptr<RotaryEncoder> m_cycleGrads;

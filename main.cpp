@@ -72,7 +72,7 @@ static std::atomic<bool> exitThisApp;
 static std::shared_ptr<std::thread> thisAppThread;
 static void thisAppForeverFunction();
 
-static std::unique_ptr<SaveRestoreGrad> saveRestoreGrad;
+static std::shared_ptr<SaveRestoreGrad> saveRestoreGrad;
 
 void cleanUpBeforeExit()
 {
@@ -153,12 +153,6 @@ int main (int argc, char *argv[])
    brightKnob.reset(new PotentiometerKnob(knobsAdcs, 7, 100));
    gainKnob.reset(new PotentiometerKnob(knobsAdcs, 6, 100));
 
-   rotaries.push_back(hueRotary);
-   rotaries.push_back(satRotary);
-   rotaries.push_back(ledSelected);
-   rotaries.push_back(reachRotary);
-   rotaries.push_back(posRotary);
-
    thisAppThread.reset(new std::thread(thisAppForeverFunction));
 
    sleep(0x7FFFFFFF);
@@ -168,31 +162,39 @@ int main (int argc, char *argv[])
 
 void thisAppForeverFunction()
 {
-   // Set initial gradient. Try to restore, set to default if restore fails.
-   auto gradColors = saveRestoreGrad->restore();
-   bool failedRestore = (gradColors.size() <= 0);
-   if(failedRestore)
-   {
-      // Restore didn't have anything. Set to Red, White and Blue
-      constexpr int numColorPoints = 3;
-      gradColors.resize(numColorPoints);
-      gradColors[0].hue = 0;
-      gradColors[0].saturation = 1.0;
-      gradColors[1].hue = 0.5;
-      gradColors[1].saturation = 0.0;
-      gradColors[2].hue = 0.65;
-      gradColors[2].saturation = 1.0;
-   }
-   std::shared_ptr<ColorGradient> grad(new ColorGradient(gradColors, failedRestore));
-
    exitThisApp = false;
    while(!exitThisApp)
    {
+      // Set initial gradient. Try to restore, set to default if restore fails.
+      auto gradColors = saveRestoreGrad->restore();
+      bool failedRestore = (gradColors.size() <= 0);
+      if(failedRestore)
+      {
+         // Restore didn't have anything. Set to Red, White and Blue
+         constexpr int numColorPoints = 3;
+         gradColors.resize(numColorPoints);
+         gradColors[0].hue = 0;
+         gradColors[0].saturation = 1.0;
+         gradColors[1].hue = 0.5;
+         gradColors[1].saturation = 0.0;
+         gradColors[2].hue = 0.65;
+         gradColors[2].saturation = 1.0;
+      }
+      std::shared_ptr<ColorGradient> grad(new ColorGradient(gradColors, failedRestore));
+
       // Gradient Edit Mode
       if(!exitThisApp)
       {
+         // Start up the thread that will check the periodically query the state fo the rotary encoders.
+         rotaries.clear();
+         rotaries.push_back(hueRotary);
+         rotaries.push_back(satRotary);
+         rotaries.push_back(ledSelected);
+         rotaries.push_back(reachRotary);
+         rotaries.push_back(posRotary);
          rotaryEncPollThreadActive = true;
          checkRotaryThread.reset(new std::thread(RotaryUpdateFunction));
+
          gradChangeThread.reset(new GradChangeThread(
             grad, 
             ledStrip, 
@@ -230,8 +232,15 @@ void thisAppForeverFunction()
       // Configure for FFT Audio Mode.
       if(!exitThisApp)
       {
+         // Start up the thread that will check the periodically query the state fo the rotary encoders.
+         rotaries.clear();
+         rotaries.push_back(ledSelected);
+         rotaryEncPollThreadActive = true;
+         checkRotaryThread.reset(new std::thread(RotaryUpdateFunction));
+
          audioLed.reset(new AudioLeds(
             grad,
+            saveRestoreGrad,
             ledStrip,
             ledSelected,
             leftButton,
@@ -243,6 +252,14 @@ void thisAppForeverFunction()
          // Wait for User to Exit Gradient Edit Mode.
          audioLed->waitForThreadDone();
          audioLed.reset();
+         
+         // Kill the Rotary Polling Thread.
+         rotaryEncPollThreadActive = false;
+         if(checkRotaryThread.get() != nullptr)
+         {
+            checkRotaryThread->join();
+            checkRotaryThread.reset();
+         }
       }
       
       // Set the LEDs to Black.

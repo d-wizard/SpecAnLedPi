@@ -28,6 +28,7 @@
 
 
 AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad, 
+                      std::shared_ptr<SaveRestoreGrad> saveRestorGrad,
                       std::shared_ptr<LedStrip> ledStrip, 
                       std::shared_ptr<RotaryEncoder> cycleGrads,
                       std::shared_ptr<RotaryEncoder> deleteButton,
@@ -35,6 +36,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
                       std::shared_ptr<RotaryEncoder> rightButton,
                       std::shared_ptr<PotentiometerKnob> brightKnob,
                       std::shared_ptr<PotentiometerKnob> gainKnob ) :
+   m_saveRestorGrad(saveRestorGrad),
    m_ledStrip(ledStrip),
    m_cycleGrads(cycleGrads),
    m_deleteButton(deleteButton),
@@ -108,12 +110,38 @@ void AudioLeds::endThread()
 
 void AudioLeds::buttonMonitorFunc()
 {
+   int timerCount = 0;
    while(m_buttonMonitorThread_active)
    {
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      if(m_leftButton->checkButton(false) && m_rightButton->checkButton(false))
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+      // Check if the user wants to change the color gradient.
+      auto changeGrad = m_cycleGrads->checkRotation();
+      if(changeGrad != RotaryEncoder::E_NO_CHANGE)
       {
-         m_buttonMonitorThread_active = false;
+         // Change the color gradient.
+         auto newGrad = (changeGrad == RotaryEncoder::E_FORWARD ? m_saveRestorGrad->restoreNext() : m_saveRestorGrad->restorePrev());
+         
+         // Convert
+         std::vector<ColorScale::tColorPoint> colors;
+         Convert::convertGradientToScale(newGrad, colors);
+         std::vector<ColorScale::tBrightnessPoint> brightPoints{{0,0},{1,1}}; // Scale brightness.
+
+         // Store
+         std::unique_lock<std::mutex> lock(m_colorScaleMutex);
+         m_colorScale.reset(new ColorScale(colors, brightPoints));
+      }
+
+      // Slower tasks.
+      if(++timerCount == 100)
+      {
+         timerCount = 0;
+
+         // Check if user want to toggle back to Gradient Edit Mode
+         if(m_leftButton->checkButton(false) && m_rightButton->checkButton(false))
+         {
+            m_buttonMonitorThread_active = false;
+         }
       }
    }
 }
@@ -166,15 +194,21 @@ void AudioLeds::pcmProcFunc()
 
                float brightness = m_brightKnob->getFlt();
                auto gain = m_gainKnob->getInt()*10;
-               for(size_t i = 0 ; i < NUM_LEDS; ++i)
+
+               // Generate the actual LED colors
                {
-                  int32_t ledVal = (int32_t)fftResult->data()[i]*gain;
-                  if(ledVal > 65535)
+                  std::unique_lock<std::mutex> lock(m_colorScaleMutex);
+                  for(size_t i = 0 ; i < NUM_LEDS; ++i)
                   {
-                     ledVal = 65535;
+                     int32_t ledVal = (int32_t)fftResult->data()[i]*gain;
+                     if(ledVal > 65535)
+                     {
+                        ledVal = 65535;
+                     }
+                     m_ledColors[i] = m_colorScale->getColor(ledVal, brightness);
                   }
-                  m_ledColors[i] = m_colorScale->getColor(ledVal, brightness);
                }
+
                m_ledStrip->set(m_ledColors);
             }
          #endif
