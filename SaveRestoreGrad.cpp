@@ -173,6 +173,19 @@ std::vector<ColorGradient::tGradientPoint> SaveRestoreGrad::restorePrev()
    return restore(indexFromName(allFiles, latest)-1, allFiles);
 }
 
+std::vector<ColorGradient::tGradientPoint> SaveRestoreGrad::deleteCurrent()
+{
+   auto latest = getLatestPath(); // Get this first.
+   auto retVal = restorePrev();   // Then change.
+
+   if(std::filesystem::exists(latest))
+   {
+      std::filesystem::remove(latest);
+   }
+
+   return retVal;
+}
+
 bool SaveRestoreGrad::match(std::vector<ColorGradient::tGradientPoint>& comp1, std::vector<ColorGradient::tGradientPoint>& comp2)
 {
    bool retVal = false;

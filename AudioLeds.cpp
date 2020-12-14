@@ -111,6 +111,9 @@ void AudioLeds::endThread()
 void AudioLeds::buttonMonitorFunc()
 {
    int timerCount = 0;
+   std::vector<ColorGradient::tGradientPoint> newGrad;
+   bool loadNewGrad = false;
+
    while(m_buttonMonitorThread_active)
    {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -119,9 +122,22 @@ void AudioLeds::buttonMonitorFunc()
       auto changeGrad = m_cycleGrads->checkRotation();
       if(changeGrad != RotaryEncoder::E_NO_CHANGE)
       {
-         // Change the color gradient.
-         auto newGrad = (changeGrad == RotaryEncoder::E_FORWARD ? m_saveRestorGrad->restoreNext() : m_saveRestorGrad->restorePrev());
-         
+         newGrad = (changeGrad == RotaryEncoder::E_FORWARD ? m_saveRestorGrad->restoreNext() : m_saveRestorGrad->restorePrev());
+         loadNewGrad = true;
+      }
+
+      // Check if the user wants to remove a gradient.
+      if(m_deleteButton->checkButton() == RotaryEncoder::E_DOUBLE_CLICK)
+      {
+         newGrad = m_saveRestorGrad->deleteCurrent();
+         loadNewGrad = true;
+      }
+
+      // Load the New Gradient.
+      if(loadNewGrad)
+      {
+         loadNewGrad = false;
+
          // Convert
          std::vector<ColorScale::tColorPoint> colors;
          Convert::convertGradientToScale(newGrad, colors);
@@ -131,6 +147,7 @@ void AudioLeds::buttonMonitorFunc()
          std::unique_lock<std::mutex> lock(m_colorScaleMutex);
          m_colorScale.reset(new ColorScale(colors, brightPoints));
       }
+
 
       // Slower tasks.
       if(++timerCount == 100)
