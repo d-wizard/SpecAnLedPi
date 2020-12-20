@@ -16,35 +16,32 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-
-#include <stdint.h>
-#include <stddef.h>
-#include <vector>
-#include <memory>
-#include "specAnLedPiTypes.h"
-#include "colorScale.h"
+#include <assert.h>
 #include "AudioDisplayBase.h"
 
-class AudioAmpDisplay : public AudioDisplayBase
+
+AudioDisplayBase::AudioDisplayBase(size_t frameSize, size_t numDisplayPoints):
+   m_frameSize(frameSize),
+   m_displayPoints(numDisplayPoints)
 {
-public:
-   AudioAmpDisplay(size_t frameSize, size_t numDisplayPoints, float fadeAwayFactor);
 
-private:
-   // Make uncopyable
-   AudioAmpDisplay();
-   AudioAmpDisplay(AudioAmpDisplay const&);
-   void operator=(AudioAmpDisplay const&);
+}
 
-   void processPcm(const SpecAnLedTypes::tPcmSample* samples) override;
+void AudioDisplayBase::parsePcm(const SpecAnLedTypes::tPcmSample* samples, size_t numSamp)
+{
+   // For now only handling inputs that match the frame size.
+   assert(numSamp == m_frameSize);
+   processPcm(samples);
+}
 
-   void fillInDisplayPoints(int gain) override;
-
-   float m_fadeAwayFactor;
-
-   int m_peak;
-
-   float m_ledToUse;
-};
+void AudioDisplayBase::fillInLeds(SpecAnLedTypes::tRgbVector& ledColors, std::unique_ptr<ColorScale>& colorScale, float brightness, int gain)
+{
+   fillInDisplayPoints(gain); // Fill in m_displayPoints
+   
+   // Convert m_displayPoints to color via colorScale
+   for(size_t i = 0; i < ledColors.size(); ++i)
+   {
+      ledColors[i] = colorScale->getColor(m_displayPoints[i], brightness);
+   }
+}
 

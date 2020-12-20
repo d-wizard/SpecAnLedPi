@@ -20,29 +20,28 @@
 #include <cmath>
 #include "AudioAmplitudeDisplay.h"
 
-AudioAmpDisplay::AudioAmpDisplay(float fadeAwayFactor):
+AudioAmpDisplay::AudioAmpDisplay(size_t frameSize, size_t numDisplayPoints, float fadeAwayFactor):
+   AudioDisplayBase(frameSize, numDisplayPoints),
    m_fadeAwayFactor(fadeAwayFactor)
 {
 
 }
 
-bool AudioAmpDisplay::update(int16_t* samp, size_t numSamp)
+void AudioAmpDisplay::processPcm(const SpecAnLedTypes::tPcmSample* samples)
 {
-   bool ready = true;
    int peak = 0;
-   for(size_t i = 0; i < numSamp; ++i)
+   for(size_t i = 0; i < m_displayPoints.size(); ++i)
    {
-      auto mag = std::abs(samp[i]);
+      auto mag = std::abs(samples[i]);
       if(mag > peak)
          peak = mag;
    }
    m_peak = peak;
-   return ready;
 }
 
-void AudioAmpDisplay::getDisplayPoints(SpecAnLedTypes::tRgbVector& ledColors, std::unique_ptr<ColorScale>& colorScale, float brightness, int gain)
+void AudioAmpDisplay::fillInDisplayPoints(int gain)
 {
-   size_t numLeds = ledColors.size();
+   size_t numLeds = m_displayPoints.size();
    size_t maxIndex = numLeds-1;
 
    // Use the most recent peak to determine 
@@ -65,13 +64,12 @@ void AudioAmpDisplay::getDisplayPoints(SpecAnLedTypes::tRgbVector& ledColors, st
 
    for(size_t i = 0; i <= peakLed; ++i)
    {
-      int ledVal = (i * 0xFFFF) / peakLed;
-      ledColors[i] = colorScale->getColor(ledVal, brightness);
+      m_displayPoints[i] = (i * 0xFFFF) / peakLed;
    }
 
    for(size_t i = peakLed+1; i < numLeds; ++i)
    {
-      ledColors[i].u32 = SpecAnLedTypes::COLOR_BLACK;
+      m_displayPoints[i] = 0;
    }
 }
 

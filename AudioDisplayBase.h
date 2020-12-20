@@ -24,27 +24,29 @@
 #include <memory>
 #include "specAnLedPiTypes.h"
 #include "colorScale.h"
-#include "AudioDisplayBase.h"
 
-class AudioAmpDisplay : public AudioDisplayBase
+class AudioDisplayBase
 {
 public:
-   AudioAmpDisplay(size_t frameSize, size_t numDisplayPoints, float fadeAwayFactor);
+   AudioDisplayBase(size_t frameSize, size_t numDisplayPoints);
+
+   size_t getFrameSize(){return m_frameSize;}
+
+   void parsePcm(const SpecAnLedTypes::tPcmSample* samples, size_t numSamp);
+
+   void fillInLeds(SpecAnLedTypes::tRgbVector& ledColors, std::unique_ptr<ColorScale>& colorScale, float brightness, int gain);
 
 private:
    // Make uncopyable
-   AudioAmpDisplay();
-   AudioAmpDisplay(AudioAmpDisplay const&);
-   void operator=(AudioAmpDisplay const&);
+   AudioDisplayBase();
+   AudioDisplayBase(AudioDisplayBase const&);
+   void operator=(AudioDisplayBase const&);
 
-   void processPcm(const SpecAnLedTypes::tPcmSample* samples) override;
+   virtual void processPcm(const SpecAnLedTypes::tPcmSample* samples) = 0;
 
-   void fillInDisplayPoints(int gain) override;
+   virtual void fillInDisplayPoints(int gain) = 0;
 
-   float m_fadeAwayFactor;
-
-   int m_peak;
-
-   float m_ledToUse;
+protected:
+   size_t m_frameSize;
+   std::vector<uint16_t> m_displayPoints;
 };
-
