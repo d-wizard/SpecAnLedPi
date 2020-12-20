@@ -1,0 +1,64 @@
+/* Copyright 2020 Dan Williams. All Rights Reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this
+ * software and associated documentation files (the "Software"), to deal in the Software
+ * without restriction, including without limitation the rights to use, copy, modify, merge,
+ * publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons
+ * to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+ * FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+#include "AudioDisplayFft.h"
+
+
+
+AudioDisplayFft::AudioDisplayFft(size_t sampleRate, size_t frameSize, size_t numDisplayPoints):
+   AudioDisplayBase(frameSize, numDisplayPoints),
+   m_fftResult(nullptr)
+{
+   // FFT Stuff
+   m_fftRun.reset(new FftRunRate(sampleRate, frameSize, 150.0));
+
+   tFftModifiers mod;
+   mod.startFreq = 300;
+   mod.stopFreq = 12000;
+   mod.clipMin = 0;
+   mod.clipMax = 5000;
+   mod.logScale = false;
+   mod.attenLowFreqs = true;
+   mod.attenLowStartLevel = 0.2;
+   mod.attenLowStopFreq = 6000;
+   mod.fadeAwayAmount = 15;
+   m_fftModifier.reset(new FftModifier(sampleRate, frameSize, numDisplayPoints, mod));
+
+}
+
+void AudioDisplayFft::processPcm(const SpecAnLedTypes::tPcmSample* samples)
+{
+   m_fftResult = m_fftRun->run(samples, m_numDisplayPoints);
+}
+
+void AudioDisplayFft::fillInDisplayPoints(int gain)
+{
+   if(m_fftResult != nullptr)
+   {
+      m_fftModifier->modify(m_fftResult->data());
+
+      for(size_t i = 0 ; i < m_numDisplayPoints; ++i)
+      {
+         int32_t ledVal = (int32_t)m_fftResult->data()[i]*gain;
+         if(ledVal > 0xFFFF)
+            ledVal = 0xFFFF;
+         m_displayPoints[i] = ledVal;
+      }
+   }
+   m_fftResult = nullptr;
+}

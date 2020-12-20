@@ -17,37 +17,29 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include <memory>
+#include "AudioDisplayBase.h"
+#include "fftRunRate.h"
+#include "fftModifier.h"
 
-#include "specAnLedPiTypes.h"
-#include "specAnFft.h"
-
-
-class FftRunRate
+class AudioDisplayFft : public AudioDisplayBase
 {
 public:
-   FftRunRate(float sampleRate, int fftSize, float fftRate);
-   virtual ~FftRunRate();
-
-   SpecAnLedTypes::tFftVector* run(const SpecAnLedTypes::tPcmSample* samples, size_t numSamp);
-
+   AudioDisplayFft(size_t sampleRate, size_t fftSize, size_t numDisplayPoints);
 
 private:
    // Make uncopyable
-   FftRunRate();
-   FftRunRate(FftRunRate const&);
-   void operator=(FftRunRate const&);
+   AudioDisplayFft();
+   AudioDisplayFft(AudioDisplayFft const&);
+   void operator=(AudioDisplayFft const&);
 
+   void processPcm(const SpecAnLedTypes::tPcmSample* samples) override;
 
-   float m_sampRate;
-   int m_fftSize;
+   void fillInDisplayPoints(int gain) override;
 
-   SpecAnFft m_fft;
+   // FFT Stuff
+   std::unique_ptr<FftRunRate> m_fftRun;
+   std::unique_ptr<FftModifier> m_fftModifier;
 
-   SpecAnLedTypes::tPcmBuffer m_pcmBuffer;
-   SpecAnLedTypes::tFftVector m_fftResult;
-
-   int m_numSampNeededToDoFft;
-   int m_numSampToRemoveAfterFft;
-
+   SpecAnLedTypes::tFftVector* m_fftResult = nullptr;
 };
-

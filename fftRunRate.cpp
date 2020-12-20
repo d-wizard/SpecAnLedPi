@@ -42,7 +42,7 @@ FftRunRate::~FftRunRate()
 
 }
 
-SpecAnLedTypes::tFftVector* FftRunRate::run(SpecAnLedTypes::tPcmSample* samples, size_t numSamp)
+SpecAnLedTypes::tFftVector* FftRunRate::run(const SpecAnLedTypes::tPcmSample* samples, size_t numSamp)
 {
    SpecAnLedTypes::tFftVector* fftResults = nullptr;
 

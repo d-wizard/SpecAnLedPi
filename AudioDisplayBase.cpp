@@ -22,7 +22,8 @@
 
 AudioDisplayBase::AudioDisplayBase(size_t frameSize, size_t numDisplayPoints):
    m_frameSize(frameSize),
-   m_displayPoints(numDisplayPoints)
+   m_displayPoints(numDisplayPoints),
+   m_numDisplayPoints(numDisplayPoints)
 {
 
 }
