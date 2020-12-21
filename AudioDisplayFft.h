@@ -33,7 +33,7 @@ private:
    AudioDisplayFft(AudioDisplayFft const&);
    void operator=(AudioDisplayFft const&);
 
-   void processPcm(const SpecAnLedTypes::tPcmSample* samples) override;
+   bool processPcm(const SpecAnLedTypes::tPcmSample* samples) override;
 
    void fillInDisplayPoints(int gain) override;
 

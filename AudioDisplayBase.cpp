@@ -28,11 +28,11 @@ AudioDisplayBase::AudioDisplayBase(size_t frameSize, size_t numDisplayPoints):
 
 }
 
-void AudioDisplayBase::parsePcm(const SpecAnLedTypes::tPcmSample* samples, size_t numSamp)
+bool AudioDisplayBase::parsePcm(const SpecAnLedTypes::tPcmSample* samples, size_t numSamp)
 {
    // For now only handling inputs that match the frame size.
    assert(numSamp == m_frameSize);
-   processPcm(samples);
+   return processPcm(samples);
 }
 
 void AudioDisplayBase::fillInLeds(SpecAnLedTypes::tRgbVector& ledColors, std::unique_ptr<ColorScale>& colorScale, float brightness, int gain)

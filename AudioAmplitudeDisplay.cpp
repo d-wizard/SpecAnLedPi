@@ -27,16 +27,17 @@ AudioAmpDisplay::AudioAmpDisplay(size_t frameSize, size_t numDisplayPoints, floa
 
 }
 
-void AudioAmpDisplay::processPcm(const SpecAnLedTypes::tPcmSample* samples)
+bool AudioAmpDisplay::processPcm(const SpecAnLedTypes::tPcmSample* samples)
 {
    int peak = 0;
-   for(size_t i = 0; i < m_displayPoints.size(); ++i)
+   for(size_t i = 0; i < m_frameSize; ++i)
    {
       auto mag = std::abs(samples[i]);
       if(mag > peak)
          peak = mag;
    }
    m_peak = peak;
+   return true;
 }
 
 void AudioAmpDisplay::fillInDisplayPoints(int gain)

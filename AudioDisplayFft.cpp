@@ -41,9 +41,10 @@ AudioDisplayFft::AudioDisplayFft(size_t sampleRate, size_t frameSize, size_t num
 
 }
 
-void AudioDisplayFft::processPcm(const SpecAnLedTypes::tPcmSample* samples)
+bool AudioDisplayFft::processPcm(const SpecAnLedTypes::tPcmSample* samples)
 {
-   m_fftResult = m_fftRun->run(samples, m_numDisplayPoints);
+   m_fftResult = m_fftRun->run(samples, m_frameSize);
+   return m_fftResult != nullptr;
 }
 
 void AudioDisplayFft::fillInDisplayPoints(int gain)

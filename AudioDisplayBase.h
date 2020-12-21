@@ -32,7 +32,7 @@ public:
 
    size_t getFrameSize(){return m_frameSize;}
 
-   void parsePcm(const SpecAnLedTypes::tPcmSample* samples, size_t numSamp);
+   bool parsePcm(const SpecAnLedTypes::tPcmSample* samples, size_t numSamp);
 
    void fillInLeds(SpecAnLedTypes::tRgbVector& ledColors, std::unique_ptr<ColorScale>& colorScale, float brightness, int gain);
 
@@ -42,7 +42,7 @@ private:
    AudioDisplayBase(AudioDisplayBase const&);
    void operator=(AudioDisplayBase const&);
 
-   virtual void processPcm(const SpecAnLedTypes::tPcmSample* samples) = 0;
+   virtual bool processPcm(const SpecAnLedTypes::tPcmSample* samples) = 0;
 
    virtual void fillInDisplayPoints(int gain) = 0;
 

@@ -37,7 +37,7 @@ private:
    AudioAmpDisplay(AudioAmpDisplay const&);
    void operator=(AudioAmpDisplay const&);
 
-   void processPcm(const SpecAnLedTypes::tPcmSample* samples) override;
+   bool processPcm(const SpecAnLedTypes::tPcmSample* samples) override;
 
    void fillInDisplayPoints(int gain) override;
 
