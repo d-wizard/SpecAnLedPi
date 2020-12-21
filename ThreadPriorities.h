@@ -44,9 +44,10 @@ namespace ThreadPriorities
 
 
    // Thread Priorities for this application.
-   static constexpr int ROTORY_ENCODER_POLL_THREAD_PRIORITY = 99;
-   static constexpr int GRADIENT_CHANGE_THREAD_PRIORITY = 98;
-   static constexpr int USER_CUE_THREAD_PRIORITY = 97;
+   static constexpr int ALSA_MIC_THREAD_PRIORITY = 99;
+   static constexpr int ROTORY_ENCODER_POLL_THREAD_PRIORITY = 98;
+   static constexpr int GRADIENT_CHANGE_THREAD_PRIORITY = 97;
+   static constexpr int USER_CUE_THREAD_PRIORITY = 96;
 }
 
 #ifdef NEED_TO_UNDEF_GNU_SOURCE

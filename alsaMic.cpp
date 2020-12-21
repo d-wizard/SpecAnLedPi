@@ -18,6 +18,7 @@
  */
 #include <stdio.h>
 #include "alsaMic.h"
+#include "ThreadPriorities.h"
 
 #define ALSA_ERR(printStr, err) if(err < 0) {printf("%s - %s\n", printStr, snd_strerror(err)); return err;}
 
@@ -78,6 +79,15 @@ int AlsaMic::init()
          ALSA_ERR("snd_pcm_hw_params_set_channels", err); // This will early return on error.
       }
 
+      // Following example in https://www.alsa-project.org/alsa-doc/alsa-lib/_2test_2latency_8c-example.html#a18 , setparams_bufsize
+      snd_pcm_uframes_t periodsize = 2*m_sampPer;
+      err = snd_pcm_hw_params_set_buffer_size_near(m_alsaHandle, alsaParams, &periodsize);
+      ALSA_ERR("snd_pcm_hw_params_set_buffer_size_near", err); // This will early return on error.
+
+      periodsize >>= 1;
+      err = snd_pcm_hw_params_set_period_size_near(m_alsaHandle, alsaParams, &periodsize, 0);
+      ALSA_ERR("snd_pcm_hw_params_set_period_size_near", err); // This will early return on error.
+
       err = snd_pcm_hw_params(m_alsaHandle, alsaParams);
       ALSA_ERR("snd_pcm_hw_params", err); // This will early return on error.
 
@@ -104,6 +114,8 @@ int AlsaMic::deinit()
 
 void* AlsaMic::micReadThreadFunction(void* inPtr)
 {
+   ThreadPriorities::setThisThreadPriorityPolicy(ThreadPriorities::ALSA_MIC_THREAD_PRIORITY, SCHED_FIFO);
+
    AlsaMic* _this = (AlsaMic*)inPtr;
 
    _this->m_buffer.resize(_this->m_sampPer*_this->m_numChannels);
