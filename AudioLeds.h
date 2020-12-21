@@ -29,8 +29,7 @@
 #include "potentiometerKnob.h"
 #include "alsaMic.h"
 #include "specAnFft.h"
-#include "fftRunRate.h"
-#include "fftModifier.h"
+#include "AudioDisplayBase.h"
 #include "SaveRestoreGrad.h"
 
 class AudioLeds
@@ -61,9 +60,9 @@ private:
    std::unique_ptr<AlsaMic> m_mic;
    static void alsaMicSamples(void* usrPtr, int16_t* samples, size_t numSamp);
 
-   // FFT Stuff
-   std::unique_ptr<FftRunRate> m_fftRun;
-   std::unique_ptr<FftModifier> m_fftModifier;
+   // Audio Displays
+   std::vector<std::unique_ptr<AudioDisplayBase>> m_audioDisplays;
+   std::atomic<int> m_activeAudioDisplayIndex = 0;
 
    // PCM Sample Processing Thread Stuff.
    std::thread m_pcmProc_thread;

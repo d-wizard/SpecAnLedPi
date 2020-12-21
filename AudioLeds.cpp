@@ -19,6 +19,8 @@
 #include "AudioLeds.h"
 #include "colorGradient.h"
 #include "gradientToScale.h"
+#include "AudioDisplayAmplitude.h"
+#include "AudioDisplayFft.h"
 
 // Audio Stuff
 #define SAMPLE_RATE (44100)
@@ -47,21 +49,6 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
 {
    auto NUM_LEDS = m_ledStrip->getNumLeds();
 
-   // FFT Stuff
-   m_fftRun.reset(new FftRunRate(SAMPLE_RATE, FFT_SIZE, 150.0));
-
-   tFftModifiers mod;
-   mod.startFreq = 300;
-   mod.stopFreq = 12000;
-   mod.clipMin = 0;
-   mod.clipMax = 5000;
-   mod.logScale = false;
-   mod.attenLowFreqs = true;
-   mod.attenLowStartLevel = 0.2;
-   mod.attenLowStopFreq = 6000;
-   mod.fadeAwayAmount = 15;
-   m_fftModifier.reset(new FftModifier(SAMPLE_RATE, FFT_SIZE, NUM_LEDS, mod));
-   
    // Set Color Scale that will be used to turn Audio into Colors.
    auto gradVect = colorGrad->getGradient();
    std::vector<ColorScale::tColorPoint> colors;
@@ -74,6 +61,10 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    // Create the Button / Rotary Enocoder monitoring thread.
    m_buttonMonitorThread_active = true;
    m_buttonMonitor_thread = std::thread(&AudioLeds::buttonMonitorFunc, this);
+
+   // Set the Audio Displays (do this before creating the thread)
+   m_audioDisplays.emplace_back(new AudioDisplayAmp(FFT_SIZE, ledStrip->getNumLeds(), 0.5));
+   m_audioDisplays.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, ledStrip->getNumLeds()));
 
    // Create the processing thread.
    m_pcmProc_buff.reserve(5000);
@@ -166,11 +157,16 @@ void AudioLeds::buttonMonitorFunc()
 // Processes PCM samples from the Microphone Capture object.
 void AudioLeds::pcmProcFunc()
 {
-   auto NUM_LEDS = m_ledStrip->getNumLeds();
-   int16_t samples[FFT_SIZE];
-   size_t numSamp = FFT_SIZE;
+   auto& audioDisplay = m_audioDisplays[m_activeAudioDisplayIndex];
+   size_t numSamp = audioDisplay->getFrameSize();
+   SpecAnLedTypes::tPcmBuffer samples(numSamp);
+
    while(m_pcmProc_active)
    {
+      auto& audioDisplay = m_audioDisplays[m_activeAudioDisplayIndex];
+      numSamp = audioDisplay->getFrameSize();
+      samples.resize(numSamp);
+
       bool copySamples = false;
       {
          std::unique_lock<std::mutex> lock(m_pcmProc_mutex);
@@ -186,49 +182,26 @@ void AudioLeds::pcmProcFunc()
          copySamples = copySamples && m_pcmProc_active;
          if(copySamples)
          {
-            memcpy(samples, m_pcmProc_buff.data(), sizeof(samples));
+            memcpy(samples.data(), m_pcmProc_buff.data(), sizeof(samples[0])*numSamp);
             m_pcmProc_buff.erase(m_pcmProc_buff.begin(),m_pcmProc_buff.begin()+numSamp);
          }
       }
 
       if(copySamples)
       {
-         #if 0
-            // Now we can process the samples outside of the mutex lock.
-            smartPlot_1D(samples, E_INT_16, numSamp, SAMPLE_RATE, SAMPLE_RATE/49, "Mic", "Samp");
-         #elif 0
-            SpecAnLedTypes::tFftVector* fftResult = fftRun->run(samples, numSamp);
-            if(fftResult != nullptr)
+         // Send the samples to the Audio Display to generate the LED Colors.
+         if(audioDisplay->parsePcm(samples.data(), numSamp))
+         {
+            float brightness = m_brightKnob->getFlt();
+            auto gain = m_gainKnob->getInt()*10;
+
             {
-               fftModifier->modify(fftResult->data());
-               smartPlot_1D(fftResult->data(), E_UINT_16, NUM_LEDS, NUM_LEDS, 0, "FFT", "re");
+               std::unique_lock<std::mutex> lock(m_colorScaleMutex);
+               audioDisplay->fillInLeds(m_ledColors, m_colorScale, brightness, gain);
             }
-         #else
-            SpecAnLedTypes::tFftVector* fftResult = m_fftRun->run(samples, numSamp);
-            if(fftResult != nullptr)
-            {
-               m_fftModifier->modify(fftResult->data());
 
-               float brightness = m_brightKnob->getFlt();
-               auto gain = m_gainKnob->getInt()*10;
-
-               // Generate the actual LED colors
-               {
-                  std::unique_lock<std::mutex> lock(m_colorScaleMutex);
-                  for(size_t i = 0 ; i < NUM_LEDS; ++i)
-                  {
-                     int32_t ledVal = (int32_t)fftResult->data()[i]*gain;
-                     if(ledVal > 65535)
-                     {
-                        ledVal = 65535;
-                     }
-                     m_ledColors[i] = m_colorScale->getColor(ledVal, brightness);
-                  }
-               }
-
-               m_ledStrip->set(m_ledColors);
-            }
-         #endif
+            m_ledStrip->set(m_ledColors);
+         }
       }
    }
 }

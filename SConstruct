@@ -19,6 +19,9 @@
 env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g -Wall -Werror -fdiagnostics-color=always', CXXFLAGS='--std=c++17')
 
 src = [ 'main.cpp',
+        'AudioDisplayBase.cpp',
+        'AudioDisplayAmplitude.cpp',
+        'AudioDisplayFft.cpp',
         'AudioLeds.cpp',
         'alsaMic.cpp',
         'DisplayGradient.cpp',
