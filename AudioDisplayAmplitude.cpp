@@ -18,16 +18,16 @@
  */
 
 #include <cmath>
-#include "AudioAmplitudeDisplay.h"
+#include "AudioDisplayAmplitude.h"
 
-AudioAmpDisplay::AudioAmpDisplay(size_t frameSize, size_t numDisplayPoints, float fadeAwayFactor):
+AudioDisplayAmp::AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, float fadeAwayFactor):
    AudioDisplayBase(frameSize, numDisplayPoints),
    m_fadeAwayFactor(fadeAwayFactor)
 {
 
 }
 
-bool AudioAmpDisplay::processPcm(const SpecAnLedTypes::tPcmSample* samples)
+bool AudioDisplayAmp::processPcm(const SpecAnLedTypes::tPcmSample* samples)
 {
    int peak = 0;
    for(size_t i = 0; i < m_frameSize; ++i)
@@ -40,7 +40,7 @@ bool AudioAmpDisplay::processPcm(const SpecAnLedTypes::tPcmSample* samples)
    return true;
 }
 
-void AudioAmpDisplay::fillInDisplayPoints(int gain)
+void AudioDisplayAmp::fillInDisplayPoints(int gain)
 {
    size_t numLeds = m_displayPoints.size();
    size_t maxIndex = numLeds-1;

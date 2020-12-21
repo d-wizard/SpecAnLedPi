@@ -26,16 +26,16 @@
 #include "colorScale.h"
 #include "AudioDisplayBase.h"
 
-class AudioAmpDisplay : public AudioDisplayBase
+class AudioDisplayAmp : public AudioDisplayBase
 {
 public:
-   AudioAmpDisplay(size_t frameSize, size_t numDisplayPoints, float fadeAwayFactor);
+   AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, float fadeAwayFactor);
 
 private:
    // Make uncopyable
-   AudioAmpDisplay();
-   AudioAmpDisplay(AudioAmpDisplay const&);
-   void operator=(AudioAmpDisplay const&);
+   AudioDisplayAmp();
+   AudioDisplayAmp(AudioDisplayAmp const&);
+   void operator=(AudioDisplayAmp const&);
 
    bool processPcm(const SpecAnLedTypes::tPcmSample* samples) override;
 
