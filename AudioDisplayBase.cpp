@@ -23,7 +23,8 @@
 AudioDisplayBase::AudioDisplayBase(size_t frameSize, size_t numDisplayPoints):
    m_frameSize(frameSize),
    m_displayPoints(numDisplayPoints),
-   m_numDisplayPoints(numDisplayPoints)
+   m_numDisplayPoints(numDisplayPoints),
+   m_numNonBlackPoints(numDisplayPoints)
 {
 
 }
@@ -40,9 +41,13 @@ void AudioDisplayBase::fillInLeds(SpecAnLedTypes::tRgbVector& ledColors, std::un
    fillInDisplayPoints(gain); // Fill in m_displayPoints
    
    // Convert m_displayPoints to color via colorScale
-   for(size_t i = 0; i < ledColors.size(); ++i)
+   for(size_t i = 0; i < m_numNonBlackPoints; ++i)
    {
       ledColors[i] = colorScale->getColor(m_displayPoints[i], brightness);
+   }
+   for(size_t i = m_numNonBlackPoints; i < m_numDisplayPoints; ++i)
+   {
+      ledColors[i].u32 = SpecAnLedTypes::COLOR_BLACK;
    }
 }
 

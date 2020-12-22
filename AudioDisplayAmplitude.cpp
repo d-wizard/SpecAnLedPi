@@ -67,10 +67,6 @@ void AudioDisplayAmp::fillInDisplayPoints(int gain)
    {
       m_displayPoints[i] = (i * 0xFFFF) / peakLed;
    }
-
-   for(size_t i = peakLed+1; i < numLeds; ++i)
-   {
-      m_displayPoints[i] = 0;
-   }
+   m_numNonBlackPoints = peakLed+1;
 }
 

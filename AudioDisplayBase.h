@@ -50,4 +50,6 @@ protected:
    size_t m_frameSize;
    std::vector<uint16_t> m_displayPoints;
    size_t m_numDisplayPoints;
+
+   size_t m_numNonBlackPoints; // All LEDs after this value will be set to Black.
 };
