@@ -41,10 +41,10 @@ private:
 
    void fillInDisplayPoints(int gain) override;
 
-   float m_fadeAwayFactor;
+   float m_fadeAwayFactor = 0;
 
-   int m_peak;
+   int m_peak = 0;
 
-   float m_ledToUse;
+   float m_ledToUse = 0;
 };
 
