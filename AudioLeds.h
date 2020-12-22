@@ -39,6 +39,7 @@ public:
               std::shared_ptr<SaveRestoreGrad> saveRestorGrad,
               std::shared_ptr<LedStrip> ledStrip, 
               std::shared_ptr<RotaryEncoder> cycleGrads,
+              std::shared_ptr<RotaryEncoder> cycleDisplays,
               std::shared_ptr<RotaryEncoder> deleteButton,
               std::shared_ptr<RotaryEncoder> leftButton,
               std::shared_ptr<RotaryEncoder> rightButton,
@@ -88,6 +89,7 @@ private:
 
    // Knobs and Buttons
    std::shared_ptr<RotaryEncoder> m_cycleGrads;
+   std::shared_ptr<RotaryEncoder> m_cycleDisplays;
    std::shared_ptr<RotaryEncoder> m_deleteButton;
    std::shared_ptr<RotaryEncoder> m_leftButton;
    std::shared_ptr<RotaryEncoder> m_rightButton;

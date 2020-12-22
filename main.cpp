@@ -235,6 +235,7 @@ void thisAppForeverFunction()
          // Start up the thread that will check the periodically query the state fo the rotary encoders.
          rotaries.clear();
          rotaries.push_back(ledSelected);
+         rotaries.push_back(reachRotary);
          rotaryEncPollThreadActive = true;
          checkRotaryThread.reset(new std::thread(RotaryUpdateFunction));
 
@@ -243,7 +244,8 @@ void thisAppForeverFunction()
             saveRestoreGrad,
             ledStrip,
             ledSelected,
-            leftButton,
+            reachRotary,
+            rightButton,
             leftButton,
             rightButton,
             brightKnob,

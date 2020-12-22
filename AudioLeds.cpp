@@ -34,6 +34,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
                       std::shared_ptr<SaveRestoreGrad> saveRestorGrad,
                       std::shared_ptr<LedStrip> ledStrip, 
                       std::shared_ptr<RotaryEncoder> cycleGrads,
+                      std::shared_ptr<RotaryEncoder> cycleDisplays,
                       std::shared_ptr<RotaryEncoder> deleteButton,
                       std::shared_ptr<RotaryEncoder> leftButton,
                       std::shared_ptr<RotaryEncoder> rightButton,
@@ -42,6 +43,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    m_saveRestorGrad(saveRestorGrad),
    m_ledStrip(ledStrip),
    m_cycleGrads(cycleGrads),
+   m_cycleDisplays(cycleDisplays),
    m_deleteButton(deleteButton),
    m_leftButton(leftButton),
    m_rightButton(rightButton),
@@ -117,6 +119,19 @@ void AudioLeds::buttonMonitorFunc()
       {
          newGrad = (changeGrad == RotaryEncoder::E_FORWARD ? m_saveRestorGrad->restoreNext() : m_saveRestorGrad->restorePrev());
          loadNewGrad = true;
+      }
+
+      // Check if the user wants to change the Audio Display.
+      auto changeDisplay = m_cycleDisplays->checkRotation();
+      if(changeDisplay != RotaryEncoder::E_NO_CHANGE)
+      {
+         int delta = (changeDisplay == RotaryEncoder::E_FORWARD ? 1 : -1);
+         int max = m_audioDisplays.size();
+         int newIndex = m_activeAudioDisplayIndex + delta;
+         if(newIndex < 0) newIndex = max-1;
+         else if(newIndex >= max) newIndex = 0;
+
+         m_activeAudioDisplayIndex = newIndex;
       }
 
       // Check if the user wants to remove a gradient.
