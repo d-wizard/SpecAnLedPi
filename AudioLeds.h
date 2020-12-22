@@ -23,7 +23,6 @@
 #include <vector>
 #include <mutex>
 #include <condition_variable>
-#include "colorGradient.h"
 #include "ledStrip.h"
 #include "rotaryEncoder.h"
 #include "potentiometerKnob.h"
@@ -84,8 +83,7 @@ private:
    // LED Stuff
    std::shared_ptr<LedStrip> m_ledStrip;
    SpecAnLedTypes::tRgbVector m_ledColors;
-   std::unique_ptr<ColorScale> m_colorScale;
-   std::mutex m_colorScaleMutex;
+   ColorGradient::tGradient m_currentGradient;
 
    // Knobs and Buttons
    std::shared_ptr<RotaryEncoder> m_cycleGrads;

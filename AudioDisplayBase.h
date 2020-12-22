@@ -22,19 +22,23 @@
 #include <stddef.h>
 #include <vector>
 #include <memory>
+#include <mutex>
 #include "specAnLedPiTypes.h"
+#include "colorGradient.h"
 #include "colorScale.h"
 
 class AudioDisplayBase
 {
 public:
-   AudioDisplayBase(size_t frameSize, size_t numDisplayPoints);
+   AudioDisplayBase(size_t frameSize, size_t numDisplayPoints, float firstLedBrightness = 0.0);
+
+   void setGradient(ColorGradient::tGradient& gradient);
 
    size_t getFrameSize(){return m_frameSize;}
 
    bool parsePcm(const SpecAnLedTypes::tPcmSample* samples, size_t numSamp);
 
-   void fillInLeds(SpecAnLedTypes::tRgbVector& ledColors, std::unique_ptr<ColorScale>& colorScale, float brightness, int gain);
+   void fillInLeds(SpecAnLedTypes::tRgbVector& ledColors, float brightness, int gain);
 
 private:
    // Make uncopyable
@@ -52,4 +56,8 @@ protected:
    size_t m_numDisplayPoints;
 
    size_t m_numNonBlackPoints; // All LEDs after this value will be set to Black.
+
+   float m_firstLedBrightness;
+   std::unique_ptr<ColorScale> m_colorScale;
+   std::mutex m_colorScaleMutex;
 };

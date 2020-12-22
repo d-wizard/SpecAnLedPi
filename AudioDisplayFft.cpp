@@ -51,6 +51,7 @@ void AudioDisplayFft::fillInDisplayPoints(int gain)
 {
    if(m_fftResult != nullptr)
    {
+      gain *= 6;
       m_fftModifier->modify(m_fftResult->data());
 
       for(size_t i = 0 ; i < m_numDisplayPoints; ++i)

@@ -27,7 +27,7 @@ ColorGradient::ColorGradient(size_t numPoints)
    init(numPoints);
 }
 
-ColorGradient::ColorGradient(std::vector<ColorGradient::tGradientPoint>& points, bool onlyHueAndSat)
+ColorGradient::ColorGradient(ColorGradient::tGradient& points, bool onlyHueAndSat)
 {
    init(points.size());
    if(onlyHueAndSat)
@@ -73,7 +73,7 @@ void ColorGradient::init(size_t numPoints)
    }
 }
 
-std::vector<ColorGradient::tGradientPoint> ColorGradient::getGradient()
+ColorGradient::tGradient ColorGradient::getGradient()
 {
    return m_gradPoints;
 }

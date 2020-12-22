@@ -56,9 +56,10 @@ public:
          return !(*this == rhs);
       }
    }tGradientPoint;
+   typedef std::vector<tGradientPoint> tGradient;
    
    ColorGradient(size_t numPoints);
-   ColorGradient(std::vector<tGradientPoint>& points, bool onlyHueAndSat = true); // Note only Hue and Saturation will be used by default
+   ColorGradient(tGradient& points, bool onlyHueAndSat = true); // Note only Hue and Saturation will be used by default
    virtual ~ColorGradient();
 
    void updateGradient(eGradientOptions option, float value, int pointIndex);
@@ -69,7 +70,7 @@ public:
    bool canRemovePoint();
    bool removePoint(int pointIndexToRemove); // Return whether a point was removed or not.
 
-   std::vector<tGradientPoint> getGradient();
+   tGradient getGradient();
    tGradientPoint getGradientPoint(int pointIndex);
 
    size_t getNumPoints() {return m_gradPoints.size();}
@@ -78,7 +79,7 @@ private:
 
    static constexpr float MIN_INCREMENT = 0.0078125; // 1/128
 
-   std::vector<tGradientPoint> m_gradPoints;
+   tGradient m_gradPoints;
 
    void init(size_t numPoints);
 
@@ -91,8 +92,8 @@ private:
    // Keep track of previous orientation for when position / reach change.
    eGradientOptions m_previousOption = E_GRAD_INVALID;
    int m_previousIndex = -1;
-   std::vector<tGradientPoint> m_previousGradPointsLo;
-   std::vector<tGradientPoint> m_previousGradPointsHi;
+   tGradient m_previousGradPointsLo;
+   tGradient m_previousGradPointsHi;
    void storePrevSettings(eGradientOptions option, int pointIndex);
    void locationChanged(size_t pointIndex);
 

@@ -21,7 +21,7 @@
 #include "AudioDisplayAmplitude.h"
 
 AudioDisplayAmp::AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, float fadeAwayFactor):
-   AudioDisplayBase(frameSize, numDisplayPoints),
+   AudioDisplayBase(frameSize, numDisplayPoints, 0.5),
    m_fadeAwayFactor(fadeAwayFactor)
 {
 
@@ -47,7 +47,7 @@ void AudioDisplayAmp::fillInDisplayPoints(int gain)
 
    // Use the most recent peak to determine 
    size_t newPeakLed = m_peak * gain * numLeds;
-   newPeakLed >>= 18;
+   newPeakLed >>= 17;
    if(newPeakLed > maxIndex)
       newPeakLed = maxIndex;
    else if(newPeakLed < 1)

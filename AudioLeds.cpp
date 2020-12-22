@@ -18,7 +18,6 @@
  */
 #include "AudioLeds.h"
 #include "colorGradient.h"
-#include "gradientToScale.h"
 #include "AudioDisplayAmplitude.h"
 #include "AudioDisplayFft.h"
 #include "ThreadPriorities.h"
@@ -42,6 +41,8 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
                       std::shared_ptr<PotentiometerKnob> gainKnob ) :
    m_saveRestorGrad(saveRestorGrad),
    m_ledStrip(ledStrip),
+   m_ledColors(ledStrip->getNumLeds()),
+   m_currentGradient(colorGrad->getGradient()),
    m_cycleGrads(cycleGrads),
    m_cycleDisplays(cycleDisplays),
    m_deleteButton(deleteButton),
@@ -50,17 +51,6 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    m_brightKnob(brightKnob),
    m_gainKnob(gainKnob)
 {
-   auto NUM_LEDS = m_ledStrip->getNumLeds();
-
-   // Set Color Scale that will be used to turn Audio into Colors.
-   auto gradVect = colorGrad->getGradient();
-   std::vector<ColorScale::tColorPoint> colors;
-   Convert::convertGradientToScale(gradVect, colors);
-   std::vector<ColorScale::tBrightnessPoint> brightPoints{{0,0},{1,1}}; // Scale brightness.
-   m_colorScale.reset(new ColorScale(colors, brightPoints));
-
-   m_ledColors.resize(NUM_LEDS);
-
    // Create the Button / Rotary Enocoder monitoring thread.
    m_buttonMonitorThread_active = true;
    m_buttonMonitor_thread = std::thread(&AudioLeds::buttonMonitorFunc, this);
@@ -68,6 +58,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    // Set the Audio Displays (do this before creating the thread)
    m_audioDisplays.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), 0.7));
    m_audioDisplays.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, ledStrip->getNumLeds()));
+   m_audioDisplays[m_activeAudioDisplayIndex]->setGradient(m_currentGradient);
 
    // Create the processing thread.
    m_pcmProc_buff.reserve(5000);
@@ -106,7 +97,7 @@ void AudioLeds::buttonMonitorFunc()
 {
    ThreadPriorities::setThisThreadName("AudioButtonMon");
    int timerCount = 0;
-   std::vector<ColorGradient::tGradientPoint> newGrad;
+   ColorGradient::tGradient newGrad;
    bool loadNewGrad = false;
 
    while(m_buttonMonitorThread_active)
@@ -132,6 +123,10 @@ void AudioLeds::buttonMonitorFunc()
          else if(newIndex >= max) newIndex = 0;
 
          m_activeAudioDisplayIndex = newIndex;
+
+         // Make sure the gradient gets updates in the new display (in case it changed since the last time the display was used).
+         newGrad = m_currentGradient; 
+         loadNewGrad = true;
       }
 
       // Check if the user wants to remove a gradient.
@@ -145,15 +140,8 @@ void AudioLeds::buttonMonitorFunc()
       if(loadNewGrad)
       {
          loadNewGrad = false;
-
-         // Convert
-         std::vector<ColorScale::tColorPoint> colors;
-         Convert::convertGradientToScale(newGrad, colors);
-         std::vector<ColorScale::tBrightnessPoint> brightPoints{{0,0},{1,1}}; // Scale brightness.
-
-         // Store
-         std::unique_lock<std::mutex> lock(m_colorScaleMutex);
-         m_colorScale.reset(new ColorScale(colors, brightPoints));
+         m_currentGradient = newGrad;
+         m_audioDisplays[m_activeAudioDisplayIndex]->setGradient(m_currentGradient);
       }
 
 
@@ -211,13 +199,8 @@ void AudioLeds::pcmProcFunc()
          if(audioDisplay->parsePcm(samples.data(), numSamp))
          {
             float brightness = m_brightKnob->getFlt();
-            auto gain = m_gainKnob->getInt()*10;
-
-            {
-               std::unique_lock<std::mutex> lock(m_colorScaleMutex);
-               audioDisplay->fillInLeds(m_ledColors, m_colorScale, brightness, gain);
-            }
-
+            auto gain = m_gainKnob->getInt();
+            audioDisplay->fillInLeds(m_ledColors, brightness, gain);
             m_ledStrip->set(m_ledColors);
          }
       }
