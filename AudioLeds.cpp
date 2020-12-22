@@ -21,6 +21,7 @@
 #include "gradientToScale.h"
 #include "AudioDisplayAmplitude.h"
 #include "AudioDisplayFft.h"
+#include "ThreadPriorities.h"
 
 // Audio Stuff
 #define SAMPLE_RATE (44100)
@@ -63,7 +64,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    m_buttonMonitor_thread = std::thread(&AudioLeds::buttonMonitorFunc, this);
 
    // Set the Audio Displays (do this before creating the thread)
-   m_audioDisplays.emplace_back(new AudioDisplayAmp(FFT_SIZE, ledStrip->getNumLeds(), 0.5));
+   m_audioDisplays.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), 0.7));
    m_audioDisplays.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, ledStrip->getNumLeds()));
 
    // Create the processing thread.
@@ -72,7 +73,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    m_pcmProc_thread = std::thread(&AudioLeds::pcmProcFunc, this);
 
    // Start capturing from the microphone.
-   m_mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE, 1, alsaMicSamples, this));
+   m_mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE>>1, 1, alsaMicSamples, this));
 }
 
 AudioLeds::~AudioLeds()
@@ -101,6 +102,7 @@ void AudioLeds::endThread()
 
 void AudioLeds::buttonMonitorFunc()
 {
+   ThreadPriorities::setThisThreadName("AudioButtonMon");
    int timerCount = 0;
    std::vector<ColorGradient::tGradientPoint> newGrad;
    bool loadNewGrad = false;
@@ -157,6 +159,7 @@ void AudioLeds::buttonMonitorFunc()
 // Processes PCM samples from the Microphone Capture object.
 void AudioLeds::pcmProcFunc()
 {
+   ThreadPriorities::setThisThreadName("PcmProcFunc");
    auto& audioDisplay = m_audioDisplays[m_activeAudioDisplayIndex];
    size_t numSamp = audioDisplay->getFrameSize();
    SpecAnLedTypes::tPcmBuffer samples(numSamp);
