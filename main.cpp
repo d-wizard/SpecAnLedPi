@@ -40,7 +40,7 @@
 
 
 // LED Stuff
-#define NUM_LEDS (40)
+#define NUM_LEDS (30)
 static std::shared_ptr<LedStrip> ledStrip;
 
 // Thread for Updating the Color Gradient
@@ -234,8 +234,8 @@ void thisAppForeverFunction()
       {
          // Start up the thread that will check the periodically query the state fo the rotary encoders.
          rotaries.clear();
+         rotaries.push_back(hueRotary);
          rotaries.push_back(ledSelected);
-         rotaries.push_back(reachRotary);
          rotaryEncPollThreadActive = true;
          checkRotaryThread.reset(new std::thread(RotaryUpdateFunction));
 
@@ -243,8 +243,8 @@ void thisAppForeverFunction()
             grad,
             saveRestoreGrad,
             ledStrip,
+            hueRotary,
             ledSelected,
-            reachRotary,
             rightButton,
             leftButton,
             rightButton,
