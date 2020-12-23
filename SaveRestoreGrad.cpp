@@ -134,7 +134,7 @@ void SaveRestoreGrad::save(std::vector<ColorGradient::tGradientPoint>& gradToSav
       do
       {
          std::stringstream saveFileName;
-         saveFileName << m_saveRestoreDir << "/" << "colors" << saveFileNum;
+         saveFileName << m_saveRestoreDir << "/" << USER_SAVE_PREFIX << saveFileNum;
          if(!std::filesystem::exists(saveFileName.str()))
          {
             write(saveFileName.str(), gradToSave);
@@ -178,7 +178,14 @@ std::vector<ColorGradient::tGradientPoint> SaveRestoreGrad::deleteCurrent()
    auto latest = getLatestPath(); // Get this first.
    auto retVal = restorePrev();   // Then change.
 
-   if(std::filesystem::exists(latest))
+   // Get 
+   std::string fileName = std::filesystem::path(latest).filename();
+   std::string prefix;
+   int dummyNum = 0;
+   splitNumFromName(fileName, prefix, dummyNum);
+   
+   // Only delete if the file was generated here (i.e. the prefix matches USER_SAVE_PREFIX)
+   if(std::filesystem::exists(latest) && prefix == USER_SAVE_PREFIX)
    {
       std::filesystem::remove(latest);
    }

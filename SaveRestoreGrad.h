@@ -37,6 +37,7 @@ public:
 
 private:
    const std::string LATEST_NAME = "latest";
+   const std::string USER_SAVE_PREFIX = "colors";
    std::string m_saveRestoreDir;
    std::string m_latestFileSavePath;
 
