@@ -57,7 +57,13 @@ protected:
 
    size_t m_numNonBlackPoints; // All LEDs after this value will be set to Black.
 
+   std::vector<uint16_t> m_overridePoints;
+   size_t m_overrideStart = 0;
+
+
    float m_firstLedBrightness;
    std::unique_ptr<ColorScale> m_colorScale;
    std::mutex m_colorScaleMutex;
+
+   
 };

@@ -29,7 +29,14 @@
 class AudioDisplayAmp : public AudioDisplayBase
 {
 public:
-   AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, float fadeAwayFactor);
+   typedef enum
+   {
+      E_SCALE,
+      E_MIN_SAME,
+      E_PEAK_SAME
+   }eAmpDisplayType;
+   
+   AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, eAmpDisplayType displayType, float fadeAwayFactor, float peakFadeAwayFactor = 0.0);
 
 private:
    // Make uncopyable
@@ -41,10 +48,17 @@ private:
 
    void fillInDisplayPoints(int gain) override;
 
+   eAmpDisplayType m_displayType = E_SCALE;
+   int m_measuredPeak = 0;
+
    float m_fadeAwayFactor = 0;
-
-   int m_peak = 0;
-
    float m_ledToUse = 0;
+
+   bool m_addPeak = false;
+   float m_peakFadeFactorStart = 0;
+   float m_peakFadeFactorCurrent = 0;
+   float m_ledToUsePeak = 0;
+   uint16_t m_savedPeakFadeColor = 0;
+
 };
 

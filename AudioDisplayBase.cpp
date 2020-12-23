@@ -64,5 +64,9 @@ void AudioDisplayBase::fillInLeds(SpecAnLedTypes::tRgbVector& ledColors, float b
    {
       ledColors[i].u32 = SpecAnLedTypes::COLOR_BLACK;
    }
+   for(size_t i = 0; i < m_overridePoints.size(); ++i)
+   {
+      ledColors[i+m_overrideStart] = m_colorScale->getColor(m_overridePoints[i], brightness);
+   }
 }
 
