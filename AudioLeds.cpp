@@ -16,6 +16,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#include <signal.h>
 #include "AudioLeds.h"
 #include "colorGradient.h"
 #include "AudioDisplayAmplitude.h"
@@ -183,7 +184,15 @@ void AudioLeds::pcmProcFunc()
          copySamples = (m_pcmProc_buff.size() >= numSamp);
          if(!copySamples)
          {
-            m_pcmProc_bufferReadyCondVar.wait(lock);
+            auto result = m_pcmProc_bufferReadyCondVar.wait_for(lock, std::chrono::milliseconds(100));
+            if(result == std::cv_status::timeout)
+            {
+               // Sometimes the ALSA driver stuff just stops sending samples. Killing the application
+               // is only way I have found to fix this issue. 
+               std::thread([](){ raise(SIGINT); }).detach(); // Kill from a different thread.
+               
+               m_pcmProc_active = false; // Exit out of this thread.
+            }
             copySamples = (m_pcmProc_buff.size() >= numSamp);
          }
 
