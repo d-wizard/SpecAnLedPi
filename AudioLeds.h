@@ -29,13 +29,13 @@
 #include "alsaMic.h"
 #include "specAnFft.h"
 #include "AudioDisplayBase.h"
-#include "SaveRestoreGrad.h"
+#include "SaveRestore.h"
 
 class AudioLeds
 {
 public:
    AudioLeds( std::shared_ptr<ColorGradient> colorGrad, 
-              std::shared_ptr<SaveRestoreGrad> saveRestorGrad,
+              std::shared_ptr<SaveRestore::Gradient> saveRestorGrad,
               std::shared_ptr<LedStrip> ledStrip, 
               std::shared_ptr<RotaryEncoder> cycleGrads,
               std::shared_ptr<RotaryEncoder> cycleDisplays,
@@ -78,7 +78,7 @@ private:
    void buttonMonitorFunc();
 
    // Save Restore Gradient object
-   std::shared_ptr<SaveRestoreGrad> m_saveRestorGrad;
+   std::shared_ptr<SaveRestore::Gradient> m_saveRestorGrad;
 
    // LED Stuff
    std::shared_ptr<LedStrip> m_ledStrip;

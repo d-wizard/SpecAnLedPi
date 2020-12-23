@@ -31,7 +31,7 @@
 
 
 AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad, 
-                      std::shared_ptr<SaveRestoreGrad> saveRestorGrad,
+                      std::shared_ptr<SaveRestore::Gradient> saveRestorGrad,
                       std::shared_ptr<LedStrip> ledStrip, 
                       std::shared_ptr<RotaryEncoder> cycleGrads,
                       std::shared_ptr<RotaryEncoder> cycleDisplays,

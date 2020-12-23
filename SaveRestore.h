@@ -22,10 +22,13 @@
 #include <string>
 #include "colorGradient.h"
 
-class SaveRestoreGrad
+namespace SaveRestore
+{
+
+class Gradient
 {
 public:
-   SaveRestoreGrad();
+   Gradient();
 
    void save(ColorGradient::tGradient& gradToSave);
 
@@ -61,3 +64,4 @@ private:
    
 };
 
+}

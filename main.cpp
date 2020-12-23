@@ -36,7 +36,7 @@
 #include "potentiometerKnob.h"
 #include "ThreadPriorities.h"
 #include "wiringPi.h"
-#include "SaveRestoreGrad.h"
+#include "SaveRestore.h"
 
 
 // LED Stuff
@@ -72,7 +72,7 @@ static std::atomic<bool> exitThisApp;
 static std::shared_ptr<std::thread> thisAppThread;
 static void thisAppForeverFunction();
 
-static std::shared_ptr<SaveRestoreGrad> saveRestoreGrad;
+static std::shared_ptr<SaveRestore::Gradient> saveRestoreGrad;
 
 void cleanUpBeforeExit()
 {
@@ -132,7 +132,7 @@ int main (int argc, char *argv[])
    wiringPiSetup();
 
    // This is used to save / restore Color Gradients.
-   saveRestoreGrad.reset(new SaveRestoreGrad());
+   saveRestoreGrad.reset(new SaveRestore::Gradient());
 
    // Setup LED strip.
    ledStrip.reset(new LedStrip(NUM_LEDS, LedStrip::GRB));

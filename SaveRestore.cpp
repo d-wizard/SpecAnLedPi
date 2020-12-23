@@ -23,9 +23,9 @@
 #include <assert.h>
 #include <algorithm>
 #include <filesystem>
-#include "SaveRestoreGrad.h"
+#include "SaveRestore.h"
 
-SaveRestoreGrad::SaveRestoreGrad()
+SaveRestore::Gradient::Gradient()
 {
    m_saveRestoreDir = std::filesystem::current_path().native() + "/.specanledpi";
    m_latestFileSavePath = m_saveRestoreDir + "/" + LATEST_NAME;
@@ -36,7 +36,7 @@ SaveRestoreGrad::SaveRestoreGrad()
 }
 
 
-std::vector<std::string> SaveRestoreGrad::getAllFiles()
+std::vector<std::string> SaveRestore::Gradient::getAllFiles()
 {
    std::vector<std::string> retVal;
    for(const auto& entry : std::filesystem::directory_iterator(m_saveRestoreDir))
@@ -53,7 +53,7 @@ std::vector<std::string> SaveRestoreGrad::getAllFiles()
    return retVal;
 }
 
-void SaveRestoreGrad::splitNumFromName(std::string& fileName, std::string& namePart, int& numPart)
+void SaveRestore::Gradient::splitNumFromName(std::string& fileName, std::string& namePart, int& numPart)
 {
    namePart = fileName;
    numPart = 0;
@@ -74,7 +74,7 @@ void SaveRestoreGrad::splitNumFromName(std::string& fileName, std::string& nameP
    }
 }
 
-bool SaveRestoreGrad::sortPathFunc(std::string path0, std::string path1)
+bool SaveRestore::Gradient::sortPathFunc(std::string path0, std::string path1)
 {
    auto p0 = std::filesystem::path(path0);
    auto p1 = std::filesystem::path(path1);
@@ -107,7 +107,7 @@ bool SaveRestoreGrad::sortPathFunc(std::string path0, std::string path1)
 }
 
 
-void SaveRestoreGrad::save(ColorGradient::tGradient& gradToSave)
+void SaveRestore::Gradient::save(ColorGradient::tGradient& gradToSave)
 {
    bool saved = false;
 
@@ -147,33 +147,33 @@ void SaveRestoreGrad::save(ColorGradient::tGradient& gradToSave)
 
 }
 
-ColorGradient::tGradient SaveRestoreGrad::restore(int index)
+ColorGradient::tGradient SaveRestore::Gradient::restore(int index)
 {
    return restore(index, getAllFiles());
 }
 
-ColorGradient::tGradient SaveRestoreGrad::restore()
+ColorGradient::tGradient SaveRestore::Gradient::restore()
 {
    auto allFiles = getAllFiles();
    auto latest = getLatestPath();
    return restore(indexFromName(allFiles, latest), allFiles);
 }
 
-ColorGradient::tGradient SaveRestoreGrad::restoreNext()
+ColorGradient::tGradient SaveRestore::Gradient::restoreNext()
 {
    auto allFiles = getAllFiles();
    auto latest = getLatestPath();
    return restore(indexFromName(allFiles, latest)+1, allFiles);
 }
 
-ColorGradient::tGradient SaveRestoreGrad::restorePrev()
+ColorGradient::tGradient SaveRestore::Gradient::restorePrev()
 {
    auto allFiles = getAllFiles();
    auto latest = getLatestPath();
    return restore(indexFromName(allFiles, latest)-1, allFiles);
 }
 
-ColorGradient::tGradient SaveRestoreGrad::deleteCurrent()
+ColorGradient::tGradient SaveRestore::Gradient::deleteCurrent()
 {
    auto latest = getLatestPath(); // Get this first.
    auto retVal = restorePrev();   // Then change.
@@ -193,7 +193,7 @@ ColorGradient::tGradient SaveRestoreGrad::deleteCurrent()
    return retVal;
 }
 
-bool SaveRestoreGrad::match(ColorGradient::tGradient& comp1, ColorGradient::tGradient& comp2)
+bool SaveRestore::Gradient::match(ColorGradient::tGradient& comp1, ColorGradient::tGradient& comp2)
 {
    bool retVal = false;
    if(comp1.size() == comp2.size())
@@ -211,7 +211,7 @@ bool SaveRestoreGrad::match(ColorGradient::tGradient& comp1, ColorGradient::tGra
    return retVal;
 }
 
-std::string SaveRestoreGrad::getLatestPath()
+std::string SaveRestore::Gradient::getLatestPath()
 {
    std::string line = "";
    if(std::filesystem::exists(m_latestFileSavePath))
@@ -224,7 +224,7 @@ std::string SaveRestoreGrad::getLatestPath()
    return line;
 }
 
-void SaveRestoreGrad::setLatestPath(std::string latest)
+void SaveRestore::Gradient::setLatestPath(std::string latest)
 {
    std::ofstream writeFile;
    writeFile.open(m_latestFileSavePath);
@@ -232,7 +232,7 @@ void SaveRestoreGrad::setLatestPath(std::string latest)
    writeFile.close();
 }
 
-int SaveRestoreGrad::indexFromName(std::vector<std::string> filePaths, std::string fileName)
+int SaveRestore::Gradient::indexFromName(std::vector<std::string> filePaths, std::string fileName)
 {
    int matchingIndex = -1;
    for(size_t i = 0; i < filePaths.size(); ++i)
@@ -246,7 +246,7 @@ int SaveRestoreGrad::indexFromName(std::vector<std::string> filePaths, std::stri
    return matchingIndex;
 }
 
-ColorGradient::tGradient SaveRestoreGrad::restore(int index, std::vector<std::string> filePaths)
+ColorGradient::tGradient SaveRestore::Gradient::restore(int index, std::vector<std::string> filePaths)
 {
    ColorGradient::tGradient retVal;
    int numPaths = filePaths.size();
@@ -266,7 +266,7 @@ ColorGradient::tGradient SaveRestoreGrad::restore(int index, std::vector<std::st
    return retVal;
 }
 
-ColorGradient::tGradient SaveRestoreGrad::read(std::string filePath)
+ColorGradient::tGradient SaveRestore::Gradient::read(std::string filePath)
 {
    ColorGradient::tGradient retVal;
    ColorGradient::tGradientPoint newPoint;
@@ -313,7 +313,7 @@ ColorGradient::tGradient SaveRestoreGrad::read(std::string filePath)
    return retVal;
 }
 
-void SaveRestoreGrad::write(std::string filePath, ColorGradient::tGradient toWrite)
+void SaveRestore::Gradient::write(std::string filePath, ColorGradient::tGradient toWrite)
 {
    std::stringstream ss;
    for(const auto& point : toWrite)

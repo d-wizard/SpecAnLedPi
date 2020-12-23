@@ -36,7 +36,7 @@ src = [ 'main.cpp',
         'hsvrgb.cpp',
         'gradientChangeThread.cpp',
         'rotaryEncoder.cpp',
-        'SaveRestoreGrad.cpp',
+        'SaveRestore.cpp',
         'modules/plotperfectclient/sendMemoryToPlot.c', 
         'modules/plotperfectclient/smartPlotMessage.c' ]
 
