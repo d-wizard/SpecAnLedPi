@@ -21,7 +21,7 @@
 #include "AudioDisplayAmplitude.h"
 
 AudioDisplayAmp::AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, eAmpDisplayType displayType, float fadeAwayFactor, float peakFadeAwayFactor):
-   AudioDisplayBase(frameSize, numDisplayPoints, 0.5),
+   AudioDisplayBase(frameSize, numDisplayPoints, displayType == E_PEAK_SAME ? 1.0 : 0.5),
    m_displayType(displayType),
    m_fadeAwayFactor(fadeAwayFactor),
    m_addPeak(peakFadeAwayFactor > 0.0),
@@ -49,31 +49,32 @@ bool AudioDisplayAmp::processPcm(const SpecAnLedTypes::tPcmSample* samples)
 
 void AudioDisplayAmp::fillInDisplayPoints(int gain)
 {
-   size_t numLeds = m_displayPoints.size();
-   size_t maxIndex = numLeds-1;
+   constexpr int NoColorMin = -2;
+   int numLeds = m_displayPoints.size();
+   int maxIndex = numLeds-1;
 
    // Use the most recent peak to determine 
-   size_t newPeakLed = m_measuredPeak * gain * numLeds;
+   int newPeakLed = m_measuredPeak * gain * numLeds;
    newPeakLed >>= 17;
    if(newPeakLed > maxIndex)
       newPeakLed = maxIndex;
-   else if(newPeakLed < 1)
-      newPeakLed = 1;
+   else if(newPeakLed <= 0)
+      newPeakLed = NoColorMin; // Make silence display nothing.
 
    // Fade away the current LED value.
    m_ledToUse -= m_fadeAwayFactor;
-   if(m_ledToUse < 1)
-      m_ledToUse = 1;
+   if(m_ledToUse < NoColorMin)
+      m_ledToUse = NoColorMin;
 
    // Check for new peak.
    if(newPeakLed > m_ledToUse)
       m_ledToUse = newPeakLed;
 
-   size_t peakLed = m_ledToUse + 0.5;
+   int peakLed = m_ledToUse;
 
    // Determine how to display the amplitude (default to E_SCALE)
-   size_t delta = 0;
-   size_t divisor = peakLed;
+   int delta = 0;
+   int divisor = peakLed;
    uint16_t peakFadeColor = 0;
    bool useSavedPeakForLowerValues = false;
    switch(m_displayType)
@@ -87,7 +88,8 @@ void AudioDisplayAmp::fillInDisplayPoints(int gain)
       case E_MIN_SAME:
          delta = 0;
          divisor = maxIndex;
-         peakFadeColor = ((peakLed+delta) * 0xFFFF) / divisor;
+         if(peakLed >= 0)
+            peakFadeColor = ((peakLed+delta) * 0xFFFF) / divisor;
          useSavedPeakForLowerValues = true;
       break;
       case E_PEAK_SAME:
@@ -97,11 +99,15 @@ void AudioDisplayAmp::fillInDisplayPoints(int gain)
       break;
    }
 
-   for(size_t i = 0; i <= peakLed; ++i)
+   // Make sure not to divide by zero.
+   if(divisor < 1)
+      divisor = 1;
+
+   for(int i = 0; i <= peakLed; ++i)
    {
       m_displayPoints[i] = ((i+delta) * 0xFFFF) / divisor;
    }
-   m_numNonBlackPoints = peakLed+1;
+   m_numNonBlackPoints = peakLed < 0 ? 0 : peakLed+1;
 
    if(m_addPeak)
    {
@@ -122,10 +128,10 @@ void AudioDisplayAmp::fillInDisplayPoints(int gain)
          m_savedPeakFadeColor = peakFadeColor;
       }
 
-      if(m_ledToUsePeak < 1)
-         m_ledToUsePeak = 1;
+      if(m_ledToUsePeak < NoColorMin)
+         m_ledToUsePeak = NoColorMin;
       
-      size_t desiredPeakLed = m_ledToUsePeak + 0.5;
+      int desiredPeakLed = m_ledToUsePeak + 0.5;
       if(desiredPeakLed == peakLed && peakLed < maxIndex)
          desiredPeakLed++;
 
