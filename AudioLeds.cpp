@@ -137,9 +137,6 @@ void AudioLeds::buttonMonitorFunc()
 
          m_activeAudioDisplayIndex = newIndex;
 
-         // Save off the current Audio Display.
-         m_saveRestorSettings.save_displayIndex(m_activeAudioDisplayIndex);
-
          // Make sure the gradient gets updates in the new display (in case it changed since the last time the display was used).
          newGrad = m_currentGradient; 
          loadNewGrad = true;
