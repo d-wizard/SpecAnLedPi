@@ -80,6 +80,9 @@ private:
    // Save Restore Gradient object
    std::shared_ptr<SaveRestore::Gradient> m_saveRestorGrad;
 
+   // Save Restore Settings object
+   SaveRestore::Settings m_saveRestorSettings;
+
    // LED Stuff
    std::shared_ptr<LedStrip> m_ledStrip;
    SpecAnLedTypes::tRgbVector m_ledColors;

@@ -25,6 +25,10 @@
 namespace SaveRestore
 {
 
+   const std::string LATEST_NAME = "latest";
+   const std::string USER_SAVE_PREFIX = "colors";
+   const std::string SETTINGS_NAME = "settings";
+
 class Gradient
 {
 public:
@@ -39,8 +43,6 @@ public:
    ColorGradient::tGradient deleteCurrent();
 
 private:
-   const std::string LATEST_NAME = "latest";
-   const std::string USER_SAVE_PREFIX = "colors";
    std::string m_saveRestoreDir;
    std::string m_latestFileSavePath;
 
@@ -62,6 +64,18 @@ private:
    ColorGradient::tGradient read(std::string filePath);
    void write(std::string filePath, ColorGradient::tGradient toWrite);
    
+};
+
+class Settings
+{
+public:
+   Settings();
+
+   void save_displayIndex(int index);
+   int restore_displayIndex();
+private:
+   std::string m_saveRestorePath;
+
 };
 
 }

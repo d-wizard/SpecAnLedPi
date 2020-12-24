@@ -61,6 +61,13 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    m_audioDisplays.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_MIN_SAME,  0.7, 0.03));
    m_audioDisplays.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_PEAK_SAME, 0.7, 0.03));
    m_audioDisplays.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, ledStrip->getNumLeds()));
+
+   // Attempt to Restore the Audio Display Index.
+   int restoredDisplayIndex = m_saveRestorSettings.restore_displayIndex();
+   if(restoredDisplayIndex >= 0 && restoredDisplayIndex < int(m_audioDisplays.size()))
+      m_activeAudioDisplayIndex = restoredDisplayIndex;
+
+   // Make sure the first display gets set for the current gradient.
    m_audioDisplays[m_activeAudioDisplayIndex]->setGradient(m_currentGradient);
 
    // Create the processing thread.
@@ -74,6 +81,9 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
 
 AudioLeds::~AudioLeds()
 {
+   // Save off the current Audio Display.
+   m_saveRestorSettings.save_displayIndex(m_activeAudioDisplayIndex);
+
    // Stop getting samples from the microphone.
    m_mic.reset();
 
@@ -126,6 +136,9 @@ void AudioLeds::buttonMonitorFunc()
          else if(newIndex >= max) newIndex = 0;
 
          m_activeAudioDisplayIndex = newIndex;
+
+         // Save off the current Audio Display.
+         m_saveRestorSettings.save_displayIndex(m_activeAudioDisplayIndex);
 
          // Make sure the gradient gets updates in the new display (in case it changed since the last time the display was used).
          newGrad = m_currentGradient; 

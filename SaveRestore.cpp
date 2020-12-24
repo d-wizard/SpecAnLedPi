@@ -25,14 +25,29 @@
 #include <filesystem>
 #include "SaveRestore.h"
 
+namespace SaveRestore
+{
+   static std::string GetSaveRestoreDir()
+   {
+      std::string saveRestoreDir = std::filesystem::current_path().native() + "/.specanledpi";
+      if(!std::filesystem::exists(saveRestoreDir))
+      {
+         std::filesystem::create_directory(saveRestoreDir);
+      }
+      return saveRestoreDir;
+   }
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+
 SaveRestore::Gradient::Gradient()
 {
-   m_saveRestoreDir = std::filesystem::current_path().native() + "/.specanledpi";
+   m_saveRestoreDir = GetSaveRestoreDir();
    m_latestFileSavePath = m_saveRestoreDir + "/" + LATEST_NAME;
-   if(!std::filesystem::exists(m_saveRestoreDir))
-   {
-      std::filesystem::create_directory(m_saveRestoreDir);
-   }
 }
 
 
@@ -43,7 +58,8 @@ std::vector<std::string> SaveRestore::Gradient::getAllFiles()
    {
       if(!std::filesystem::is_directory(entry.path()))
       {
-         if(entry.path().filename() != LATEST_NAME)
+         std::string filename = entry.path().filename();
+         if(filename != LATEST_NAME && filename != SETTINGS_NAME)
          {
             retVal.push_back(entry.path().native());
          }
@@ -328,4 +344,44 @@ void SaveRestore::Gradient::write(std::string filePath, ColorGradient::tGradient
    writeFile.open(filePath.c_str());
    writeFile << ss.str();
    writeFile.close();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+
+
+SaveRestore::Settings::Settings()
+{
+   m_saveRestorePath = GetSaveRestoreDir() + "/" + SETTINGS_NAME;
+}
+
+void SaveRestore::Settings::save_displayIndex(int index)
+{
+   std::stringstream ss;
+   ss << index << std::endl;
+   
+   std::ofstream writeFile;
+   writeFile.open(m_saveRestorePath.c_str());
+   writeFile << ss.str();
+   writeFile.close();
+}
+
+int SaveRestore::Settings::restore_displayIndex()
+{
+   int retVal = -1;
+
+   std::ifstream readFile;
+   std::string line;
+   readFile.open(m_saveRestorePath.c_str());
+   if(std::getline(readFile, line))
+   {
+      std::istringstream iss(line);
+      iss >> retVal;
+   }
+   readFile.close();
+
+   return retVal;
 }
