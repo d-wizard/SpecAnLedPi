@@ -162,6 +162,7 @@ int main (int argc, char *argv[])
 
 void thisAppForeverFunction()
 {
+   bool skipGradFirst = true;
    exitThisApp = false;
    while(!exitThisApp)
    {
@@ -182,49 +183,53 @@ void thisAppForeverFunction()
       }
       std::shared_ptr<ColorGradient> grad(new ColorGradient(gradColors, failedRestore));
 
-      // Gradient Edit Mode
-      if(!exitThisApp)
+      if(!skipGradFirst)
       {
-         // Start up the thread that will check the periodically query the state fo the rotary encoders.
-         rotaries.clear();
-         rotaries.push_back(hueRotary);
-         rotaries.push_back(satRotary);
-         rotaries.push_back(ledSelected);
-         rotaries.push_back(reachRotary);
-         rotaries.push_back(posRotary);
-         rotaryEncPollThreadActive = true;
-         checkRotaryThread.reset(new std::thread(RotaryUpdateFunction));
-
-         gradChangeThread.reset(new GradChangeThread(
-            grad, 
-            ledStrip, 
-            hueRotary,
-            satRotary,
-            ledSelected,
-            reachRotary,
-            posRotary,
-            leftButton,
-            rightButton,
-            brightKnob));
-
-         // Wait for User to Exit Gradient Edit Mode.
-         gradChangeThread->waitForThreadDone();
-         gradChangeThread.reset();
-
-         // Kill the Rotary Polling Thread.
-         rotaryEncPollThreadActive = false;
-         if(checkRotaryThread.get() != nullptr)
+         // Gradient Edit Mode
+         if(!exitThisApp)
          {
-            checkRotaryThread->join();
-            checkRotaryThread.reset();
+            // Start up the thread that will check the periodically query the state fo the rotary encoders.
+            rotaries.clear();
+            rotaries.push_back(hueRotary);
+            rotaries.push_back(satRotary);
+            rotaries.push_back(ledSelected);
+            rotaries.push_back(reachRotary);
+            rotaries.push_back(posRotary);
+            rotaryEncPollThreadActive = true;
+            checkRotaryThread.reset(new std::thread(RotaryUpdateFunction));
+
+            gradChangeThread.reset(new GradChangeThread(
+               grad, 
+               ledStrip, 
+               hueRotary,
+               satRotary,
+               ledSelected,
+               reachRotary,
+               posRotary,
+               leftButton,
+               rightButton,
+               brightKnob));
+
+            // Wait for User to Exit Gradient Edit Mode.
+            gradChangeThread->waitForThreadDone();
+            gradChangeThread.reset();
+
+            // Kill the Rotary Polling Thread.
+            rotaryEncPollThreadActive = false;
+            if(checkRotaryThread.get() != nullptr)
+            {
+               checkRotaryThread->join();
+               checkRotaryThread.reset();
+            }
          }
+
+         // Set the LEDs to Black.
+         ledStrip->clear();
+
+         // Wait for both to be unpressed.
+         while(leftButton->checkButton(false) && rightButton->checkButton(false) && !exitThisApp){std::this_thread::sleep_for(std::chrono::milliseconds(1));}
       }
-
-      // Set the LEDs to Black.
-      ledStrip->clear();
-
-      // Wait for both to be unpressed.
-      while(leftButton->checkButton(false) && rightButton->checkButton(false) && !exitThisApp){std::this_thread::sleep_for(std::chrono::milliseconds(1));}
+      skipGradFirst = false;
 
       std::vector<ColorGradient::tGradientPoint> gradVect = grad->getGradient();
       saveRestoreGrad->save(gradVect);
