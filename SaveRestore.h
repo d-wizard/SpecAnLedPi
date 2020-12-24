@@ -20,6 +20,7 @@
 
 #include <vector>
 #include <string>
+#include <mutex>
 #include "colorGradient.h"
 
 namespace SaveRestore
@@ -61,6 +62,7 @@ private:
 
    ColorGradient::tGradient restore(int index, std::vector<std::string> filePaths);
 
+   std::mutex m_readWriteMutex;
    ColorGradient::tGradient read(std::string filePath);
    void write(std::string filePath, ColorGradient::tGradient toWrite);
    
@@ -74,7 +76,8 @@ public:
    void save_displayIndex(int index);
    int restore_displayIndex();
 private:
-   std::string m_saveRestorePath;
+   std::string m_saveRestorePath = "";
+   std::mutex m_readWriteMutex;
 
 };
 

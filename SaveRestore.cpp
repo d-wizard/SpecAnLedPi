@@ -284,6 +284,8 @@ ColorGradient::tGradient SaveRestore::Gradient::restore(int index, std::vector<s
 
 ColorGradient::tGradient SaveRestore::Gradient::read(std::string filePath)
 {
+   std::unique_lock<std::mutex> lock(m_readWriteMutex);
+
    ColorGradient::tGradient retVal;
    ColorGradient::tGradientPoint newPoint;
 
@@ -331,6 +333,8 @@ ColorGradient::tGradient SaveRestore::Gradient::read(std::string filePath)
 
 void SaveRestore::Gradient::write(std::string filePath, ColorGradient::tGradient toWrite)
 {
+   std::unique_lock<std::mutex> lock(m_readWriteMutex);
+
    std::stringstream ss;
    for(const auto& point : toWrite)
    {
@@ -360,6 +364,8 @@ SaveRestore::Settings::Settings()
 
 void SaveRestore::Settings::save_displayIndex(int index)
 {
+   std::unique_lock<std::mutex> lock(m_readWriteMutex);
+
    std::stringstream ss;
    ss << index << std::endl;
    
@@ -371,6 +377,8 @@ void SaveRestore::Settings::save_displayIndex(int index)
 
 int SaveRestore::Settings::restore_displayIndex()
 {
+   std::unique_lock<std::mutex> lock(m_readWriteMutex);
+
    int retVal = -1;
 
    std::ifstream readFile;
