@@ -50,8 +50,8 @@ bool AudioDisplayAmp::processPcm(const SpecAnLedTypes::tPcmSample* samples)
 void AudioDisplayAmp::fillInDisplayPoints(int gain)
 {
    constexpr int NoColorMin = -2;
-   int numLeds = m_displayPoints.size();
-   int maxIndex = numLeds-1;
+   const int numLeds = m_displayPoints.size();
+   const int maxIndex = numLeds-1;
 
    // Use the most recent peak to determine 
    int newPeakLed = m_measuredPeak * gain * numLeds;
@@ -135,6 +135,7 @@ void AudioDisplayAmp::fillInDisplayPoints(int gain)
       if(desiredPeakLed == peakLed && peakLed < maxIndex)
          desiredPeakLed++;
 
+      // Define where the peak color and where it will go.
       m_overridePoints[0] = m_savedPeakFadeColor;
       m_overrideStart = desiredPeakLed;
 
