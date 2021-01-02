@@ -160,7 +160,7 @@ int main (int argc, char *argv[])
    return 0;
 }
 
-void thisAppForeverFunction()
+static void thisAppForeverFunction()
 {
    bool skipGradFirst = true;
    exitThisApp = false;

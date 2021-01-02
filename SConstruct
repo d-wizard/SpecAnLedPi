@@ -46,7 +46,7 @@ inc = [ './modules/plotperfectclient',
         './modules/Ne10/inc', 
         './modules/rpi_ws281x' ]
 
-lib = ['rt', 'stdc++fs', 'asound', 'fftw3', 'pthread', 'NE10', 'ws2811', 'wiringPi']
+lib = ['rt', 'stdc++fs', 'asound', 'pthread', 'NE10', 'ws2811', 'wiringPi']
 
 libpath = ['./modules/Ne10/build/modules', './modules/rpi_ws281x']
 
