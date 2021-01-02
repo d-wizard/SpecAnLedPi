@@ -104,9 +104,9 @@ int AlsaMic::deinit()
 {
    if(m_running)
    {
-      snd_pcm_close(m_alsaHandle);
       m_running = false;
       pthread_join(m_readThread, nullptr);
+      snd_pcm_close(m_alsaHandle);
    }
 
    return 0;
