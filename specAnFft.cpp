@@ -55,7 +55,7 @@ SpecAnFft::SpecAnFft(int numTaps, bool window):
    m_window(window)
 {
    m_ne10Config = ne10_fft_alloc_r2c_int16(numTaps);
-   m_tempComplex.resize(numTaps>>1);
+   m_tempComplex.resize(numTaps);
    if(m_window)
    {
       genWindowCoef(numTaps, false);
@@ -83,7 +83,7 @@ void SpecAnFft::runFft(int16_t* inSamp, uint16_t* outSamp)
    ne10_fft_r2c_1d_int16_neon(m_tempComplex.data(), sampToFft, m_ne10Config, 1);
 
    // Convert complex to real (i.e. do Pythagoras)
-   size_t numComplexSamples = m_tempComplex.size();
+   size_t numComplexSamples = m_numTaps>>1;
    for(size_t i = 0; i < numComplexSamples; ++i)
    {
       outSamp[i] = magnatude((int16_t*)&m_tempComplex[i]);
