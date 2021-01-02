@@ -29,6 +29,8 @@
 #include "alsaMic.h"
 #include "specAnFft.h"
 #include "AudioDisplayBase.h"
+#include "AudioDisplayAmplitude.h"
+#include "AudioDisplayFft.h"
 #include "SaveRestore.h"
 
 class AudioLeds
@@ -61,7 +63,9 @@ private:
    static void alsaMicSamples(void* usrPtr, int16_t* samples, size_t numSamp);
 
    // Audio Displays
-   std::vector<std::unique_ptr<AudioDisplayBase>> m_audioDisplays;
+   std::vector<std::unique_ptr<AudioDisplayAmp>> m_audioDisplayAmp;
+   std::vector<std::unique_ptr<AudioDisplayFft>> m_audioDisplayFft;
+   std::vector<AudioDisplayBase*> m_audioDisplays;
    std::atomic<int> m_activeAudioDisplayIndex = 0;
 
    // PCM Sample Processing Thread Stuff.

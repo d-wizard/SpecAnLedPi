@@ -19,8 +19,6 @@
 #include <signal.h>
 #include "AudioLeds.h"
 #include "colorGradient.h"
-#include "AudioDisplayAmplitude.h"
-#include "AudioDisplayFft.h"
 #include "ThreadPriorities.h"
 
 // Audio Stuff
@@ -57,10 +55,15 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    m_buttonMonitor_thread = std::thread(&AudioLeds::buttonMonitorFunc, this);
 
    // Set the Audio Displays (do this before creating the thread)
-   m_audioDisplays.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_SCALE,     0.7, 0.03));
-   m_audioDisplays.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_MIN_SAME,  0.7, 0.03));
-   m_audioDisplays.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_PEAK_SAME, 0.7, 0.03));
-   m_audioDisplays.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, ledStrip->getNumLeds()));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_SCALE,     0.7, 0.03));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_MIN_SAME,  0.7, 0.03));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_PEAK_SAME, 0.7, 0.03));
+   m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, ledStrip->getNumLeds()));
+
+   for(auto& disp : m_audioDisplayAmp)
+      m_audioDisplays.push_back(disp.get());
+   for(auto& disp : m_audioDisplayFft)
+      m_audioDisplays.push_back(disp.get());
 
    // Attempt to Restore the Audio Display Index.
    int restoredDisplayIndex = m_saveRestorSettings.restore_displayIndex();
