@@ -7,3 +7,6 @@
 [submodule "modules/plotperfectclient"]
 	path = modules/plotperfectclient
 	url = https://github.com/d-wizard/plotperfectclient.git
+[submodule "modules/jsoncpp"]
+	path = modules/jsoncpp
+	url = https://github.com/open-source-parsers/jsoncpp.git
