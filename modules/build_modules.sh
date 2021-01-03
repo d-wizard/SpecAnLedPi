@@ -33,7 +33,7 @@ cd ../..
 cd jsoncpp
 mkdir build
 cd build
-cmake
+cmake ..
 make -j 2
 cd ../..
 
