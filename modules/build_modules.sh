@@ -27,7 +27,7 @@ mkdir build
 cd build
 cmake -DGNULINUX_PLATFORM=ON -DNE10_LINUX_TARGET_ARCH=armv7 ..
 make -j 2
-cd ..
+cd ../..
 
 # build jsoncpp
 cd jsoncpp
@@ -35,7 +35,7 @@ mkdir build
 cd build
 cmake
 make -j 2
-cd ..
+cd ../..
 
 # plotperfectclient
 # No build, just add the 2 .c files you the top level build.
