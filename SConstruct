@@ -16,7 +16,7 @@
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g -Wall -Werror -fdiagnostics-color=always', CXXFLAGS='--std=c++17')
+env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g -Wall -Werror -fdiagnostics-color=always')
 
 src = [ 'main.cpp',
         'AudioDisplayBase.cpp',
@@ -44,11 +44,12 @@ defines = []
 
 inc = [ './modules/plotperfectclient', 
         './modules/Ne10/inc', 
-        './modules/rpi_ws281x' ]
+        './modules/rpi_ws281x', 
+        './modules/jsoncpp/include' ]
 
-lib = ['rt', 'stdc++fs', 'asound', 'pthread', 'NE10', 'ws2811', 'wiringPi']
+lib = ['rt', 'asound', 'pthread', 'NE10', 'ws2811', 'wiringPi', 'jsoncpp_static']
 
-libpath = ['./modules/Ne10/build/modules', './modules/rpi_ws281x']
+libpath = ['./modules/Ne10/build/modules', './modules/rpi_ws281x', './modules/jsoncpp/build/lib']
 
 env.Program( source=src,
              CPPDEFINES=defines,

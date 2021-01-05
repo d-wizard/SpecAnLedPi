@@ -22,63 +22,44 @@
 #include <string>
 #include <mutex>
 #include "colorGradient.h"
+#include "json/json.h"
 
-namespace SaveRestore
-{
-
-   const std::string LATEST_NAME = "latest";
-   const std::string USER_SAVE_PREFIX = "colors";
-   const std::string SETTINGS_NAME = "settings";
-
-class Gradient
+class SaveRestoreJson
 {
 public:
-   Gradient();
+   SaveRestoreJson();
 
-   void save(ColorGradient::tGradient& gradToSave);
+   void save_gradient(ColorGradient::tGradient& gradToSave);
 
-   ColorGradient::tGradient restore();
-   ColorGradient::tGradient restoreNext();
-   ColorGradient::tGradient restorePrev();
+   ColorGradient::tGradient restore_gradient();
+   ColorGradient::tGradient restore_gradientNext();
+   ColorGradient::tGradient restore_gradientPrev();
 
-   ColorGradient::tGradient deleteCurrent();
-
-private:
-   std::string m_saveRestoreDir;
-   std::string m_latestFileSavePath;
-
-   std::vector<std::string> getAllFiles();
-   static void splitNumFromName(std::string& fileName, std::string& namePart, int& numPart);
-   static bool sortPathFunc(std::string path0, std::string path1);
-
-   ColorGradient::tGradient restore(int index);
-
-   bool match(ColorGradient::tGradient& comp1, ColorGradient::tGradient& comp2);
-
-   std::string getLatestPath();
-   void setLatestPath(std::string latest);
-
-   int indexFromName(std::vector<std::string> filePaths, std::string fileName);
-
-   ColorGradient::tGradient restore(int index, std::vector<std::string> filePaths);
-
-   std::mutex m_readWriteMutex;
-   ColorGradient::tGradient read(std::string filePath);
-   void write(std::string filePath, ColorGradient::tGradient toWrite);
-   
-};
-
-class Settings
-{
-public:
-   Settings();
+   ColorGradient::tGradient delete_gradient();
 
    void save_displayIndex(int index);
    int restore_displayIndex();
+
 private:
-   std::string m_saveRestorePath = "";
-   std::mutex m_readWriteMutex;
+   // Make uncopyable
+   SaveRestoreJson(SaveRestoreJson const&);
+   void operator=(SaveRestoreJson const&);
 
+   const std::string SETTINGS_JSON = "settings.json";
+   const std::string PRESET_GRADIENT_JSON = "presets.json";
+
+   std::mutex m_mutex;
+
+   void getJson(std::string pathToJson, Json::Value& jsonRetVal);
+
+   std::vector<ColorGradient::tGradient> getAllGradients(int& currentIndex);
+   std::vector<ColorGradient::tGradient> getAllGradients(int& currentIndex, int& numPresetGrads);
+   std::vector<ColorGradient::tGradient> getUserGradients(Json::Value& settingsJson);
+
+   ColorGradient::tGradient restoreGradient(int indexDelta);
+
+   bool match(ColorGradient::tGradient& comp1, ColorGradient::tGradient& comp2);
+
+   void saveGradientIndex(Json::Value& settingsJson, int index);
+   void saveSettings(Json::Value& settingsJson);
 };
-
-}

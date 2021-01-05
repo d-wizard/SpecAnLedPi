@@ -29,7 +29,7 @@
 
 
 AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad, 
-                      std::shared_ptr<SaveRestore::Gradient> saveRestorGrad,
+                      std::shared_ptr<SaveRestoreJson> saveRestore,
                       std::shared_ptr<LedStrip> ledStrip, 
                       std::shared_ptr<RotaryEncoder> cycleGrads,
                       std::shared_ptr<RotaryEncoder> cycleDisplays,
@@ -38,7 +38,8 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
                       std::shared_ptr<RotaryEncoder> rightButton,
                       std::shared_ptr<PotentiometerKnob> brightKnob,
                       std::shared_ptr<PotentiometerKnob> gainKnob ) :
-   m_saveRestorGrad(saveRestorGrad),
+   m_activeAudioDisplayIndex(0),
+   m_saveRestore(saveRestore),
    m_ledStrip(ledStrip),
    m_ledColors(ledStrip->getNumLeds()),
    m_currentGradient(colorGrad->getGradient()),
@@ -66,7 +67,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
       m_audioDisplays.push_back(disp.get());
 
    // Attempt to Restore the Audio Display Index.
-   int restoredDisplayIndex = m_saveRestorSettings.restore_displayIndex();
+   int restoredDisplayIndex = m_saveRestore->restore_displayIndex();
    if(restoredDisplayIndex >= 0 && restoredDisplayIndex < int(m_audioDisplays.size()))
       m_activeAudioDisplayIndex = restoredDisplayIndex;
 
@@ -85,7 +86,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
 AudioLeds::~AudioLeds()
 {
    // Save off the current Audio Display.
-   m_saveRestorSettings.save_displayIndex(m_activeAudioDisplayIndex);
+   m_saveRestore->save_displayIndex(m_activeAudioDisplayIndex);
 
    // Stop getting samples from the microphone.
    m_mic.reset();
@@ -124,7 +125,7 @@ void AudioLeds::buttonMonitorFunc()
       auto changeGrad = m_cycleGrads->checkRotation();
       if(changeGrad != RotaryEncoder::E_NO_CHANGE)
       {
-         newGrad = (changeGrad == RotaryEncoder::E_FORWARD ? m_saveRestorGrad->restoreNext() : m_saveRestorGrad->restorePrev());
+         newGrad = (changeGrad == RotaryEncoder::E_FORWARD ? m_saveRestore->restore_gradientNext() : m_saveRestore->restore_gradientPrev());
          loadNewGrad = true;
       }
 
@@ -148,7 +149,7 @@ void AudioLeds::buttonMonitorFunc()
       // Check if the user wants to remove a gradient.
       if(m_deleteButton->checkButton() == RotaryEncoder::E_DOUBLE_CLICK)
       {
-         newGrad = m_saveRestorGrad->deleteCurrent();
+         newGrad = m_saveRestore->delete_gradient();
          loadNewGrad = true;
       }
 

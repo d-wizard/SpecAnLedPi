@@ -37,7 +37,7 @@ class AudioLeds
 {
 public:
    AudioLeds( std::shared_ptr<ColorGradient> colorGrad, 
-              std::shared_ptr<SaveRestore::Gradient> saveRestorGrad,
+              std::shared_ptr<SaveRestoreJson> saveRestore,
               std::shared_ptr<LedStrip> ledStrip, 
               std::shared_ptr<RotaryEncoder> cycleGrads,
               std::shared_ptr<RotaryEncoder> cycleDisplays,
@@ -66,7 +66,7 @@ private:
    std::vector<std::unique_ptr<AudioDisplayAmp>> m_audioDisplayAmp;
    std::vector<std::unique_ptr<AudioDisplayFft>> m_audioDisplayFft;
    std::vector<AudioDisplayBase*> m_audioDisplays;
-   std::atomic<int> m_activeAudioDisplayIndex = 0;
+   std::atomic<int> m_activeAudioDisplayIndex;
 
    // PCM Sample Processing Thread Stuff.
    std::thread m_pcmProc_thread;
@@ -82,10 +82,7 @@ private:
    void buttonMonitorFunc();
 
    // Save Restore Gradient object
-   std::shared_ptr<SaveRestore::Gradient> m_saveRestorGrad;
-
-   // Save Restore Settings object
-   SaveRestore::Settings m_saveRestorSettings;
+   std::shared_ptr<SaveRestoreJson> m_saveRestore;
 
    // LED Stuff
    std::shared_ptr<LedStrip> m_ledStrip;

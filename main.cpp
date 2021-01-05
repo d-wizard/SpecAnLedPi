@@ -72,7 +72,7 @@ static std::atomic<bool> exitThisApp;
 static std::shared_ptr<std::thread> thisAppThread;
 static void thisAppForeverFunction();
 
-static std::shared_ptr<SaveRestore::Gradient> saveRestoreGrad;
+static std::shared_ptr<SaveRestoreJson> saveRestore;
 
 void cleanUpBeforeExit()
 {
@@ -132,7 +132,7 @@ int main (int argc, char *argv[])
    wiringPiSetup();
 
    // This is used to save / restore Color Gradients.
-   saveRestoreGrad.reset(new SaveRestore::Gradient());
+   saveRestore.reset(new SaveRestoreJson());
 
    // Setup LED strip.
    ledStrip.reset(new LedStrip(NUM_LEDS, LedStrip::GRB));
@@ -167,7 +167,7 @@ static void thisAppForeverFunction()
    while(!exitThisApp)
    {
       // Set initial gradient. Try to restore, set to default if restore fails.
-      auto gradColors = saveRestoreGrad->restore();
+      auto gradColors = saveRestore->restore_gradient();
       bool failedRestore = (gradColors.size() <= 0);
       if(failedRestore)
       {
@@ -232,7 +232,7 @@ static void thisAppForeverFunction()
       skipGradFirst = false;
 
       std::vector<ColorGradient::tGradientPoint> gradVect = grad->getGradient();
-      saveRestoreGrad->save(gradVect);
+      saveRestore->save_gradient(gradVect);
 
       // Configure for FFT Audio Mode.
       if(!exitThisApp)
@@ -246,7 +246,7 @@ static void thisAppForeverFunction()
 
          audioLed.reset(new AudioLeds(
             grad,
-            saveRestoreGrad,
+            saveRestore,
             ledStrip,
             hueRotary,
             ledSelected,

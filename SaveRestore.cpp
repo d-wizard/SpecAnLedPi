@@ -22,194 +22,119 @@
 #include <sstream>
 #include <assert.h>
 #include <algorithm>
-#include <filesystem>
 #include "SaveRestore.h"
 
-namespace SaveRestore
+
+static ColorGradient::tGradient jsonToGrad(Json::Value& jsonIn)
 {
-   static std::string GetSaveRestoreDir()
+   ColorGradient::tGradient retVal;
+   ColorGradient::tGradientPoint point;
+
+   for(auto pointItr = jsonIn.begin(); pointItr != jsonIn.end(); ++pointItr)
    {
-      std::string saveRestoreDir = std::filesystem::current_path().native() + "/.specanledpi";
-      if(!std::filesystem::exists(saveRestoreDir))
-      {
-         std::filesystem::create_directory(saveRestoreDir);
-      }
-      return saveRestoreDir;
+      point.hue = (*pointItr)["hue"].asFloat();
+      point.saturation = (*pointItr)["saturation"].asFloat();
+      point.lightness = (*pointItr)["lightness"].asFloat();
+      point.position = (*pointItr)["position"].asFloat();
+      point.reach = (*pointItr)["reach"].asFloat();
+      retVal.push_back(point);
    }
-}
 
-//---------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------
-
-SaveRestore::Gradient::Gradient()
-{
-   m_saveRestoreDir = GetSaveRestoreDir();
-   m_latestFileSavePath = m_saveRestoreDir + "/" + LATEST_NAME;
-}
-
-
-std::vector<std::string> SaveRestore::Gradient::getAllFiles()
-{
-   std::vector<std::string> retVal;
-   for(const auto& entry : std::filesystem::directory_iterator(m_saveRestoreDir))
-   {
-      if(!std::filesystem::is_directory(entry.path()))
-      {
-         std::string filename = entry.path().filename();
-         if(filename != LATEST_NAME && filename != SETTINGS_NAME)
-         {
-            retVal.push_back(entry.path().native());
-         }
-      }
-   }
-   std::sort(retVal.begin(), retVal.end(), sortPathFunc);
    return retVal;
 }
 
-void SaveRestore::Gradient::splitNumFromName(std::string& fileName, std::string& namePart, int& numPart)
+static std::vector<ColorGradient::tGradient> jsonToGradVect(Json::Value& jsonIn)
 {
-   namePart = fileName;
-   numPart = 0;
-   int numX = 1;
-   while(namePart.size() > 0)
+   std::vector<ColorGradient::tGradient> retVal;
+
+   for(auto gradItr = jsonIn.begin(); gradItr != jsonIn.end(); ++gradItr)
    {
-      char ch = *(namePart.c_str()+namePart.size()-1);
-      if(ch >= '0' && ch <= '9')
+      retVal.push_back(jsonToGrad(*gradItr));
+   }
+
+   return retVal;
+}
+
+
+static Json::Value gradToJson(ColorGradient::tGradient& gradIn)
+{
+   Json::Value retVal;
+   for(size_t i = 0; i < gradIn.size(); ++i)
+   {
+      Json::Value point;
+      point["hue"] = gradIn[i].hue;
+      point["saturation"] = gradIn[i].saturation;
+      point["lightness"] = gradIn[i].lightness;
+      point["position"] = gradIn[i].position;
+      point["reach"] = gradIn[i].reach;
+
+      retVal[std::to_string(i)] = point;
+   }
+   return retVal;
+}
+
+static Json::Value gradVectToJson(std::vector<ColorGradient::tGradient>& gradsIn)
+{
+   Json::Value retVal;
+   for(size_t i = 0; i < gradsIn.size(); ++i)
+   {
+      retVal[std::to_string(i)] = gradToJson(gradsIn[i]);
+   }
+   return retVal;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+
+SaveRestoreJson::SaveRestoreJson()
+{
+}
+
+void SaveRestoreJson::save_gradient(ColorGradient::tGradient& gradToSave)
+{
+   std::unique_lock<std::mutex> lock(m_mutex); // Lock around all public functions (they will never call each other).
+
+   int currentIndex;
+   auto existingGrads = getAllGradients(currentIndex);
+
+   // Check if this gradient already exists (i.e. we don't want duplicates).
+   bool gradExists = false;
+   for(size_t i = 0; i < existingGrads.size(); ++i)
+   {
+      if(match(existingGrads[i], gradToSave))
       {
-         numPart += (numX * (int)(ch-'0'));
-         numX *= 10;
-         namePart.pop_back();
-      }
-      else
-      {
+         gradExists = true;
+         currentIndex = i;
          break;
       }
    }
-}
 
-bool SaveRestore::Gradient::sortPathFunc(std::string path0, std::string path1)
-{
-   auto p0 = std::filesystem::path(path0);
-   auto p1 = std::filesystem::path(path1);
+   // Read the settings json file.
+   Json::Value settingsJson;
+   getJson(SETTINGS_JSON, settingsJson);
 
-   std::string dir0 = p0.parent_path();
-   std::string dir1 = p1.parent_path();
-
-   if(dir0 != dir1)
+   if(!gradExists)
    {
-      return dir0 < dir1;
+      // Add the new gradient to the end.
+      auto userGrads = getUserGradients(settingsJson); // Just the user specified gradients.
+      userGrads.push_back(gradToSave);
+
+      // Update settings json with the new gradient.
+      settingsJson["user"] = gradVectToJson(userGrads);
+      settingsJson["grad_index"] = existingGrads.size(); // New one is being added to the end, so old size is the correct index.
    }
    else
    {
-      std::string fn0 = p0.filename();
-      std::string fn1 = p1.filename();
-      std::string name0, name1;
-      int num0, num1;
-      splitNumFromName(fn0, name0, num0);
-      splitNumFromName(fn1, name1, num1);
-
-      if(num0 == num1)
-      {
-         return name0 < name1;
-      }
-      else
-      {
-         return num0 < num1;
-      }
-   }
-}
-
-
-void SaveRestore::Gradient::save(ColorGradient::tGradient& gradToSave)
-{
-   bool saved = false;
-
-   // Check for match with existing file.
-   auto existing = getAllFiles();
-   for(auto& path : existing)
-   {
-      auto readGrad = read(path);
-      if(match(readGrad, gradToSave))
-      {
-         saved = true; // Already matchs a saved file. Exit loop
-      }
+      settingsJson["grad_index"] = currentIndex; // Make sure the index matches the gradient that matches the one passed in.
    }
 
-   if(!saved)
-   {
-      // Determine which number to use
-      std::string fileName = std::filesystem::path(existing[existing.size()-1]).filename();
-      std::string name;
-      int saveFileNum = 0;
-      splitNumFromName(fileName, name, saveFileNum);
-      saveFileNum++;
-
-      do
-      {
-         std::stringstream saveFileName;
-         saveFileName << m_saveRestoreDir << "/" << USER_SAVE_PREFIX << saveFileNum;
-         if(!std::filesystem::exists(saveFileName.str()))
-         {
-            write(saveFileName.str(), gradToSave);
-            setLatestPath(saveFileName.str());
-            saved = true;
-         }
-         saveFileNum++;
-      } while(!saved);
-   }
-
+   saveSettings(settingsJson); // Save off the changes.
 }
 
-ColorGradient::tGradient SaveRestore::Gradient::restore(int index)
-{
-   return restore(index, getAllFiles());
-}
-
-ColorGradient::tGradient SaveRestore::Gradient::restore()
-{
-   auto allFiles = getAllFiles();
-   auto latest = getLatestPath();
-   return restore(indexFromName(allFiles, latest), allFiles);
-}
-
-ColorGradient::tGradient SaveRestore::Gradient::restoreNext()
-{
-   auto allFiles = getAllFiles();
-   auto latest = getLatestPath();
-   return restore(indexFromName(allFiles, latest)+1, allFiles);
-}
-
-ColorGradient::tGradient SaveRestore::Gradient::restorePrev()
-{
-   auto allFiles = getAllFiles();
-   auto latest = getLatestPath();
-   return restore(indexFromName(allFiles, latest)-1, allFiles);
-}
-
-ColorGradient::tGradient SaveRestore::Gradient::deleteCurrent()
-{
-   auto latest = getLatestPath(); // Get this first.
-   auto retVal = restorePrev();   // Then change.
-
-   // Get 
-   std::string fileName = std::filesystem::path(latest).filename();
-   std::string prefix;
-   int dummyNum = 0;
-   splitNumFromName(fileName, prefix, dummyNum);
-   
-   // Only delete if the file was generated here (i.e. the prefix matches USER_SAVE_PREFIX)
-   if(std::filesystem::exists(latest) && prefix == USER_SAVE_PREFIX)
-   {
-      std::filesystem::remove(latest);
-   }
-
-   return retVal;
-}
-
-bool SaveRestore::Gradient::match(ColorGradient::tGradient& comp1, ColorGradient::tGradient& comp2)
+bool SaveRestoreJson::match(ColorGradient::tGradient& comp1, ColorGradient::tGradient& comp2)
 {
    bool retVal = false;
    if(comp1.size() == comp2.size())
@@ -227,169 +152,172 @@ bool SaveRestore::Gradient::match(ColorGradient::tGradient& comp1, ColorGradient
    return retVal;
 }
 
-std::string SaveRestore::Gradient::getLatestPath()
+ColorGradient::tGradient SaveRestoreJson::restore_gradient()
 {
-   std::string line = "";
-   if(std::filesystem::exists(m_latestFileSavePath))
-   {
-      std::ifstream readFile;
-      readFile.open(m_latestFileSavePath);
-      std::getline(readFile, line);
-      readFile.close();
-   }
-   return line;
+   return restoreGradient(0);
 }
 
-void SaveRestore::Gradient::setLatestPath(std::string latest)
+ColorGradient::tGradient SaveRestoreJson::restore_gradientNext()
 {
-   std::ofstream writeFile;
-   writeFile.open(m_latestFileSavePath);
-   writeFile << latest;
-   writeFile.close();
+   return restoreGradient(1);
 }
 
-int SaveRestore::Gradient::indexFromName(std::vector<std::string> filePaths, std::string fileName)
+ColorGradient::tGradient SaveRestoreJson::restore_gradientPrev()
 {
-   int matchingIndex = -1;
-   for(size_t i = 0; i < filePaths.size(); ++i)
-   {
-      if(filePaths[i] == fileName)
-      {
-         matchingIndex = i;
-         return matchingIndex;
-      }
-   }
-   return matchingIndex;
+   return restoreGradient(-1);
 }
 
-ColorGradient::tGradient SaveRestore::Gradient::restore(int index, std::vector<std::string> filePaths)
+ColorGradient::tGradient SaveRestoreJson::restoreGradient(int indexDelta)
 {
-   ColorGradient::tGradient retVal;
-   int numPaths = filePaths.size();
-   if(numPaths > 0)
-   {
-      index = index % numPaths;
-      if(index < 0)
-         index += numPaths;
-      assert(index >= 0 && index < numPaths);
-
-      if(index >= 0 && index < numPaths)
-      {
-         setLatestPath(filePaths[index]);
-         retVal = read(filePaths[index]);
-      }
-   }
-   return retVal;
-}
-
-ColorGradient::tGradient SaveRestore::Gradient::read(std::string filePath)
-{
-   std::unique_lock<std::mutex> lock(m_readWriteMutex);
+   std::unique_lock<std::mutex> lock(m_mutex); // Lock around all public functions (they will never call each other).
 
    ColorGradient::tGradient retVal;
-   ColorGradient::tGradientPoint newPoint;
+   int currentIndex = 0;
+   auto existingGrads = getAllGradients(currentIndex);
+   int existingGradsSize = existingGrads.size();
 
-   std::ifstream readFile;
-   std::string line;
-   readFile.open(filePath.c_str());
-   int numIndex = 0;
-   while(std::getline(readFile, line))
+   if(existingGradsSize > 0)
    {
-      std::istringstream iss(line);
-      float numVal;
-      if (!(iss >> numVal)) { break; } // error
+      // Update currentIndex and bound.
+      currentIndex += indexDelta;
+      if(currentIndex >= existingGradsSize)
+         currentIndex = 0;
+      else if(currentIndex < 0)
+         currentIndex = existingGradsSize-1;
 
-      switch(numIndex)
-      {
-         case 0:
-            newPoint.hue = numVal;
-         break;
-         case 1:
-            newPoint.saturation = numVal;
-         break;
-         case 2:
-            newPoint.lightness = numVal;
-         break;
-         case 3:
-            newPoint.reach = numVal;
-         break;
-         case 4:
-            newPoint.position = numVal;
-         break;
-      }
-      numIndex++;
-      if(numIndex >= 5)
-      {
-         retVal.push_back(newPoint);
-         numIndex = 0;
-      }
+      // Return the gradient.
+      retVal = existingGrads[currentIndex];
 
+      // Save the index to this gradient.
+      Json::Value settingsJson;
+      getJson(SETTINGS_JSON, settingsJson);
+      saveGradientIndex(settingsJson, currentIndex);
    }
-
-   readFile.close();
-   
    return retVal;
 }
 
-void SaveRestore::Gradient::write(std::string filePath, ColorGradient::tGradient toWrite)
+ColorGradient::tGradient SaveRestoreJson::delete_gradient()
 {
-   std::unique_lock<std::mutex> lock(m_readWriteMutex);
+   std::unique_lock<std::mutex> lock(m_mutex); // Lock around all public functions (they will never call each other).
 
-   std::stringstream ss;
-   for(const auto& point : toWrite)
+   int currentIndex = 0;
+   int numPresetGrads = 0;
+   auto existingGrads = getAllGradients(currentIndex, numPresetGrads);
+   int numExistings = existingGrads.size();
+
+   // Will be modifing the settings Json. Read it out here.
+   Json::Value settingsJson;
+   getJson(SETTINGS_JSON, settingsJson);
+
+   int toDeleteIndex = currentIndex - numPresetGrads; // Convert to index in the user specified gradients.
+   if(toDeleteIndex >= 0)
    {
-      ss << point.hue        << std::endl;
-      ss << point.saturation << std::endl;
-      ss << point.lightness  << std::endl;
-      ss << point.reach      << std::endl;
-      ss << point.position   << std::endl;
+      auto userGrads = getUserGradients(settingsJson); // Just the user specified gradients.
+
+      if(int(userGrads.size()) > toDeleteIndex)
+      {
+         userGrads.erase(userGrads.begin() + toDeleteIndex);
+      }
+
+      // Update to account for removed user gradient.
+      numExistings--;
+      
+      settingsJson["user"] = gradVectToJson(userGrads);
    }
-   std::ofstream writeFile;
-   writeFile.open(filePath.c_str());
-   writeFile << ss.str();
-   writeFile.close();
-}
 
-//---------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------
+   // Save off the new index and the updated user gradients (if one was actually removed).
+   currentIndex--;
+   if(currentIndex < 0)
+      currentIndex = numExistings-1;
+   saveGradientIndex(settingsJson, currentIndex); // Will save the index and the updated user gradients.
 
-
-SaveRestore::Settings::Settings()
-{
-   m_saveRestorePath = GetSaveRestoreDir() + "/" + SETTINGS_NAME;
-}
-
-void SaveRestore::Settings::save_displayIndex(int index)
-{
-   std::unique_lock<std::mutex> lock(m_readWriteMutex);
-
-   std::stringstream ss;
-   ss << index << std::endl;
-   
-   std::ofstream writeFile;
-   writeFile.open(m_saveRestorePath.c_str());
-   writeFile << ss.str();
-   writeFile.close();
-}
-
-int SaveRestore::Settings::restore_displayIndex()
-{
-   std::unique_lock<std::mutex> lock(m_readWriteMutex);
-
-   int retVal = -1;
-
-   std::ifstream readFile;
-   std::string line;
-   readFile.open(m_saveRestorePath.c_str());
-   if(std::getline(readFile, line))
-   {
-      std::istringstream iss(line);
-      iss >> retVal;
-   }
-   readFile.close();
-
+   // Return the previous gradient.
+   ColorGradient::tGradient retVal;
+   if(numExistings > 0 && currentIndex >= 0 && currentIndex < numExistings)
+      retVal = existingGrads[currentIndex];
    return retVal;
 }
+
+void SaveRestoreJson::saveGradientIndex(Json::Value& settingsJson, int index)
+{
+   settingsJson["grad_index"] = index;
+   saveSettings(settingsJson);
+}
+
+void SaveRestoreJson::saveSettings(Json::Value& settingsJson)
+{
+   std::ofstream writeFile;
+   writeFile.open(SETTINGS_JSON);
+   writeFile << settingsJson << std::endl;
+   writeFile.close();
+}
+
+
+void SaveRestoreJson::getJson(std::string pathToJson, Json::Value& jsonRetVal)
+{
+   std::ifstream inFile(pathToJson, std::ifstream::binary);
+   Json::Value presetJson;
+   try
+   {
+      inFile >> jsonRetVal;
+   }
+   catch(const std::exception& e)
+   {
+      //std::cerr << e.what() << '\n';
+   }
+   
+}
+
+std::vector<ColorGradient::tGradient> SaveRestoreJson::getAllGradients(int& currentIndex)
+{
+   int numPresetGrads = 0; // dummy
+   return getAllGradients(currentIndex, numPresetGrads);
+}
+
+std::vector<ColorGradient::tGradient> SaveRestoreJson::getAllGradients(int& currentIndex, int& numPresetGrads)
+{
+   Json::Value presetJson;
+   getJson(PRESET_GRADIENT_JSON, presetJson);
+   auto presetGrads = jsonToGradVect(presetJson);
+   numPresetGrads = presetGrads.size();
+
+   Json::Value settingsJson;
+   getJson(SETTINGS_JSON, settingsJson);
+   auto userGrads = getUserGradients(settingsJson);
+
+   currentIndex = settingsJson["grad_index"].asInt();
+
+   std::vector<ColorGradient::tGradient> allGrads;
+   allGrads.insert(allGrads.end(), presetGrads.begin(), presetGrads.end());
+   allGrads.insert(allGrads.end(), userGrads.begin(), userGrads.end());
+
+   return allGrads;
+}
+
+
+std::vector<ColorGradient::tGradient> SaveRestoreJson::getUserGradients(Json::Value& settingsJson)
+{
+   return jsonToGradVect(settingsJson["user"]);;
+}
+
+void SaveRestoreJson::save_displayIndex(int index)
+{
+   std::unique_lock<std::mutex> lock(m_mutex); // Lock around all public functions (they will never call each other).
+
+   Json::Value settingsJson;
+   getJson(SETTINGS_JSON, settingsJson);
+   settingsJson["display_index"] = index;
+   saveSettings(settingsJson);
+}
+
+int SaveRestoreJson::restore_displayIndex()
+{
+   std::unique_lock<std::mutex> lock(m_mutex); // Lock around all public functions (they will never call each other).
+
+   Json::Value settingsJson;
+   getJson(SETTINGS_JSON, settingsJson);
+
+   int retVal = settingsJson["display_index"].asInt();
+   return retVal;
+}
+

@@ -1,0 +1,161 @@
+{
+	"0_xmas" : 
+	{
+		"0" : 
+		{
+			"hue" : 0.341,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.207813,
+			"position" : 0.0
+		},
+		"1" : 
+		{
+			"hue" : 0.4,
+			"saturation" : 0.0,
+			"lightness" : 1.0,
+			"reach" : 0.00781251,
+			"position" : 0.365686
+		},
+		"2" : 
+		{
+			"hue" : 0,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.3,
+			"position" : 1.0
+		}
+	},
+	"1_xmas" : 
+	{
+		"0" : 
+		{
+			"hue" : 0,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.207813,
+			"position" : 0.0
+		},
+		"1" : 
+		{
+			"hue" : 0.4,
+			"saturation" : 0.0,
+			"lightness" : 1.0,
+			"reach" : 0.00781251,
+			"position" : 0.365686
+		},
+		"2" : 
+		{
+			"hue" : 0.341,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.3,
+			"position" : 1.0
+		}
+	},
+	"2_halloween" : 
+	{
+		"0" : 
+		{
+			"hue" : 0.312999,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.2,
+			"position" : 0.0
+		},
+		"1" : 
+		{
+			"hue" : 0.0480003,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.138281,
+			"position" : 0.361719
+		},
+		"2" : 
+		{
+			"hue" : 0.712,
+			"saturation" : 0.0,
+			"lightness" : 1.0,
+			"reach" : 0.0078125,
+			"position" : 0.56875
+		},
+		"3" : 
+		{
+			"hue" : 0.718,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.207813,
+			"position" : 1.0
+		}
+	},
+	"3_merica" : 
+	{
+		"0" : 
+		{
+			"hue" : 0.65,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.207813,
+			"position" : 0.0
+		},
+		"1" : 
+		{
+			"hue" : 0.4,
+			"saturation" : 0.0,
+			"lightness" : 1.0,
+			"reach" : 0.00781251,
+			"position" : 0.365686
+		},
+		"2" : 
+		{
+			"hue" : 0.0,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.3,
+			"position" : 1.0
+		}
+	},
+	"4_rainbow" : 
+	{
+		"0" : 
+		{
+			"hue" : 0.741,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.0078125,
+			"position" : 0.0
+		},
+		"1" : 
+		{
+			"hue" : 0.691,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.0078125,
+			"position" : 0.119531
+		},
+		"2" : 
+		{
+			"hue" : 0.35,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.0078125,
+			"position" : 0.373498
+		},
+		"3" : 
+		{
+			"hue" : 0.25,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.0078125,
+			"position" : 0.596936
+		},
+		"4" : 
+		{
+			"hue" : 0,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.124099,
+			"position" : 1.0
+		}
+	}	
+}
