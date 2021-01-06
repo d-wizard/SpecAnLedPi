@@ -25,7 +25,13 @@
 class AudioDisplayFft : public AudioDisplayBase
 {
 public:
-   AudioDisplayFft(size_t sampleRate, size_t fftSize, size_t numDisplayPoints);
+   typedef enum
+   {
+      E_GRADIENT_MAG,   // The position on the gradient indications the magnatude.
+      E_BRIGHTNESS_MAG  // The brighness indications the magnatude. The color of each LED is constant.
+   }eFftColorDisplay;
+
+   AudioDisplayFft(size_t sampleRate, size_t fftSize, size_t numDisplayPoints, eFftColorDisplay colorDisplay);
 
 private:
    // Make uncopyable
@@ -42,4 +48,6 @@ private:
    std::unique_ptr<FftModifier> m_fftModifier;
 
    SpecAnLedTypes::tFftVector* m_fftResult = nullptr;
+
+   eFftColorDisplay m_brightDisplayType;
 };

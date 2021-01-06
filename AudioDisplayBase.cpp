@@ -26,7 +26,8 @@ AudioDisplayBase::AudioDisplayBase(size_t frameSize, size_t numDisplayPoints, fl
    m_displayPoints(numDisplayPoints),
    m_numDisplayPoints(numDisplayPoints),
    m_numNonBlackPoints(numDisplayPoints),
-   m_firstLedBrightness(firstLedBrightness)
+   m_firstLedBrightness(firstLedBrightness),
+   m_pointsBrightness(numDisplayPoints, 1.0) // Init to no modification of brightness for all Display Points
 {
 
 }
@@ -58,7 +59,7 @@ void AudioDisplayBase::fillInLeds(SpecAnLedTypes::tRgbVector& ledColors, float b
    std::unique_lock<std::mutex> lock(m_colorScaleMutex);
    for(size_t i = 0; i < m_numNonBlackPoints; ++i)
    {
-      ledColors[i] = m_colorScale->getColor(m_displayPoints[i], brightness);
+      ledColors[i] = m_colorScale->getColor(m_displayPoints[i], brightness * m_pointsBrightness[i]);
    }
    for(size_t i = m_numNonBlackPoints; i < m_numDisplayPoints; ++i)
    {
@@ -71,7 +72,7 @@ void AudioDisplayBase::fillInLeds(SpecAnLedTypes::tRgbVector& ledColors, float b
    {
       for(int i = 0; i < overridePoints_num; ++i)
       {
-         ledColors[i+m_overrideStart] = m_colorScale->getColor(m_overridePoints[i], brightness);
+         ledColors[i+m_overrideStart] = m_colorScale->getColor(m_overridePoints[i], brightness * m_pointsBrightness[i]);
       }
    }
 }

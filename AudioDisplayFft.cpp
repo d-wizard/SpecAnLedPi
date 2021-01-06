@@ -16,13 +16,15 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#include <math.h>
 #include "AudioDisplayFft.h"
 
 
 
-AudioDisplayFft::AudioDisplayFft(size_t sampleRate, size_t frameSize, size_t numDisplayPoints):
-   AudioDisplayBase(frameSize, numDisplayPoints),
-   m_fftResult(nullptr)
+AudioDisplayFft::AudioDisplayFft(size_t sampleRate, size_t frameSize, size_t numDisplayPoints, eFftColorDisplay colorDisplay):
+   AudioDisplayBase(frameSize, numDisplayPoints, colorDisplay == E_BRIGHTNESS_MAG ? 1.0 : 0.0),
+   m_fftResult(nullptr),
+   m_brightDisplayType(colorDisplay)
 {
    // FFT Stuff
    m_fftRun.reset(new FftRunRate(sampleRate, frameSize, 150.0));
@@ -36,7 +38,7 @@ AudioDisplayFft::AudioDisplayFft(size_t sampleRate, size_t frameSize, size_t num
    mod.attenLowFreqs = true;
    mod.attenLowStartLevel = 0.2;
    mod.attenLowStopFreq = 6000;
-   mod.fadeAwayAmount = 15;
+   mod.fadeAwayAmount = (colorDisplay == E_BRIGHTNESS_MAG ? 50 : 30);
    m_fftModifier.reset(new FftModifier(sampleRate, frameSize, numDisplayPoints, mod));
 
 }
@@ -54,12 +56,28 @@ void AudioDisplayFft::fillInDisplayPoints(int gain)
       gain *= 6;
       m_fftModifier->modify(m_fftResult->data());
 
-      for(size_t i = 0 ; i < m_numDisplayPoints; ++i)
+      if(m_brightDisplayType == E_GRADIENT_MAG)
       {
-         int32_t ledVal = (int32_t)m_fftResult->data()[i]*gain;
-         if(ledVal > 0xFFFF)
-            ledVal = 0xFFFF;
-         m_displayPoints[i] = ledVal;
+         for(size_t i = 0 ; i < m_numDisplayPoints; ++i)
+         {
+            int32_t ledVal = (int32_t)m_fftResult->data()[i]*gain;
+            if(ledVal > 0xFFFF)
+               ledVal = 0xFFFF;
+            m_displayPoints[i] = ledVal;
+         }
+      }
+      else // E_BRIGHTNESS_MAG
+      {
+         for(size_t i = 0 ; i < m_numDisplayPoints; ++i)
+         {
+            int32_t brightVal = (int32_t)m_fftResult->data()[i]*gain;
+            if(brightVal > 0x10000)
+               brightVal = 0x10000;
+            m_pointsBrightness[i] = float(brightVal) / float(0x10000);
+            m_pointsBrightness[i] = pow(m_pointsBrightness[i], 1.8); // reduce smaller brightness values much more the higher brightness value to give a bigger distinction, since brightness is the only indicator.
+
+            m_displayPoints[i] = (0xFFFF * i + ((m_numDisplayPoints-1)>>1)) / (m_numDisplayPoints-1);
+         }
       }
    }
    m_fftResult = nullptr;

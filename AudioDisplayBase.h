@@ -65,5 +65,6 @@ protected:
    std::unique_ptr<ColorScale> m_colorScale;
    std::mutex m_colorScaleMutex;
 
-   
+   // Brightness modifier.
+   std::vector<float> m_pointsBrightness;
 };
