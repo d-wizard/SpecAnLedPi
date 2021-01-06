@@ -20,13 +20,13 @@
 #include <cmath>
 #include "AudioDisplayAmplitude.h"
 
-AudioDisplayAmp::AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, eAmpDisplayType displayType, float fadeAwayFactor, float peakFadeAwayFactor):
-   AudioDisplayBase(frameSize, numDisplayPoints, displayType == E_PEAK_SAME ? 1.0 : 0.5),
+AudioDisplayAmp::AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, eAmpDisplayType displayType, float gradient_fadeAwayFactor, float peak_fadeAwayFactor):
+   AudioDisplayBase(frameSize, numDisplayPoints, displayType == E_MAX_SAME ? 1.0 : 0.5),
    m_displayType(displayType),
-   m_fadeAwayFactor(fadeAwayFactor),
-   m_addPeak(peakFadeAwayFactor > 0.0),
-   m_peakFadeFactorStart(peakFadeAwayFactor),
-   m_peakFadeFactorCurrent(peakFadeAwayFactor)
+   m_grad_fadeAwayFactor(gradient_fadeAwayFactor),
+   m_addPeak(peak_fadeAwayFactor > 0.0),
+   m_peak_fadeFactorStart(peak_fadeAwayFactor),
+   m_peak_fadeFactorCurrent(peak_fadeAwayFactor)
 {
    if(m_addPeak)
    {
@@ -36,14 +36,14 @@ AudioDisplayAmp::AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, eAmp
 
 bool AudioDisplayAmp::processPcm(const SpecAnLedTypes::tPcmSample* samples)
 {
-   int peak = 0;
+   int maxSamp = 0;
    for(size_t i = 0; i < m_frameSize; ++i)
    {
       auto mag = std::abs(samples[i]);
-      if(mag > peak)
-         peak = mag;
+      if(mag > maxSamp)
+         maxSamp = mag;
    }
-   m_measuredPeak = peak;
+   m_maxAudioPcmSample = maxSamp;
    return true;
 }
 
@@ -51,30 +51,30 @@ void AudioDisplayAmp::fillInDisplayPoints(int gain)
 {
    constexpr int NoColorMin = -2;
    const int numLeds = m_displayPoints.size();
-   const int maxIndex = numLeds-1;
+   const int maxLedIndex = numLeds-1;
 
-   // Use the most recent peak to determine 
-   int newPeakLed = m_measuredPeak * gain * numLeds;
-   newPeakLed >>= 17;
-   if(newPeakLed > maxIndex)
-      newPeakLed = maxIndex;
-   else if(newPeakLed <= 0)
-      newPeakLed = NoColorMin; // Make silence display nothing.
+   // Use the most recent gradient max.
+   int newGradMaxLed = m_maxAudioPcmSample * gain * numLeds;
+   newGradMaxLed >>= 17; // Scale down to keep within bounds.
+   if(newGradMaxLed > maxLedIndex)
+      newGradMaxLed = maxLedIndex;
+   else if(newGradMaxLed <= 0)
+      newGradMaxLed = NoColorMin; // Make silence display nothing.
 
-   // Fade away the current LED value.
-   m_ledToUse -= m_fadeAwayFactor;
-   if(m_ledToUse < NoColorMin)
-      m_ledToUse = NoColorMin;
+   // Fade away the current Gradient Max LED Position value.
+   m_grad_maxPosition -= m_grad_fadeAwayFactor;
+   if(m_grad_maxPosition < NoColorMin)
+      m_grad_maxPosition = NoColorMin;
 
-   // Check for new peak.
-   if(newPeakLed > m_ledToUse)
-      m_ledToUse = newPeakLed;
+   // Check if new value is higher than the "faded-away" version of the Gradient Max LED Position value.
+   if(newGradMaxLed > m_grad_maxPosition)
+      m_grad_maxPosition = newGradMaxLed;
 
-   int peakLed = m_ledToUse;
+   int grad_maxLedPosition = m_grad_maxPosition;
 
    // Determine how to display the amplitude (default to E_SCALE)
    int delta = 0;
-   int divisor = peakLed;
+   int divisor = grad_maxLedPosition;
    uint16_t peakFadeColor = 0;
    bool useSavedPeakForLowerValues = false;
    switch(m_displayType)
@@ -82,19 +82,19 @@ void AudioDisplayAmp::fillInDisplayPoints(int gain)
       case E_SCALE:
       default:
          delta = 0;
-         divisor = peakLed;
+         divisor = grad_maxLedPosition;
          peakFadeColor = 0xFFFF;
       break;
       case E_MIN_SAME:
          delta = 0;
-         divisor = maxIndex;
-         if(peakLed >= 0)
-            peakFadeColor = ((peakLed+delta) * 0xFFFF) / divisor;
+         divisor = maxLedIndex;
+         if(grad_maxLedPosition >= 0)
+            peakFadeColor = ((grad_maxLedPosition+delta) * 0xFFFF) / divisor;
          useSavedPeakForLowerValues = true;
       break;
-      case E_PEAK_SAME:
-         delta = maxIndex - peakLed;
-         divisor = maxIndex;
+      case E_MAX_SAME:
+         delta = maxLedIndex - grad_maxLedPosition;
+         divisor = maxLedIndex;
          peakFadeColor = 0;
       break;
    }
@@ -103,44 +103,44 @@ void AudioDisplayAmp::fillInDisplayPoints(int gain)
    if(divisor < 1)
       divisor = 1;
 
-   for(int i = 0; i <= peakLed; ++i)
+   for(int i = 0; i <= grad_maxLedPosition; ++i)
    {
       m_displayPoints[i] = ((i+delta) * 0xFFFF) / divisor;
    }
-   m_numNonBlackPoints = peakLed < 0 ? 0 : peakLed+1;
+   m_numNonBlackPoints = grad_maxLedPosition < 0 ? 0 : grad_maxLedPosition+1;
 
    if(m_addPeak)
    {
-      m_ledToUsePeak -= m_peakFadeFactorCurrent;
-      if(m_ledToUse > m_ledToUsePeak)
+      m_peak_position -= m_peak_fadeFactorCurrent;
+      if(m_grad_maxPosition > m_peak_position)
       {
          // Reset 
-         m_peakFadeFactorCurrent = m_peakFadeFactorStart;
-         m_ledToUsePeak = m_ledToUse;
+         m_peak_fadeFactorCurrent = m_peak_fadeFactorStart;
+         m_peak_position = m_grad_maxPosition;
 
          if(useSavedPeakForLowerValues)
          {
-            m_savedPeakFadeColor = peakFadeColor;
+            m_peak_savedFadeColor = peakFadeColor;
          }
       }
       if(!useSavedPeakForLowerValues)
       {
-         m_savedPeakFadeColor = peakFadeColor;
+         m_peak_savedFadeColor = peakFadeColor;
       }
 
-      if(m_ledToUsePeak < NoColorMin)
-         m_ledToUsePeak = NoColorMin;
+      if(m_peak_position < NoColorMin)
+         m_peak_position = NoColorMin;
       
-      int desiredPeakLed = m_ledToUsePeak + 0.5;
-      if(desiredPeakLed == peakLed && peakLed < maxIndex)
+      int desiredPeakLed = m_peak_position + 0.5;
+      if(desiredPeakLed == grad_maxLedPosition && grad_maxLedPosition < maxLedIndex)
          desiredPeakLed++;
 
       // Define where the peak color and where it will go.
-      m_overridePoints[0] = m_savedPeakFadeColor;
+      m_overridePoints[0] = m_peak_savedFadeColor;
       m_overrideStart = desiredPeakLed;
 
       // Accelerate the Fade down of the peak.
-      m_peakFadeFactorCurrent += (m_peakFadeFactorStart*0.03);
+      m_peak_fadeFactorCurrent += (m_peak_fadeFactorStart*0.03);
    }
 }
 
