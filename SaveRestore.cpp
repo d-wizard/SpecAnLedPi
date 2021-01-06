@@ -217,12 +217,11 @@ ColorGradient::tGradient SaveRestoreJson::delete_gradient()
       if(int(userGrads.size()) > toDeleteIndex)
       {
          userGrads.erase(userGrads.begin() + toDeleteIndex);
+         
+         // Update to account for removed user gradient.
+         numExistings--;
+         settingsJson["user"] = gradVectToJson(userGrads);
       }
-
-      // Update to account for removed user gradient.
-      numExistings--;
-      
-      settingsJson["user"] = gradVectToJson(userGrads);
    }
 
    // Save off the new index and the updated user gradients (if one was actually removed).
