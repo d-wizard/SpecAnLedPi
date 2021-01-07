@@ -36,9 +36,22 @@ public:
       E_MAX_SAME
    }eAmpDisplayType;
    
-   AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, eAmpDisplayType displayType, float gradient_fadeAwayFactor, float peak_fadeAwayFactor = 0.0);
+   typedef enum
+   {
+      E_PEAK_NONE,
+      E_PEAK_GRAD_MAX,
+      E_PEAK_GRAD_MIN,
+      E_PEAK_GRAD_MID_CONST,
+      E_PEAK_GRAD_MID_CHANGE
+   }ePeakType;
+   
+   AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, eAmpDisplayType displayType, float gradient_fadeAwayFactor, ePeakType peakType = E_PEAK_NONE);
 
 private:
+   static constexpr int NO_COLOR_MIN_INDEX = -2; // Set to 2 less than mininum valid index (0). This is to ensure that if a peak is used it will also be able to be less than 0.
+   const int NUM_LEDS;
+   const int MAX_LED_INDEX;
+
    // Make uncopyable
    AudioDisplayAmp();
    AudioDisplayAmp(AudioDisplayAmp const&);
@@ -48,13 +61,15 @@ private:
 
    void fillInDisplayPoints(int gain) override;
 
+   void fillInPeak();
+
    eAmpDisplayType m_displayType = E_SCALE;
    int m_maxAudioPcmSample = 0;
 
    float m_grad_fadeAwayFactor = 0;
    float m_grad_maxPosition = 0;
 
-   bool m_addPeak = false;
+   ePeakType m_peak_type = E_PEAK_NONE;
    float m_peak_fadeFactorStart = 0;
    float m_peak_fadeFactorCurrent = 0;
    float m_peak_position = 0;

@@ -56,9 +56,9 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    m_buttonMonitor_thread = std::thread(&AudioLeds::buttonMonitorFunc, this);
 
    // Set the Audio Displays (do this before creating the thread)
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_SCALE,     0.7, 0.03));
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_MIN_SAME,  0.7, 0.03));
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_MAX_SAME, 0.7, 0.03));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_SCALE,    0.7, AudioDisplayAmp::E_PEAK_GRAD_MAX));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_MIN_SAME, 0.7, AudioDisplayAmp::E_PEAK_GRAD_MID_CONST));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, ledStrip->getNumLeds(), AudioDisplayAmp::E_MAX_SAME, 0.7, AudioDisplayAmp::E_PEAK_GRAD_MIN));
    m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, ledStrip->getNumLeds(), AudioDisplayFft::E_GRADIENT_MAG));
    m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, ledStrip->getNumLeds(), AudioDisplayFft::E_BRIGHTNESS_MAG));
 
