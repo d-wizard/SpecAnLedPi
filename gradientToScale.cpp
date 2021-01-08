@@ -31,8 +31,8 @@ static HsvColor gradientToHsv(ColorGradient::tGradientPoint grad)
    return hsv;
 }
 
-void convertGradientToScale( std::vector<ColorGradient::tGradientPoint>& gradPoints, 
-                              std::vector<ColorScale::tColorPoint>& colorPoints )
+void convertGradientToScale( ColorGradient::tGradient& gradPoints, 
+                             std::vector<ColorScale::tColorPoint>& colorPoints )
 {
    // Color Points.
    colorPoints.resize(gradPoints.size()*2);
@@ -91,6 +91,20 @@ SpecAnLedTypes::tRgbColor convertGradientPointToRGB(ColorGradient::tGradientPoin
    retVal.rgb.r = rgb.r;
    retVal.rgb.g = rgb.g;
    retVal.rgb.b = rgb.b;
+   return retVal;
+}
+
+ColorGradient::tGradient reverseGradient(ColorGradient::tGradient& in)
+{
+   ColorGradient::tGradient retVal(in.size());
+   int maxIndex = in.size()-1;
+   for(int i = 0; i <= maxIndex; ++i)
+   {
+      auto& pointOut = retVal[maxIndex-i];
+      pointOut = in[i];
+      pointOut.position = 1.0 - pointOut.position;
+   }
+
    return retVal;
 }
 

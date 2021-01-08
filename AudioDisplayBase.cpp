@@ -32,11 +32,19 @@ AudioDisplayBase::AudioDisplayBase(size_t frameSize, size_t numDisplayPoints, fl
 
 }
 
-void AudioDisplayBase::setGradient(ColorGradient::tGradient& gradient)
+void AudioDisplayBase::setGradient(ColorGradient::tGradient& gradient, bool reverseGrad)
 {
    // Convert input gradient and set brightness.
    std::vector<ColorScale::tColorPoint> colors;
-   Convert::convertGradientToScale(gradient, colors);
+   if(reverseGrad)
+   {
+      auto revGrad = Convert::reverseGradient(gradient);
+      Convert::convertGradientToScale(revGrad, colors);
+   }
+   else
+   {
+      Convert::convertGradientToScale(gradient, colors);
+   }
    std::vector<ColorScale::tBrightnessPoint> brightPoints{{m_firstLedBrightness,0},{1,1}}; // Scale brightness.
 
    // Set the member variable for defining LED colors.

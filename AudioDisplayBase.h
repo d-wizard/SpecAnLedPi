@@ -32,7 +32,7 @@ class AudioDisplayBase
 public:
    AudioDisplayBase(size_t frameSize, size_t numDisplayPoints, float firstLedBrightness = 0.0);
 
-   void setGradient(ColorGradient::tGradient& gradient);
+   void setGradient(ColorGradient::tGradient& gradient, bool reverseGrad);
 
    size_t getFrameSize(){return m_frameSize;}
 

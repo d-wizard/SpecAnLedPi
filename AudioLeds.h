@@ -41,6 +41,7 @@ public:
               std::shared_ptr<LedStrip> ledStrip, 
               std::shared_ptr<RotaryEncoder> cycleGrads,
               std::shared_ptr<RotaryEncoder> cycleDisplays,
+              std::shared_ptr<RotaryEncoder> reverseGrad,
               std::shared_ptr<RotaryEncoder> deleteButton,
               std::shared_ptr<RotaryEncoder> leftButton,
               std::shared_ptr<RotaryEncoder> rightButton,
@@ -88,10 +89,12 @@ private:
    std::shared_ptr<LedStrip> m_ledStrip;
    SpecAnLedTypes::tRgbVector m_ledColors;
    ColorGradient::tGradient m_currentGradient;
+   bool m_reverseGrad = false;
 
    // Knobs and Buttons
    std::shared_ptr<RotaryEncoder> m_cycleGrads;
    std::shared_ptr<RotaryEncoder> m_cycleDisplays;
+   std::shared_ptr<RotaryEncoder> m_reverseGradToggle;
    std::shared_ptr<RotaryEncoder> m_deleteButton;
    std::shared_ptr<RotaryEncoder> m_leftButton;
    std::shared_ptr<RotaryEncoder> m_rightButton;

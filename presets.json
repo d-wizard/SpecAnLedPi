@@ -26,33 +26,6 @@
 			"position" : 1.0
 		}
 	},
-	"1_xmas" : 
-	{
-		"0" : 
-		{
-			"hue" : 0,
-			"saturation" : 1.0,
-			"lightness" : 1.0,
-			"reach" : 0.207813,
-			"position" : 0.0
-		},
-		"1" : 
-		{
-			"hue" : 0.4,
-			"saturation" : 0.0,
-			"lightness" : 1.0,
-			"reach" : 0.00781251,
-			"position" : 0.365686
-		},
-		"2" : 
-		{
-			"hue" : 0.341,
-			"saturation" : 1.0,
-			"lightness" : 1.0,
-			"reach" : 0.3,
-			"position" : 1.0
-		}
-	},
 	"2_halloween" : 
 	{
 		"0" : 

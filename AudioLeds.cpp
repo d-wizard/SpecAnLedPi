@@ -33,6 +33,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
                       std::shared_ptr<LedStrip> ledStrip, 
                       std::shared_ptr<RotaryEncoder> cycleGrads,
                       std::shared_ptr<RotaryEncoder> cycleDisplays,
+                      std::shared_ptr<RotaryEncoder> reverseGrad,
                       std::shared_ptr<RotaryEncoder> deleteButton,
                       std::shared_ptr<RotaryEncoder> leftButton,
                       std::shared_ptr<RotaryEncoder> rightButton,
@@ -45,6 +46,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    m_currentGradient(colorGrad->getGradient()),
    m_cycleGrads(cycleGrads),
    m_cycleDisplays(cycleDisplays),
+   m_reverseGradToggle(reverseGrad),
    m_deleteButton(deleteButton),
    m_leftButton(leftButton),
    m_rightButton(rightButton),
@@ -74,7 +76,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
       m_activeAudioDisplayIndex = restoredDisplayIndex;
 
    // Make sure the first display gets set for the current gradient.
-   m_audioDisplays[m_activeAudioDisplayIndex]->setGradient(m_currentGradient);
+   m_audioDisplays[m_activeAudioDisplayIndex]->setGradient(m_currentGradient, m_reverseGrad);
 
    // Create the processing thread.
    m_pcmProc_buff.reserve(5000);
@@ -148,6 +150,14 @@ void AudioLeds::buttonMonitorFunc()
          loadNewGrad = true;
       }
 
+      // Check if the user want to reverse the gradient (use rotary and button).
+      if(m_reverseGradToggle->checkRotation() != RotaryEncoder::E_NO_CHANGE || m_reverseGradToggle->checkButton(true))
+      {
+         newGrad = m_currentGradient;
+         m_reverseGrad = !m_reverseGrad;
+         loadNewGrad = true;
+      }
+
       // Check if the user wants to remove a gradient.
       if(m_deleteButton->checkButton() == RotaryEncoder::E_DOUBLE_CLICK)
       {
@@ -160,7 +170,7 @@ void AudioLeds::buttonMonitorFunc()
       {
          loadNewGrad = false;
          m_currentGradient = newGrad;
-         m_audioDisplays[m_activeAudioDisplayIndex]->setGradient(m_currentGradient);
+         m_audioDisplays[m_activeAudioDisplayIndex]->setGradient(m_currentGradient, m_reverseGrad);
       }
 
 

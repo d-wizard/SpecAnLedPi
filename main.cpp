@@ -241,6 +241,7 @@ static void thisAppForeverFunction()
          rotaries.clear();
          rotaries.push_back(hueRotary);
          rotaries.push_back(ledSelected);
+         rotaries.push_back(posRotary);
          rotaryEncPollThreadActive = true;
          checkRotaryThread.reset(new std::thread(RotaryUpdateFunction));
 
@@ -250,6 +251,7 @@ static void thisAppForeverFunction()
             ledStrip,
             hueRotary,
             ledSelected,
+            posRotary,
             rightButton,
             leftButton,
             rightButton,
