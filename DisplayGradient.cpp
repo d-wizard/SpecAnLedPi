@@ -20,7 +20,7 @@
 #include <thread>
 #include "DisplayGradient.h"
 #include "gradientToScale.h"
-
+#include "Transform1D.h"
 
 
 DisplayGradient::DisplayGradient(std::shared_ptr<ColorGradient> grad, std::shared_ptr<LedStrip> ledStrip, std::shared_ptr<PotentiometerKnob> brightKnob):
@@ -37,7 +37,7 @@ void DisplayGradient::fillInLedStrip(int onlyColorToShow, float constBrightnessL
    auto numLeds = m_ledStrip->getNumLeds();
    m_ledColors.resize(numLeds);
    auto gradVect = m_grad->getGradient();
-   float brightnessPot = m_brightKnob->getFlt();
+   float brightnessPot = Transform1D::Unit::quarterCircle_below(m_brightKnob->getFlt()); // Use the quarterCircle_below transform to provide more resolution at lower brightness levels.
 
    // Force brightness level, if specified.
    if(constBrightnessLevel >= 0.0 && constBrightnessLevel <= 1.0)

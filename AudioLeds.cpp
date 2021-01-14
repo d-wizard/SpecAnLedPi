@@ -20,6 +20,7 @@
 #include "AudioLeds.h"
 #include "colorGradient.h"
 #include "ThreadPriorities.h"
+#include "Transform1D.h"
 
 // Audio Stuff
 #define SAMPLE_RATE (44100)
@@ -235,8 +236,9 @@ void AudioLeds::pcmProcFunc()
          // Send the samples to the Audio Display to generate the LED Colors.
          if(audioDisplay->parsePcm(samples.data(), numSamp))
          {
-            float brightness = m_brightKnob->getFlt();
+            float brightness = Transform1D::Unit::quarterCircle_below(m_brightKnob->getFlt()); // Use the quarterCircle_below transform to provide more resolution at lower brightness levels.
             auto gain = m_gainKnob->getInt();
+
             audioDisplay->fillInLeds(m_ledColors, brightness, gain);
             m_ledStrip->set(m_ledColors);
          }
