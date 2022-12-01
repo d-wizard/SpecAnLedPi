@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -39,7 +39,8 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
                       std::shared_ptr<RotaryEncoder> leftButton,
                       std::shared_ptr<RotaryEncoder> rightButton,
                       std::shared_ptr<PotentiometerKnob> brightKnob,
-                      std::shared_ptr<PotentiometerKnob> gainKnob ) :
+                      std::shared_ptr<PotentiometerKnob> gainKnob,
+                      std::shared_ptr<RemoteControl> remoteCtrl ) :
    m_activeAudioDisplayIndex(0),
    m_saveRestore(saveRestore),
    m_ledStrip(ledStrip),
@@ -52,9 +53,11 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    m_leftButton(leftButton),
    m_rightButton(rightButton),
    m_brightKnob(brightKnob),
-   m_gainKnob(gainKnob)
+   m_gainKnob(gainKnob),
+   m_remoteCtrl(remoteCtrl)
 {
    // Create the Button / Rotary Enocoder monitoring thread.
+   m_remoteCtrl->clear(); // Clear out any previously stored commands.
    m_buttonMonitorThread_active = true;
    m_buttonMonitor_thread = std::thread(&AudioLeds::buttonMonitorFunc, this);
 
@@ -127,18 +130,18 @@ void AudioLeds::buttonMonitorFunc()
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
       // Check if the user wants to change the color gradient.
-      auto changeGrad = m_cycleGrads->checkRotation();
-      if(changeGrad != RotaryEncoder::E_NO_CHANGE)
+      auto changeGrad = checkForChange(m_cycleGrads->checkRotation(), m_remoteCtrl->checkGradientChange()); // Check both the rotary and remote control.
+      if(changeGrad != SpecAnLedTypes::eDirection::E_DIRECTION_NO_CHANGE)
       {
-         newGrad = (changeGrad == RotaryEncoder::E_FORWARD ? m_saveRestore->restore_gradientNext() : m_saveRestore->restore_gradientPrev());
+         newGrad = (changeGrad == SpecAnLedTypes::eDirection::E_DIRECTION_POS ? m_saveRestore->restore_gradientNext() : m_saveRestore->restore_gradientPrev());
          loadNewGrad = true;
       }
 
       // Check if the user wants to change the Audio Display.
-      auto changeDisplay = m_cycleDisplays->checkRotation();
-      if(changeDisplay != RotaryEncoder::E_NO_CHANGE)
+      auto changeDisplay = checkForChange(m_cycleDisplays->checkRotation(), m_remoteCtrl->checkDisplayChange()); // Check both the rotary and remote control.
+      if(changeDisplay != SpecAnLedTypes::eDirection::E_DIRECTION_NO_CHANGE)
       {
-         int delta = (changeDisplay == RotaryEncoder::E_FORWARD ? 1 : -1);
+         int delta = (changeDisplay == SpecAnLedTypes::eDirection::E_DIRECTION_POS ? 1 : -1);
          int max = m_audioDisplays.size();
          int newIndex = m_activeAudioDisplayIndex + delta;
          if(newIndex < 0) newIndex = max-1;
@@ -152,7 +155,9 @@ void AudioLeds::buttonMonitorFunc()
       }
 
       // Check if the user want to reverse the gradient (use rotary and button).
-      if(m_reverseGradToggle->checkRotation() != RotaryEncoder::E_NO_CHANGE || m_reverseGradToggle->checkButton(true))
+      bool rotaryToggleGrad = m_reverseGradToggle->checkRotation() != RotaryEncoder::E_NO_CHANGE || m_reverseGradToggle->checkButton(true);
+      bool remoteToggleGrad = m_remoteCtrl->checkReverseGradientToggle();
+      if(rotaryToggleGrad || remoteToggleGrad)
       {
          newGrad = m_currentGradient;
          m_reverseGrad = !m_reverseGrad;
@@ -256,4 +261,27 @@ void AudioLeds::alsaMicSamples(void* usrPtr, int16_t* samples, size_t numSamp)
    _this->m_pcmProc_buff.resize(origSize+numSamp);
    memcpy(&_this->m_pcmProc_buff[origSize], samples, numSamp*sizeof(samples[0]));
    _this->m_pcmProc_bufferReadyCondVar.notify_all();
+}
+
+SpecAnLedTypes::eDirection AudioLeds::checkForChange(RotaryEncoder::eRotation rotary, RemoteControl::eDirection remote)
+{
+   switch(rotary) // Convert rotary movement to SpecAnLedTypes::eDirection
+   {
+      case RotaryEncoder::eRotation::E_FORWARD:
+         return SpecAnLedTypes::eDirection::E_DIRECTION_POS;
+      case RotaryEncoder::eRotation::E_BACKWARD:
+         return SpecAnLedTypes::eDirection::E_DIRECTION_NEG;
+      default:
+         break; // Do nothing.
+   }
+   switch(remote) // Convert remote control type to SpecAnLedTypes::eDirection
+   {
+      case RemoteControl::eDirection::E_DIRECTION_POS:
+         return SpecAnLedTypes::eDirection::E_DIRECTION_POS;
+      case RemoteControl::eDirection::E_DIRECTION_NEG:
+         return SpecAnLedTypes::eDirection::E_DIRECTION_NEG;
+      default:
+         break; // Do nothing.
+   }
+   return SpecAnLedTypes::eDirection::E_DIRECTION_NO_CHANGE;
 }

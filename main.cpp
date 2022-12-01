@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -37,7 +37,10 @@
 #include "ThreadPriorities.h"
 #include "wiringPi.h"
 #include "SaveRestore.h"
+#include "RemoteControl.h"
 
+// Remote Control Port Num
+#define REMOTE_CTRL_PORT_NUM (2555)
 
 // LED Stuff
 #define NUM_LEDS (30)
@@ -66,6 +69,10 @@ static std::vector<std::shared_ptr<RotaryEncoder>> rotaries;
 static std::shared_ptr<SeeedAdc8Ch12Bit> knobsAdcs;
 static std::shared_ptr<PotentiometerKnob> brightKnob;
 static std::shared_ptr<PotentiometerKnob> gainKnob;
+
+// Remote Control Interface.
+static std::shared_ptr<RemoteControl> remoteControl;
+
 
 // The Main Thread (i.e. This App's Thread)
 static std::atomic<bool> exitThisApp;
@@ -152,6 +159,9 @@ int main (int argc, char *argv[])
    knobsAdcs.reset(new SeeedAdc8Ch12Bit());
    brightKnob.reset(new PotentiometerKnob(knobsAdcs, 7, 100));
    gainKnob.reset(new PotentiometerKnob(knobsAdcs, 6, 100));
+
+   // Init remote control interface.
+   remoteControl.reset(new RemoteControl(REMOTE_CTRL_PORT_NUM));
 
    thisAppThread.reset(new std::thread(thisAppForeverFunction));
 
@@ -256,9 +266,10 @@ static void thisAppForeverFunction()
             leftButton,
             rightButton,
             brightKnob,
-            gainKnob ));
+            gainKnob,
+            remoteControl ));
          
-         // Wait for User to Exit Gradient Edit Mode.
+         // Wait for User to Exit Audio LED Mode.
          audioLed->waitForThreadDone();
          audioLed.reset();
          

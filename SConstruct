@@ -1,4 +1,4 @@
-# Copyright 2020 Dan Williams. All Rights Reserved.
+# Copyright 2020, 2022 Dan Williams. All Rights Reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this
 # software and associated documentation files (the "Software"), to deal in the Software
@@ -35,8 +35,10 @@ src = [ 'main.cpp',
         'GradientUserCues.cpp',
         'hsvrgb.cpp',
         'gradientChangeThread.cpp',
+        'RemoteControl.cpp',
         'rotaryEncoder.cpp',
         'SaveRestore.cpp',
+        'TCPThreads.cpp',
         'modules/plotperfectclient/sendMemoryToPlot.c', 
         'modules/plotperfectclient/smartPlotMessage.c' ]
 

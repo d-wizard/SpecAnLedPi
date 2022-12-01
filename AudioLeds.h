@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -32,6 +32,7 @@
 #include "AudioDisplayAmplitude.h"
 #include "AudioDisplayFft.h"
 #include "SaveRestore.h"
+#include "RemoteControl.h"
 
 class AudioLeds
 {
@@ -46,7 +47,8 @@ public:
               std::shared_ptr<RotaryEncoder> leftButton,
               std::shared_ptr<RotaryEncoder> rightButton,
               std::shared_ptr<PotentiometerKnob> brightKnob,
-              std::shared_ptr<PotentiometerKnob> gainKnob );
+              std::shared_ptr<PotentiometerKnob> gainKnob,
+              std::shared_ptr<RemoteControl> remoteCtrl );
 
    virtual ~AudioLeds();
 
@@ -58,6 +60,9 @@ private:
    AudioLeds();
    AudioLeds(AudioLeds const&);
    void operator=(AudioLeds const&);
+
+   // Check for a change via rotary enocder or remote control.
+   SpecAnLedTypes::eDirection checkForChange(RotaryEncoder::eRotation rotary, RemoteControl::eDirection remote);
 
    // Microphone Capture
    std::unique_ptr<AlsaMic> m_mic;
@@ -101,6 +106,8 @@ private:
    std::shared_ptr<PotentiometerKnob> m_brightKnob;
    std::shared_ptr<PotentiometerKnob> m_gainKnob;
 
+   // Remote Control Inteface
+   std::shared_ptr<RemoteControl> m_remoteCtrl;
 
 };
 
