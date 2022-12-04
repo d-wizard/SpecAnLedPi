@@ -241,10 +241,13 @@ void AudioLeds::pcmProcFunc()
          // Send the samples to the Audio Display to generate the LED Colors.
          if(audioDisplay->parsePcm(samples.data(), numSamp))
          {
-            float brightness = Transform1D::Unit::quarterCircle_below(m_brightKnob->getFlt()); // Use the quarterCircle_below transform to provide more resolution at lower brightness levels.
-            auto gain = m_gainKnob->getInt();
+            bool remoteBrightGain = m_remoteCtrl->useRemoteGainBrightness();
+            float brightness = remoteBrightGain ? m_remoteCtrl->getBrightness() : m_brightKnob->getFlt();
+            int gain = remoteBrightGain ? m_remoteCtrl->getGain() : m_gainKnob->getInt();
 
-            audioDisplay->fillInLeds(m_ledColors, brightness, gain);
+            float brightnessShaped = Transform1D::Unit::quarterCircle_below(brightness);  // Use the quarterCircle_below transform to provide more resolution at lower brightness levels.
+
+            audioDisplay->fillInLeds(m_ledColors, brightnessShaped, gain);
             m_ledStrip->set(m_ledColors);
          }
       }

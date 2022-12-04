@@ -21,7 +21,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-RemoteControl::RemoteControl(uint16_t port)
+RemoteControl::RemoteControl(uint16_t port, bool useRemoteGainBrightness):
+   m_useRemoteGainBrightness(useRemoteGainBrightness)
 {
    // Set up the TCP server. Packets will be received in the "rxPacketCallback" function.
    dServerSocket_init(&m_server, port, rxPacketCallback, nullptr, nullptr, this);
@@ -143,6 +144,29 @@ void RemoteControl::processPacket(char* packetPtr, unsigned int packetSize)
       cmdVal = E_DISPLAY_CHANGE_NEG;
    else if(cmdStr == "E_REVERSE_GRADIENT_TOGGLE")
       cmdVal = E_REVERSE_GRADIENT_TOGGLE;
+   else if(cmdStr == "E_GAIN_BRIGHT_LOCAL")
+      m_useRemoteGainBrightness = false;
+   else if(cmdStr == "E_GAIN_BRIGHT_REMOTE")
+      m_useRemoteGainBrightness = true;
+   else
+   {
+      // Check for Gain / Brightness values.
+      static const std::string GAIN_STR = "E_GAIN_VALUE";
+      auto gainPos = cmdStr.find(GAIN_STR);
+      if(gainPos == 0 && cmdStr.size() > GAIN_STR.size()) // GAIN_STR is at the beginning and there are more characters.
+      {
+         std::lock_guard<std::mutex> lock(m_brightGainMutex);
+         strTo(cmdStr.substr(GAIN_STR.size()), m_gainValue);
+      }
+
+      static const std::string BRIGHT_STR = "E_BRIGHT_VALUE";
+      auto brightPos = cmdStr.find(BRIGHT_STR);
+      if(brightPos == 0 && cmdStr.size() > BRIGHT_STR.size()) // GAIN_STR is at the beginning and there are more characters.
+      {
+         std::lock_guard<std::mutex> lock(m_brightGainMutex);
+         strTo(cmdStr.substr(BRIGHT_STR.size()), m_brightnessValue);
+      }
+   }
    
    if(cmdVal != E_INVALID_COMMAND)
    {

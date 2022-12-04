@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include <vector>
 #include <mutex>
+#include <sstream>
+#include <atomic>
 #include "TCPThreads.h"
 
 class RemoteControl
@@ -45,6 +47,10 @@ private:
       E_DISPLAY_CHANGE_POS,
       E_DISPLAY_CHANGE_NEG,
       E_REVERSE_GRADIENT_TOGGLE,
+      E_GAIN_BRIGHT_LOCAL,
+      E_GAIN_BRIGHT_REMOTE,
+      E_GAIN_VALUE,
+      E_BRIGHT_VALUE,
       E_INVALID_COMMAND
    }eCommands;
 
@@ -55,15 +61,20 @@ private:
    }tCmdDataPair;
    
 public:
-   RemoteControl(uint16_t port);
+   RemoteControl(uint16_t port, bool useRemoteGainBrightness = false);
    virtual ~RemoteControl();
 
    eDirection checkGradientChange();
    eDirection checkDisplayChange();
    bool checkReverseGradientToggle();
 
+   bool useRemoteGainBrightness(){ return m_useRemoteGainBrightness; }
+   int getGain(){ std::lock_guard<std::mutex> lock(m_brightGainMutex); return m_gainValue; }
+   float getBrightness(){ std::lock_guard<std::mutex> lock(m_brightGainMutex); return m_brightnessValue; }
+
    void clear();
 
+   
 private:
    // Make uncopyable
    RemoteControl();
@@ -80,5 +91,35 @@ private:
 
    // This is the server for receiving the remote commands.
    dServerSocket m_server;
+
+   // Parameters for keeping track of brightness and gain.
+   std::mutex m_brightGainMutex;
+   std::atomic<bool> m_useRemoteGainBrightness;
+   int m_gainValue = 0;
+   float m_brightnessValue = 0;
+
+   
+   // Function for safely converting string to other values.
+   template <class type> bool strTo(const std::string& t_input, type& toVal)
+   {
+      std::istringstream iss(t_input);
+      type tryStrTo;
+
+      // Try to convert string to type.
+      iss >> std::noskipws >> tryStrTo; // noskipws means leading whitespace is invalid
+
+      // Make sure the conversion used the entire string without failure.
+      bool success = iss.eof() && !iss.fail();
+
+      if(success)
+      {
+         // Write valid value 
+         toVal = tryStrTo;
+      }
+
+      // Indicate whether conversion was successful.
+      return success; 
+   }
+
 };
 
