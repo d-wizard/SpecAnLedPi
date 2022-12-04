@@ -150,5 +150,11 @@ void RemoteControl::processPacket(char* packetPtr, unsigned int packetSize)
       tCmdDataPair cmdDataPair;
       cmdDataPair.cmd = cmdVal;
       m_commands.push_back(cmdDataPair);
+
+      // Make sure command queue doesn't get too big.
+      if(m_commands.size() > MAX_CMDS_IN_QUEUE)
+      {
+         m_commands.erase(m_commands.begin(), m_commands.begin() + m_commands.size() - MAX_CMDS_IN_QUEUE); // Erase oldest commands
+      }
    }
 }

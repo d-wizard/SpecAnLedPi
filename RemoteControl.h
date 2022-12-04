@@ -34,8 +34,10 @@ public:
       E_DIRECTION_NEG
    }eDirection;
 
-// Some private types
+// Some private types / constants
 private:
+   static constexpr size_t MAX_CMDS_IN_QUEUE = 100; // Limit to avoid heap overrun.
+
    typedef enum
    {
       E_GRADIENT_POS,
