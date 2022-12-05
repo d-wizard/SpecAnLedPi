@@ -18,87 +18,96 @@
       $pythonSetGetScript = "python ".$thisScriptDir."/sendCmds.py";
       $buttonPressed = False;
 
+      $gainValue = 50;
+      $brightnessValue = "0.5";
+
       // Check which the button was pressed.
 
       // Gain / Brightness
-      if(isset($_POST["E_GAIN_BRIGHT_LOCAL"]))
+      if(isset($_GET["gain_local"]))
       {
          shell_exec($pythonSetGetScript." E_GAIN_BRIGHT_LOCAL");
          $buttonPressed = True;
       }
-      if(isset($_POST["E_GAIN_BRIGHT_REMOTE"]))
+      if(isset($_GET["gain_remote"]))
       {
          shell_exec($pythonSetGetScript." E_GAIN_BRIGHT_REMOTE");
          $buttonPressed = True;
       }
-      if(isset($_POST["E_GAIN_VALUE"]))
+      if(isset($_GET["gain_val"]))
       {
-         shell_exec($pythonSetGetScript." E_GAIN_VALUE".$_POST["gain_slider"]);
+         shell_exec($pythonSetGetScript." E_GAIN_VALUE".$_GET["gain_slider"]);
          $buttonPressed = True;
       }
-      if(isset($_POST["E_BRIGHT_VALUE"]))
+      if(isset($_GET["bright_val"]))
       {
-         shell_exec($pythonSetGetScript." E_BRIGHT_VALUE".$_POST["bright_slider"]);
+         shell_exec($pythonSetGetScript." E_BRIGHT_VALUE".$_GET["bright_slider"]);
          $buttonPressed = True;
       }
 
       // Gradient
-      if(isset($_POST["E_GRADIENT_POS"]))
+      if(isset($_GET["grad_pos"]))
       {
          shell_exec($pythonSetGetScript." E_GRADIENT_POS");
          $buttonPressed = True;
       }
-      if(isset($_POST["E_GRADIENT_NEG"]))
+      if(isset($_GET["grad_neg"]))
       {
          shell_exec($pythonSetGetScript." E_GRADIENT_NEG");
          $buttonPressed = True;
       }
 
       // Display Type
-      if(isset($_POST["E_DISPLAY_CHANGE_POS"]))
+      if(isset($_GET["disp_pos"]))
       {
          shell_exec($pythonSetGetScript." E_DISPLAY_CHANGE_POS");
          $buttonPressed = True;
       }
-      if(isset($_POST["E_DISPLAY_CHANGE_NEG"]))
+      if(isset($_GET["disp_neg"]))
       {
          shell_exec($pythonSetGetScript." E_DISPLAY_CHANGE_NEG");
          $buttonPressed = True;
       }
 
       // Reverse Gradient Toggle
-      if(isset($_POST["E_REVERSE_GRADIENT_TOGGLE"]))
+      if(isset($_GET["grad_rev"]))
       {
          shell_exec($pythonSetGetScript." E_REVERSE_GRADIENT_TOGGLE");
          $buttonPressed = True;
       }
 
-      if($buttonPressed != False)
+      // Check if Gain / Brightness values are specified.
+      if(isset($_GET["gain_slider"]))
       {
-         header("Location: #");
+         $gainValue=$_GET["gain_slider"];
       }
+      if(isset($_GET["bright_slider"]))
+      {
+         $brightnessValue=$_GET["bright_slider"];
+      }
+
    ?>
 
    <center>
+   <form action="<?php $_PHP_SELF ?>" method="get">
       <br>
-      <form action="SpecAnLed.php" method="post">
          <h1>Gain / Brightness</h1>
          <table cellpadding="5">
             <tr>
                <td style="vertical-align: middle">Gain</td>
-               <td><input name="gain_slider" type="range" min="0" max="100" value="50" class="slider"></td>
-               <td><center><input name="E_GAIN_VALUE" class="block" type="submit" value="Update" /></center></td>
+               <td><input name="gain_slider" type="range" min="0" max="100" value=<?php echo $gainValue;?> class="slider"></td>
+               <td><input name="gain_val" class="block" type="submit" value="Update" /></td>
             </tr>
             <tr>
                <td style="vertical-align: middle">Brightness</td>
-               <td><input name="bright_slider" type="range" min="0" max="1.0" value="0.5" step="0.02" class="slider"></td>
-               <td><center><input name="E_BRIGHT_VALUE" class="block" type="submit" value="Update" /></center></td>
+               <td><input name="bright_slider" type="range" min="0" max="1.0" value=<?php echo $brightnessValue;?> step="0.02" class="slider"></td>
+               <td><input name="bright_val" class="block" type="submit" value="Update" /></td>
             </tr>
          </table>
          <table cellpadding="5">
             <tr>
-               <td><center><input name="E_GAIN_BRIGHT_LOCAL" class="block" type="submit" value="Local Control" /></center></td>
-               <td><center><input name="E_GAIN_BRIGHT_REMOTE" class="block" type="submit" value="Remote Control" /></center></td>
+               <td><input name="gain_local" class="block" type="submit" value="Local Control" /></td>
+               <td><input name="gain_remote" class="block" type="submit" value="Remote Control" /></td>
             </tr>
          </table>
          <br><hr>
@@ -106,21 +115,21 @@
          <table cellpadding="5">
             <tr>
                <td style="vertical-align: middle">Gradient Type</td>
-               <td><center><input name="E_GRADIENT_POS" class="block" type="submit" value="<" /></center></td>
-               <td><center><input name="E_GRADIENT_NEG" class="block" type="submit" value=">" /></center></td>
+               <td><input name="grad_pos" class="block" type="submit" value="<" /></td>
+               <td><input name="grad_neg" class="block" type="submit" value=">" /></td>
             </tr>
             <tr>
                <td style="vertical-align: middle">Display Type</td>
-               <td><center><input name="E_DISPLAY_CHANGE_POS" class="block" type="submit" value="<" /></center></td>
-               <td><center><input name="E_DISPLAY_CHANGE_NEG" class="block" type="submit" value=">" /></center></td>
+               <td><input name="disp_pos" class="block" type="submit" value="<" /></td>
+               <td><input name="disp_neg" class="block" type="submit" value=">" /></td>
             </tr>
             <tr>
                <td style="vertical-align: middle">Gradient Direction</td>
-               <td colspan="2"><center><input name="E_REVERSE_GRADIENT_TOGGLE" class="block" type="submit" value="Toggle" /></center></td>
+               <td colspan="2"><input name="grad_rev" class="block" type="submit" value="Toggle" /></td>
             </tr>
          </table>
-      </form>
 
+   </form>
    </center>
    </body>
 
