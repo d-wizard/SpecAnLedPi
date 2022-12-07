@@ -1,4 +1,4 @@
-/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
+   /* Copyright 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,28 +16,37 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#include <unistd.h> // Needed for close
+#include <wiringPiI2C.h>
+#include "seeed_adc_8chan_12bit.h"
 
-#include <stdint.h>
-
-class SeeedAdc8Ch12Bit
+SeeedAdc8Ch12Bit::SeeedAdc8Ch12Bit(int deviceAddr): // 0x04 appears to be the default address for this ADC Hat.
+   m_deviceAddr(deviceAddr)
 {
-public:
-   SeeedAdc8Ch12Bit(int deviceAddr = 0x04); // 0x04 appears to be the default address for this ADC Hat.
-   virtual ~SeeedAdc8Ch12Bit();
+   m_fd = wiringPiI2CSetup(m_deviceAddr);
+}
 
-   bool isActive();
+SeeedAdc8Ch12Bit::~SeeedAdc8Ch12Bit()
+{
+   if(isActive())
+   {
+      close(m_fd);
+   }
+}
 
-   uint16_t getAdcValue(int adcNum);
-   
-   // Delete constructors / operations that should not be allowed.
-   SeeedAdc8Ch12Bit(SeeedAdc8Ch12Bit const&) = delete;
-   void operator=(SeeedAdc8Ch12Bit const&) = delete;
-private:
-   static constexpr int ADC_VALUE_REG_ADDR_START = 0x10;
+bool SeeedAdc8Ch12Bit::isActive()
+{
+   return (m_fd >= 0);
+}
 
-   int m_deviceAddr;
-   int m_fd = -1;
-
-};
+uint16_t SeeedAdc8Ch12Bit::getAdcValue(int adcNum)
+{
+   uint16_t retVal = 0;
+   if(isActive())
+   {
+      adcNum = adcNum & 0x7;
+      retVal = wiringPiI2CReadReg16(m_fd, ADC_VALUE_REG_ADDR_START + adcNum);
+   }
+   return retVal;
+}
 
