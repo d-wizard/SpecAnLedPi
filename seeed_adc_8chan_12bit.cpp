@@ -23,7 +23,9 @@
 SeeedAdc8Ch12Bit::SeeedAdc8Ch12Bit(int deviceAddr): // 0x04 appears to be the default address for this ADC Hat.
    m_deviceAddr(deviceAddr)
 {
+#ifndef NO_ADCS // Just need to skip the setup call if there are no ADCs. isActive() will make sure the FD isn't used in the future.
    m_fd = wiringPiI2CSetup(m_deviceAddr);
+#endif
 }
 
 SeeedAdc8Ch12Bit::~SeeedAdc8Ch12Bit()

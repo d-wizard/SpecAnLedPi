@@ -63,16 +63,20 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
 
    // Set the Audio Displays (do this before creating the thread)
    auto numLeds = ledStrip->getNumLeds();
+   // Amplitude based displays
    m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_SCALE,    0.7, AudioDisplayAmp::E_PEAK_GRAD_MID_CHANGE));
    m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_MIN_SAME, 0.7, AudioDisplayAmp::E_PEAK_GRAD_MID_CONST));
    m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_MAX_SAME, 0.7, AudioDisplayAmp::E_PEAK_GRAD_MIN));
-   m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, numLeds, AudioDisplayFft::E_GRADIENT_MAG));
-   m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, numLeds, AudioDisplayFft::E_BRIGHTNESS_MAG));
-
    for(auto& disp : m_audioDisplayAmp)
       m_audioDisplays.push_back(disp.get());
+
+#ifndef NO_FFTS
+   // Frequency based displays
+   m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, numLeds, AudioDisplayFft::E_GRADIENT_MAG));
+   m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, numLeds, AudioDisplayFft::E_BRIGHTNESS_MAG));
    for(auto& disp : m_audioDisplayFft)
-      m_audioDisplays.push_back(disp.get());
+     m_audioDisplays.push_back(disp.get());
+#endif
 
    // Attempt to Restore settings.
    int restoredDisplayIndex = m_saveRestore->restore_displayIndex();
