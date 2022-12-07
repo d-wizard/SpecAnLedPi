@@ -47,11 +47,12 @@ defines = []
 inc = [ './modules/plotperfectclient', 
         './modules/Ne10/inc', 
         './modules/rpi_ws281x', 
-        './modules/jsoncpp/include' ]
+        './modules/jsoncpp/include', 
+        './modules/WiringPi/wiringPi' ]
 
 lib = ['rt', 'asound', 'pthread', 'NE10', 'ws2811', 'wiringPi', 'jsoncpp_static']
 
-libpath = ['./modules/Ne10/build/modules', './modules/rpi_ws281x', './modules/jsoncpp/build/lib']
+libpath = ['./modules/Ne10/build/modules', './modules/rpi_ws281x', './modules/jsoncpp/build/lib', './modules/WiringPi/wiringPi']
 
 env.Program( source=src,
              CPPDEFINES=defines,

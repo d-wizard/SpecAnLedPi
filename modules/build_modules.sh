@@ -37,6 +37,11 @@ cmake ..
 make -j 2
 cd ../..
 
+# build WiringPi
+cd WiringPi
+./build
+cd ..
+
 # plotperfectclient
 # No build, just add the 2 .c files you the top level build.
 
