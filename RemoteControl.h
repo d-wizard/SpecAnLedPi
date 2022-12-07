@@ -61,7 +61,7 @@ private:
    }tCmdDataPair;
    
 public:
-   RemoteControl(uint16_t port, bool useRemoteGainBrightness = false);
+   RemoteControl(uint16_t port, bool useRemoteGainBrightness);
    virtual ~RemoteControl();
 
    eDirection checkGradientChange();
@@ -69,7 +69,7 @@ public:
    bool checkReverseGradientToggle();
 
    bool useRemoteGainBrightness(){ return m_useRemoteGainBrightness; }
-   int getGain(){ std::lock_guard<std::mutex> lock(m_brightGainMutex); return m_gainValue; }
+   float getGain(){ std::lock_guard<std::mutex> lock(m_brightGainMutex); return m_gainValue; }
    float getBrightness(){ std::lock_guard<std::mutex> lock(m_brightGainMutex); return m_brightnessValue; }
 
    void clear();
@@ -95,10 +95,10 @@ private:
    // Parameters for keeping track of brightness and gain.
    std::mutex m_brightGainMutex;
    std::atomic<bool> m_useRemoteGainBrightness;
-   int m_gainValue = 0;
-   float m_brightnessValue = 0;
+   float m_gainValue = -1;       // initialize to invalid value.
+   float m_brightnessValue = -1; // initialize to invalid value.
 
-   
+
    // Function for safely converting string to other values.
    template <class type> bool strTo(const std::string& t_input, type& toVal)
    {

@@ -74,10 +74,11 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    for(auto& disp : m_audioDisplayFft)
       m_audioDisplays.push_back(disp.get());
 
-   // Attempt to Restore the Audio Display Index.
+   // Attempt to Restore settings.
    int restoredDisplayIndex = m_saveRestore->restore_displayIndex();
    if(restoredDisplayIndex >= 0 && restoredDisplayIndex < int(m_audioDisplays.size()))
       m_activeAudioDisplayIndex = restoredDisplayIndex;
+   m_reverseGrad = m_saveRestore->restore_gradientReverse();
 
    // Make sure the first display gets set for the current gradient.
    m_audioDisplays[m_activeAudioDisplayIndex]->setGradient(m_currentGradient, m_reverseGrad);
@@ -93,8 +94,9 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
 
 AudioLeds::~AudioLeds()
 {
-   // Save off the current Audio Display.
+   // Save off current settings.
    m_saveRestore->save_displayIndex(m_activeAudioDisplayIndex);
+   m_saveRestore->save_gradientReverse(m_reverseGrad);
 
    // Stop getting samples from the microphone.
    m_mic.reset();
@@ -241,13 +243,10 @@ void AudioLeds::pcmProcFunc()
          // Send the samples to the Audio Display to generate the LED Colors.
          if(audioDisplay->parsePcm(samples.data(), numSamp))
          {
-            bool remoteBrightGain = m_remoteCtrl->useRemoteGainBrightness();
-            float brightness = remoteBrightGain ? m_remoteCtrl->getBrightness() : m_brightKnob->getFlt();
-            int gain = remoteBrightGain ? m_remoteCtrl->getGain() : m_gainKnob->getInt();
+            float gain, brightness;
+            updateGainBrightness(gain, brightness); // Get the current gain / brightness values.
 
-            float brightnessShaped = Transform1D::Unit::quarterCircle_below(brightness);  // Use the quarterCircle_below transform to provide more resolution at lower brightness levels.
-
-            audioDisplay->fillInLeds(m_ledColors, brightnessShaped, gain);
+            audioDisplay->fillInLeds(m_ledColors, brightness, gain);
             m_ledStrip->set(m_ledColors);
          }
       }
@@ -287,4 +286,28 @@ SpecAnLedTypes::eDirection AudioLeds::checkForChange(RotaryEncoder::eRotation ro
          break; // Do nothing.
    }
    return SpecAnLedTypes::eDirection::E_DIRECTION_NO_CHANGE;
+}
+
+void AudioLeds::updateGainBrightness(float& gain, float& brightness)
+{
+   // Grab the gain / brightness values (either from remote control of local potentiometer knobs)
+   bool remoteBrightGain = m_remoteCtrl->useRemoteGainBrightness();
+   brightness = remoteBrightGain ? m_remoteCtrl->getBrightness() : m_brightKnob->getFlt();
+   gain = remoteBrightGain ? m_remoteCtrl->getGain() : m_gainKnob->getInt();
+
+   // If remote values haven't been set, try to restore from JSON.
+   if(brightness < 0)
+      brightness = m_saveRestore->restore_brightness();
+   else
+      brightness = Transform1D::Unit::quarterCircle_below(brightness);  // Use the quarterCircle_below transform to provide more resolution at lower brightness levels.
+
+   if(gain < 0)
+      gain = m_saveRestore->restore_gain();
+
+   if(remoteBrightGain)
+   {
+      // If in remote mode, save off the values.
+      m_saveRestore->save_gain(gain);
+      m_saveRestore->save_brightness(brightness);
+   }
 }

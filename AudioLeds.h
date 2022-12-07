@@ -64,6 +64,9 @@ private:
    // Check for a change via rotary enocder or remote control.
    SpecAnLedTypes::eDirection checkForChange(RotaryEncoder::eRotation rotary, RemoteControl::eDirection remote);
 
+   // Update Gain and Brightness
+   void updateGainBrightness(float& gain, float& brightness);
+
    // Microphone Capture
    std::unique_ptr<AlsaMic> m_mic;
    static void alsaMicSamples(void* usrPtr, int16_t* samples, size_t numSamp);

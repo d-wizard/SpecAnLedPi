@@ -134,6 +134,51 @@ void RotaryUpdateFunction()
    }
 }
 
+bool DetermineRemoteLocalControl(int argc, char *argv[], std::shared_ptr<SaveRestoreJson> saveRestore)
+{
+   bool useRemoteGainBrightness = false;
+   bool commandFound = false;
+   
+   // Command line args take priority.
+   for(int i = 1; i < argc; ++i)
+   {
+      std::string arg(argv[i]);
+      if(arg == "-r" || arg == "-R" || arg == "--remote")
+      {
+         useRemoteGainBrightness = true;
+         commandFound = true;
+         break;
+      }
+      else if(arg == "-l" || arg == "-L" || arg == "--local")
+      {
+         useRemoteGainBrightness = false;
+         commandFound = true;
+         break;
+      }
+   }
+
+   if(!commandFound)
+   {
+      // Check if specified via JSON
+      switch(saveRestore->restore_remoteLocal())
+      {
+         // Fall through is intended.
+         default:
+         case SaveRestoreJson::eRemoteLocalOptions::E_DEFAULT:
+            saveRestore->save_remoteLocal(SaveRestoreJson::eRemoteLocalOptions::E_DEFAULT); // Make sure this gets included in the JSON.
+         break;
+         case SaveRestoreJson::eRemoteLocalOptions::E_LOCAL:
+            useRemoteGainBrightness = false; 
+         break;
+         case SaveRestoreJson::eRemoteLocalOptions::E_REMOTE:
+            useRemoteGainBrightness = true; 
+         break;
+      }
+   }
+
+   return useRemoteGainBrightness;
+}
+
 int main (int argc, char *argv[])
 {
    wiringPiSetup();
@@ -160,8 +205,11 @@ int main (int argc, char *argv[])
    brightKnob.reset(new PotentiometerKnob(knobsAdcs, 7, 100));
    gainKnob.reset(new PotentiometerKnob(knobsAdcs, 6, 100));
 
+   // Determine whether to start in remote or local control.
+   bool useRemoteGainBrightness = DetermineRemoteLocalControl(argc, argv, saveRestore);
+
    // Init remote control interface.
-   remoteControl.reset(new RemoteControl(REMOTE_CTRL_PORT_NUM));
+   remoteControl.reset(new RemoteControl(REMOTE_CTRL_PORT_NUM, useRemoteGainBrightness));
 
    thisAppThread.reset(new std::thread(thisAppForeverFunction));
 

@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -27,6 +27,13 @@
 class SaveRestoreJson
 {
 public:
+   typedef enum
+   {
+      E_DEFAULT,
+      E_LOCAL,
+      E_REMOTE
+   }eRemoteLocalOptions;
+
    SaveRestoreJson();
 
    void save_gradient(ColorGradient::tGradient& gradToSave);
@@ -40,6 +47,17 @@ public:
    void save_displayIndex(int index);
    int restore_displayIndex();
 
+   void save_gradientReverse(bool reversed);
+   bool restore_gradientReverse();
+
+   void save_remoteLocal(eRemoteLocalOptions remoteLocal);
+   eRemoteLocalOptions restore_remoteLocal();
+
+   void save_gain(float gain);
+   float restore_gain();
+   void save_brightness(float brightness);
+   float restore_brightness();
+
 private:
    // Make uncopyable
    SaveRestoreJson(SaveRestoreJson const&);
@@ -49,6 +67,9 @@ private:
    const std::string PRESET_GRADIENT_JSON = "presets.json";
 
    std::mutex m_mutex;
+
+   float m_lastGainVal = -1;   // initialize to invalid value.
+   float m_lastBrightVal = -1; // initialize to invalid value.
 
    void getJson(std::string pathToJson, Json::Value& jsonRetVal);
 
