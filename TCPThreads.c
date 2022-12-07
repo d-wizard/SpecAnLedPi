@@ -1,4 +1,4 @@
-/* Copyright 2013, 2017, 2019 Dan Williams. All Rights Reserved.
+/* Copyright 2013, 2017, 2019, 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,7 +16,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#include "TCPThreads.h"
+ #include "TCPThreads.h"
 
 
 #if defined TCP_SERVER_THREADS_WIN_BUILD && !defined __MINGW32_VERSION
@@ -26,6 +26,22 @@
       #define snprintf _snprintf
    #endif
 #endif
+
+
+////// Logging
+//#define LOG_TCP_THREADS
+#ifdef LOG_TCP_THREADS
+   #ifdef TCP_SERVER_THREADS_WIN_BUILD
+      #define dServerSocket_printf(fmt, ...) printf(fmt "\n", __VA_ARGS__) // Windows format
+   #else
+      #define dServerSocket_printf(fmt, ...) printf(fmt "\n", ##__VA_ARGS__) // Linux format
+   #endif
+#else
+   #define dServerSocket_printf(fmt, ...) // Do nothing
+#endif
+
+
+
 
 void dServerSocket_updateIndexForNextPacket(dSocketRxBuff* rxBuff)
 {
@@ -56,6 +72,7 @@ void dServerSocket_readAllPackets(dClientConnection* dConn)
    {
       dConn->rxPacketCallback(
          dConn->callbackInputPtr,
+         dConn->fd,
          &dConn->info,
          dConn->rxBuff.packetAddr[dConn->rxBuff.readIndex],
          dConn->rxBuff.packetSize[dConn->rxBuff.readIndex] );
@@ -69,7 +86,7 @@ void dServerSocket_readAllPackets(dClientConnection* dConn)
 void dServerSocket_initClientConn(dClientConnection* dConn, dServerSocket* dSock)
 {
    memset(dConn, 0, sizeof(dClientConnection));
-   dConn->fd = INVALID_FD;
+   dConn->fd = INVALID_SOCKET_FD;
    dConn->rxBuff.maxPacketSize = MAX_PACKET_SIZE;
    dConn->rxBuff.buffPtr = (char*)dConn->rxBuff.buff;
    dConn->rxPacketCallback = dSock->rxPacketCallback;
@@ -117,15 +134,15 @@ void* dServerSocket_acceptThread(void* voidDSock)
    SOCKET connectionFd = 0;
 
    dSock->acceptThread.active = 1;
-   //printf("acceptThread start\n");
+   dServerSocket_printf("acceptThread start");
 
    while(!dSock->acceptThread.kill)
    {
-      if( listen(dSock->socketFd, 10) != -1)
+      if(listen(dSock->socketFd, 10) != -1)
       {
          socklen_t sockStoreSize = sizeof(clientAddr);
          connectionFd = accept(dSock->socketFd, (struct sockaddr*)&clientAddr, &sockStoreSize);
-         if(connectionFd != INVALID_FD)
+         if( IS_VALID_SOCKET_FD(connectionFd) )
          {
             dServerSocket_newClientConn(dSock, connectionFd, &clientAddr);
          }
@@ -136,7 +153,7 @@ void* dServerSocket_acceptThread(void* voidDSock)
       }
    }
    dSock->acceptThread.active = 0;
-   //printf("acceptThread end\n");
+   dServerSocket_printf("acceptThread end");
 
    return NULL;
 }
@@ -147,7 +164,7 @@ void* dServerSocket_rxThread(void* voidDClientConn)
    int packetSize = 0;
 
    dClientConn->rxThread.active = 1;
-   //printf("rxThread start\n");
+   dServerSocket_printf("rxThread start");
    while(!dClientConn->rxThread.kill)
    {
       dServerSocket_updateIndexForNextPacket(&dClientConn->rxBuff);
@@ -166,13 +183,13 @@ void* dServerSocket_rxThread(void* voidDClientConn)
       }
       else
       {
-         //printf("rxThread wrong packet size\n");
+         dServerSocket_printf("rxThread wrong packet size");
          dClientConn->rxThread.kill = 1;
       }
 
    }
    dClientConn->rxThread.active = 0;
-   //printf("rxThread end\n");
+   dServerSocket_printf("rxThread end");
 
    sem_post(dClientConn->killThisThreadSem);
 
@@ -183,7 +200,7 @@ void* dServerSocket_procThread(void* voidDClientConn)
 {
    dClientConnection* dClientConn = (dClientConnection*)voidDClientConn;
    dClientConn->procThread.active = 1;
-   //printf("procThread start\n");
+   dServerSocket_printf("procThread start");
 
    do
    {
@@ -192,7 +209,7 @@ void* dServerSocket_procThread(void* voidDClientConn)
    }while(!dClientConn->procThread.kill);
 
    dClientConn->procThread.active = 0;
-   //printf("procThread end\n");
+   dServerSocket_printf("procThread end");
 
    return NULL;
 }
@@ -204,7 +221,7 @@ void* dServer_killThreads(void* voidDSock)
    struct dClientConnList* curClient = NULL;
    
    dSock->killThread.active = 1;
-   //printf("killThread Start\n");
+   dServerSocket_printf("killThread Start");
 
 
    // Make sure all the client connection threads have been
@@ -216,7 +233,7 @@ void* dServer_killThreads(void* voidDSock)
       curClient = NULL;
       while(clientListPtr != NULL)
       {
-         if( clientListPtr->cur.fd != INVALID_FD &&
+         if( IS_VALID_SOCKET_FD(clientListPtr->cur.fd) &&
              clientListPtr->cur.rxThread.active == 0 && 
              clientListPtr->cur.rxThread.kill == 1 )
          {
@@ -244,7 +261,7 @@ void* dServer_killThreads(void* voidDSock)
    }
 
    dSock->killThread.active = 0;
-   //printf("killThread end\n");
+   dServerSocket_printf("killThread end");
 
    return NULL;
 }
@@ -260,14 +277,18 @@ void dServerSocket_bind(dServerSocket* dSock)
 
    int success = 0;
 
-   dSock->socketFd = INVALID_FD;
+   dSock->socketFd = INVALID_SOCKET_FD;
 
    memset(&hints, 0, sizeof(hints));
    hints.ai_family = AF_INET;// AF_UNSPEC; IPv4 only for now
    hints.ai_socktype = SOCK_STREAM;
    hints.ai_flags = AI_PASSIVE; // use my IP
 
+#ifdef TCP_SERVER_THREADS_WIN_BUILD
+   _itoa_s(dSock->port, portStr, sizeof(portStr), 10); // Visual Studio doesn't like snprintf, use itoa instead.
+#else
    snprintf( portStr, sizeof(portStr), "%d", dSock->port);
+#endif
 
    if( !getaddrinfo(NULL, portStr, &hints, &serverInfoList) )
    {
@@ -276,7 +297,7 @@ void dServerSocket_bind(dServerSocket* dSock)
          socketFd = socket( serverInfo->ai_family,
                             serverInfo->ai_socktype,
                             serverInfo->ai_protocol );
-         if(socketFd != INVALID_FD)
+         if( IS_VALID_SOCKET_FD(socketFd) )
          {
             int numParam = 1;
             if( setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, (char*)&numParam, sizeof(numParam)) != -1 )
@@ -371,7 +392,7 @@ void dServerSocket_deleteClient(struct dClientConnList* clientListPtr, dServerSo
    // inform parent that a client has been disconnected
    if(dSock->clientConnEndCallback != NULL)
    {
-      dSock->clientConnEndCallback(dSock->callbackInputPtr, &clientListPtr->cur.info);
+      dSock->clientConnEndCallback(dSock->callbackInputPtr, clientListPtr->cur.fd, &clientListPtr->cur.info);
    }
    free(clientListPtr);
 }
@@ -388,12 +409,12 @@ void dServerSocket_newClientConn(dServerSocket* dSock, SOCKET clientFd, struct s
    // inform parent that a new client has connected
    if(dSock->clientConnStartCallback != NULL)
    {
-      dSock->clientConnStartCallback(dSock->callbackInputPtr, &dConn->info);
+      dSock->clientConnStartCallback(dSock->callbackInputPtr, dConn->fd, &dConn->info);
    }
 
    pthread_create((pthread_t*)&dConn->rxThread, NULL, dServerSocket_rxThread, dConn);
    pthread_create((pthread_t*)&dConn->procThread, NULL, dServerSocket_procThread, dConn);
-   //printf("New Client %d\n", clientFd);
+   dServerSocket_printf("New Client %d", clientFd);
 }
 
 void dServerSocket_killAll(dServerSocket* dSock)

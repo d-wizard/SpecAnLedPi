@@ -81,7 +81,7 @@ private:
    RemoteControl(RemoteControl const&);
    void operator=(RemoteControl const&);
 
-   static void rxPacketCallback(void* usrPtr, struct sockaddr_storage* sockInfo, char* packetPtr, unsigned int packetSize);
+   static void rxPacketCallback(void* usrPtr, SOCKET fd, struct sockaddr_storage* sockInfo, char* packetPtr, unsigned int packetSize);
 
    void processPacket(char* packetPtr, unsigned int packetSize);
 

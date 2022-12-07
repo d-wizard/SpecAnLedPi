@@ -38,7 +38,7 @@ src = [ 'main.cpp',
         'RemoteControl.cpp',
         'rotaryEncoder.cpp',
         'SaveRestore.cpp',
-        'TCPThreads.cpp',
+        'TCPThreads.c',
         'modules/plotperfectclient/sendMemoryToPlot.c', 
         'modules/plotperfectclient/smartPlotMessage.c' ]
 

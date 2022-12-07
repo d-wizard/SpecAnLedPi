@@ -105,7 +105,7 @@ void RemoteControl::clear()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteControl::rxPacketCallback(void* usrPtr, struct sockaddr_storage* sockInfo, char* packetPtr, unsigned int packetSize)
+void RemoteControl::rxPacketCallback(void* usrPtr, SOCKET fd, struct sockaddr_storage* sockInfo, char* packetPtr, unsigned int packetSize)
 {
    RemoteControl* _this = reinterpret_cast<RemoteControl*>(usrPtr); // Determine which instance of this class we are in.
    _this->processPacket(packetPtr, packetSize);

@@ -1,4 +1,4 @@
-/* Copyright 2013, 2016 - 2017 Dan Williams. All Rights Reserved.
+/* Copyright 2013, 2016 - 2017, 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -22,8 +22,8 @@
 #include <stdio.h>
 #include <stdlib.h> 
 #include <string.h>
-#include <pthread.h>
 #include <semaphore.h>
+#include <pthread.h>
 
 #if (defined(_WIN32) || defined(__WIN32__))
    #define TCP_SERVER_THREADS_WIN_BUILD
@@ -56,15 +56,30 @@
    #include <netinet/in.h>
    #include <sys/socket.h>
    
-   typedef unsigned int SOCKET;
-   #define closesocket(fd) close(fd)
+   #ifndef SOCKET
+      #define SOCKET int
+   #endif
+   #ifndef closesocket
+      #define closesocket close
+   #endif
 #endif
+
+
+// Define Macro for determining if a Socket FD is valid.
+#ifndef IS_VALID_SOCKET_FD
+#define IS_VALID_SOCKET_FD(socketFd) ((signed)socketFd >= 0)
+#endif
+
+#ifndef INVALID_SOCKET_FD
+#define INVALID_SOCKET_FD (-1)
+#endif
+
+
 
 #define MAX_PACKET_SIZE (2048)
 #define MAX_PACKETS (2048)
 #define MAX_STORED_PACKETS (2048)
 
-#define INVALID_FD (0xFFFFFFFF)
 
 typedef struct
 {
@@ -89,9 +104,9 @@ typedef struct
 }dSocketRxBuff;
 
 
-typedef void (*dRxPacketCallback)(void*, struct sockaddr_storage*, char*, unsigned int);
-typedef void (*dClientConnStartCallback)(void*, struct sockaddr_storage*);
-typedef void (*dClientConnEndCallback)(void*, struct sockaddr_storage*);
+typedef void (*dRxPacketCallback)(void*, SOCKET, struct sockaddr_storage*, char*, unsigned int);
+typedef void (*dClientConnStartCallback)(void*, SOCKET, struct sockaddr_storage*);
+typedef void (*dClientConnEndCallback)(void*, SOCKET, struct sockaddr_storage*);
 
 typedef struct
 {
@@ -129,6 +144,9 @@ typedef struct
 }dServerSocket;
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void dServerSocket_initClientConn(dClientConnection* dConn, dServerSocket* dSock);
 void dServerSocket_wsaInit();
@@ -153,5 +171,8 @@ void dServerSocket_writeNewPacket(dClientConnection* dConn, char* packet, unsign
 void dServerSocket_readAllPackets(dClientConnection* dConn);
 void dServerSocket_updateIndexForNextPacket(dSocketRxBuff* rxBuff);
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif
