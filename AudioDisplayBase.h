@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -30,7 +30,7 @@
 class AudioDisplayBase
 {
 public:
-   AudioDisplayBase(size_t frameSize, size_t numDisplayPoints, float firstLedBrightness = 0.0);
+   AudioDisplayBase(size_t frameSize, size_t numDisplayPoints, float firstLedBrightness = 0.0, bool mirror = false);
 
    void setGradient(ColorGradient::tGradient& gradient, bool reverseGrad);
 
@@ -51,6 +51,8 @@ private:
    virtual void fillInDisplayPoints(int gain) = 0;
 
 protected:
+   size_t m_numForwardPoints;
+   size_t m_numReflectionPoints;
    size_t m_frameSize;
    std::vector<uint16_t> m_displayPoints;
    size_t m_numDisplayPoints;
@@ -67,4 +69,6 @@ protected:
 
    // Brightness modifier.
    std::vector<float> m_pointsBrightness;
+
+   bool m_mirror = false;
 };

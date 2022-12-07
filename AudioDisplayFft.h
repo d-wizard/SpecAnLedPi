@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -31,7 +31,7 @@ public:
       E_BRIGHTNESS_MAG  // The brighness indications the magnatude. The color of each LED is constant.
    }eFftColorDisplay;
 
-   AudioDisplayFft(size_t sampleRate, size_t fftSize, size_t numDisplayPoints, eFftColorDisplay colorDisplay);
+   AudioDisplayFft(size_t sampleRate, size_t fftSize, size_t numDisplayPoints, eFftColorDisplay colorDisplay, bool mirror = false);
 
 private:
    // Make uncopyable

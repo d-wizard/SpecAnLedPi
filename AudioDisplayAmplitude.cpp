@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -19,8 +19,8 @@
 
 #include "AudioDisplayAmplitude.h"
 
-AudioDisplayAmp::AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, eAmpDisplayType displayType, float gradient_fadeAwayFactor, ePeakType peakType):
-   AudioDisplayBase(frameSize, numDisplayPoints, peakType == E_PEAK_GRAD_MIN ? 1.0 : 0.5),
+AudioDisplayAmp::AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, eAmpDisplayType displayType, float gradient_fadeAwayFactor, ePeakType peakType, bool mirror):
+   AudioDisplayBase(frameSize, numDisplayPoints, peakType == E_PEAK_GRAD_MIN ? 1.0 : 0.5, mirror),
    NUM_LEDS(m_displayPoints.size()),
    MAX_LED_INDEX(NUM_LEDS-1),
    m_displayType(displayType),
