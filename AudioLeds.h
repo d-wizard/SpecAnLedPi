@@ -85,6 +85,14 @@ private:
    std::atomic<bool> m_pcmProc_active;
    void pcmProcFunc();
 
+   // LED Update Thread Stuff.
+   std::thread m_ledUpdate_thread;
+   std::mutex m_ledUpdate_mutex;
+   std::condition_variable m_ledUpdate_bufferReadyCondVar;
+   std::vector<SpecAnLedTypes::tRgbVector> m_ledUpdate_buff;
+   std::atomic<bool> m_ledUpdate_active;
+   void ledUpdateFunc();
+
    // Button Monitor Thread Stuff.
    std::thread m_buttonMonitor_thread;
    std::atomic<bool> m_buttonMonitorThread_active;
@@ -95,7 +103,6 @@ private:
 
    // LED Stuff
    std::shared_ptr<LedStrip> m_ledStrip;
-   SpecAnLedTypes::tRgbVector m_ledColors;
    ColorGradient::tGradient m_currentGradient;
    bool m_reverseGrad = false;
 
