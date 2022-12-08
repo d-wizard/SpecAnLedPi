@@ -206,21 +206,21 @@ void AudioLeds::pcmProcFunc()
    ThreadPriorities::setThisThreadName("PcmProcFunc");
    auto& audioDisplay = m_audioDisplays[m_activeAudioDisplayIndex];
    size_t numSamp = audioDisplay->getFrameSize();
-   SpecAnLedTypes::tPcmBuffer samples(numSamp);
+   SpecAnLedTypes::tPcmBuffer samplesForProcessing(numSamp);
+   samplesForProcessing.reserve(numSamp);
 
    while(m_pcmProc_active)
    {
       auto& audioDisplay = m_audioDisplays[m_activeAudioDisplayIndex];
       numSamp = audioDisplay->getFrameSize();
-      samples.resize(numSamp);
 
-      bool copySamples = false;
+      bool samplesReady = false;
       {
          std::unique_lock<std::mutex> lock(m_pcmProc_mutex);
 
          // Check if we have samples right now or if we need to wait.
-         copySamples = (m_pcmProc_buff.size() >= numSamp);
-         if(!copySamples)
+         samplesReady = (m_pcmProc_buff.size() >= numSamp);
+         if(!samplesReady)
          {
             auto result = m_pcmProc_bufferReadyCondVar.wait_for(lock, std::chrono::milliseconds(100));
             if(result == std::cv_status::timeout)
@@ -231,21 +231,31 @@ void AudioLeds::pcmProcFunc()
                
                m_pcmProc_active = false; // Exit out of this thread.
             }
-            copySamples = (m_pcmProc_buff.size() >= numSamp);
+            samplesReady = (m_pcmProc_buff.size() >= numSamp);
          }
 
-         copySamples = copySamples && m_pcmProc_active;
-         if(copySamples)
+         samplesReady = samplesReady && m_pcmProc_active;
+         if(samplesReady)
          {
-            memcpy(samples.data(), m_pcmProc_buff.data(), sizeof(samples[0])*numSamp);
-            m_pcmProc_buff.erase(m_pcmProc_buff.begin(),m_pcmProc_buff.begin()+numSamp);
+            if(m_pcmProc_buff.size() == numSamp)
+            {
+               // Exactly the correct number of samples are in the buffer. No need to copy, just swap.
+               samplesForProcessing.resize(0);
+               m_pcmProc_buff.swap(samplesForProcessing);
+            }
+            else
+            {
+               samplesForProcessing.resize(numSamp);
+               memcpy(samplesForProcessing.data(), m_pcmProc_buff.data(), sizeof(samplesForProcessing[0])*numSamp);
+               m_pcmProc_buff.erase(m_pcmProc_buff.begin(),m_pcmProc_buff.begin()+numSamp);
+            }
          }
       }
 
-      if(copySamples)
+      if(samplesReady)
       {
          // Send the samples to the Audio Display to generate the LED Colors.
-         if(audioDisplay->parsePcm(samples.data(), numSamp))
+         if(audioDisplay->parsePcm(samplesForProcessing.data(), numSamp))
          {
             float gain, brightness;
             updateGainBrightness(gain, brightness); // Get the current gain / brightness values.
