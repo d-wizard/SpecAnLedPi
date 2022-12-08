@@ -43,7 +43,7 @@
 #define REMOTE_CTRL_PORT_NUM (2555)
 
 // LED Stuff
-#define NUM_LEDS (30)
+#define DEFAULT_NUM_LEDS (30)
 static std::shared_ptr<LedStrip> ledStrip;
 
 // Thread for Updating the Color Gradient
@@ -179,16 +179,44 @@ bool DetermineRemoteLocalControl(int argc, char *argv[], std::shared_ptr<SaveRes
    return useRemoteGainBrightness;
 }
 
+unsigned DetermineNumLeds(int argc, char *argv[], std::shared_ptr<SaveRestoreJson> saveRestore)
+{
+   unsigned numLeds = DEFAULT_NUM_LEDS;
+   bool commandFound = false;
+   
+   // Command line args take priority.
+   for(int i = 1; i < argc; ++i)
+   {
+      std::string arg(argv[i]);
+      if( (arg == "-n" || arg == "-N" || arg == "--num_leds") && ((i+1) < argc) )
+      {
+         auto tryNumLeds = atol(argv[i+1]);
+         if(tryNumLeds > 0)
+         {
+            numLeds = unsigned(tryNumLeds);
+            commandFound = true;
+            break;
+         }
+      }
+   }
+
+   if(!commandFound )
+   {
+      // Check if specified via JSON
+      auto tryNumLeds = saveRestore->restore_numLeds();
+      if(tryNumLeds > 0)
+         numLeds = unsigned(tryNumLeds);
+   }
+
+   return numLeds;
+}
+
 int main (int argc, char *argv[])
 {
    wiringPiSetup();
 
    // This is used to save / restore Color Gradients.
    saveRestore.reset(new SaveRestoreJson());
-
-   // Setup LED strip.
-   ledStrip.reset(new LedStrip(NUM_LEDS, LedStrip::GRB));
-   ledStrip->clear();
 
    // Setup Signal Handler for ctrl+c
    signal(SIGINT, signalHandler);
@@ -207,9 +235,14 @@ int main (int argc, char *argv[])
 
    // Determine whether to start in remote or local control.
    bool useRemoteGainBrightness = DetermineRemoteLocalControl(argc, argv, saveRestore);
+   auto numLeds = DetermineNumLeds(argc, argv, saveRestore);
 
    // Init remote control interface.
    remoteControl.reset(new RemoteControl(REMOTE_CTRL_PORT_NUM, useRemoteGainBrightness));
+
+   // Setup LED strip.
+   ledStrip.reset(new LedStrip(numLeds, LedStrip::GRB));
+   ledStrip->clear();
 
    thisAppThread.reset(new std::thread(thisAppForeverFunction));
 

@@ -36,6 +36,8 @@ public:
 
    SaveRestoreJson();
 
+   unsigned restore_numLeds();
+
    void save_gradient(ColorGradient::tGradient& gradToSave);
 
    ColorGradient::tGradient restore_gradient();
