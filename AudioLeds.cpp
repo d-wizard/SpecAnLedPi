@@ -64,9 +64,9 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    // Set the Audio Displays (do this before creating the thread)
    auto numLeds = ledStrip->getNumLeds();
    // Amplitude based displays
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_SCALE,    0.7, AudioDisplayAmp::E_PEAK_GRAD_MID_CHANGE));
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_MIN_SAME, 0.7, AudioDisplayAmp::E_PEAK_GRAD_MID_CONST));
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_MAX_SAME, 0.7, AudioDisplayAmp::E_PEAK_GRAD_MIN));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_SCALE,    0.125, AudioDisplayAmp::E_PEAK_GRAD_MID_CHANGE));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_MIN_SAME, 0.125, AudioDisplayAmp::E_PEAK_GRAD_MID_CONST));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_MAX_SAME, 0.125, AudioDisplayAmp::E_PEAK_GRAD_MIN));
    for(auto& disp : m_audioDisplayAmp)
       m_audioDisplays.push_back(disp.get());
 

@@ -19,14 +19,14 @@
 
 #include "AudioDisplayAmplitude.h"
 
-AudioDisplayAmp::AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, eAmpDisplayType displayType, float gradient_fadeAwayFactor, ePeakType peakType, bool mirror):
+AudioDisplayAmp::AudioDisplayAmp(size_t sampleRate, size_t frameSize, size_t numDisplayPoints, eAmpDisplayType displayType, float fullFadeTime, ePeakType peakType, bool mirror):
    AudioDisplayBase(frameSize, numDisplayPoints, peakType == E_PEAK_GRAD_MIN ? 1.0 : 0.5, mirror),
    NUM_LEDS(m_displayPoints.size()),
    MAX_LED_INDEX(NUM_LEDS-1),
    m_displayType(displayType),
-   m_grad_fadeAwayFactor(gradient_fadeAwayFactor),
+   m_grad_fadeAwayFactor(double(NUM_LEDS)*double(frameSize)/(double(sampleRate)*double(fullFadeTime))),
    m_peak_type(peakType),
-   m_peak_fadeFactorStart(gradient_fadeAwayFactor*3/70), // TODO this ratio was found to work visually, but it might not be optimal in all situations.
+   m_peak_fadeFactorStart(m_grad_fadeAwayFactor*3/70), // This gets the peak to fade from max led to nothing about 5x slower than the gradient.
    m_peak_fadeFactorCurrent(m_peak_fadeFactorStart)
 {
    if(m_peak_type != E_PEAK_NONE)
