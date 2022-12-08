@@ -43,8 +43,8 @@ src = [ 'main.cpp',
         'SaveRestore.cpp',
         'seeed_adc_8chan_12bit.cpp',
         'TCPThreads.c',
-        'modules/plotperfectclient/sendMemoryToPlot.c', 
-        'modules/plotperfectclient/smartPlotMessage.c' ]
+        'modules/plotperfectclient/sendMemoryToPlot.cpp', 
+        'modules/plotperfectclient/smartPlotMessage.cpp' ]
 
 defines = []
 
