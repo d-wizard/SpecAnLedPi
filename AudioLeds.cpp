@@ -28,6 +28,10 @@
 // FFT Stuff
 #define FFT_SIZE (256) // Base 2 number
 
+// Frame Sizes
+#define MICROPHONE_FRAME_SIZE (FFT_SIZE >> 1) // 2 Microphone frames per FFT.
+#define AMP_DISP_FRAME_SIZE (MICROPHONE_FRAME_SIZE << 1) // Only run every 2 Microphone frames.
+
 
 AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad, 
                       std::shared_ptr<SaveRestoreJson> saveRestore,
@@ -63,9 +67,9 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    // Set the Audio Displays (do this before creating the thread)
    auto numLeds = ledStrip->getNumLeds();
    // Amplitude based displays
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_SCALE,    0.125, AudioDisplayAmp::E_PEAK_GRAD_MID_CHANGE));
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_MIN_SAME, 0.125, AudioDisplayAmp::E_PEAK_GRAD_MID_CONST));
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_MAX_SAME, 0.125, AudioDisplayAmp::E_PEAK_GRAD_MIN));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, AMP_DISP_FRAME_SIZE, numLeds, AudioDisplayAmp::E_SCALE,    0.125, AudioDisplayAmp::E_PEAK_GRAD_MID_CHANGE));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, AMP_DISP_FRAME_SIZE, numLeds, AudioDisplayAmp::E_MIN_SAME, 0.125, AudioDisplayAmp::E_PEAK_GRAD_MID_CONST));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, AMP_DISP_FRAME_SIZE, numLeds, AudioDisplayAmp::E_MAX_SAME, 0.125, AudioDisplayAmp::E_PEAK_GRAD_MIN));
    for(auto& disp : m_audioDisplayAmp)
       m_audioDisplays.push_back(disp.get());
 
@@ -96,7 +100,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    m_ledUpdate_thread = std::thread(&AudioLeds::ledUpdateFunc, this);
 
    // Start capturing from the microphone.
-   m_mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE>>1, 1, alsaMicSamples, this));
+   m_mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, MICROPHONE_FRAME_SIZE, 1, alsaMicSamples, this));
 }
 
 AudioLeds::~AudioLeds()
