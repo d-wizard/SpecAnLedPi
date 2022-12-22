@@ -10,3 +10,6 @@
 [submodule "modules/jsoncpp"]
 	path = modules/jsoncpp
 	url = https://github.com/open-source-parsers/jsoncpp.git
+[submodule "modules/WiringPi"]
+	path = modules/WiringPi
+	url = https://github.com/WiringPi/WiringPi.git

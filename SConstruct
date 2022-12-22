@@ -18,6 +18,9 @@
 
 env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g -Wall -Werror -fdiagnostics-color=always')
 
+AdcHatAttached = True # Specifies whether the ADC hat card is attached or not.
+Ne10Compatible = True # NE10 is used to do FFTs. NE10 isn't comptible with ARM6 (Pi W Zeros).
+
 src = [ 'main.cpp',
         'AudioDisplayBase.cpp',
         'AudioDisplayAmplitude.cpp',
@@ -38,20 +41,30 @@ src = [ 'main.cpp',
         'RemoteControl.cpp',
         'rotaryEncoder.cpp',
         'SaveRestore.cpp',
+        'seeed_adc_8chan_12bit.cpp',
         'TCPThreads.c',
-        'modules/plotperfectclient/sendMemoryToPlot.c', 
-        'modules/plotperfectclient/smartPlotMessage.c' ]
+        'modules/plotperfectclient/sendMemoryToPlot.cpp', 
+        'modules/plotperfectclient/smartPlotMessage.cpp' ]
 
 defines = []
 
 inc = [ './modules/plotperfectclient', 
         './modules/Ne10/inc', 
         './modules/rpi_ws281x', 
-        './modules/jsoncpp/include' ]
+        './modules/jsoncpp/include', 
+        './modules/WiringPi/wiringPi' ]
 
 lib = ['rt', 'asound', 'pthread', 'NE10', 'ws2811', 'wiringPi', 'jsoncpp_static']
 
-libpath = ['./modules/Ne10/build/modules', './modules/rpi_ws281x', './modules/jsoncpp/build/lib']
+libpath = ['./modules/Ne10/build/modules', './modules/rpi_ws281x', './modules/jsoncpp/build/lib', './modules/WiringPi/wiringPi']
+
+# Update build based on some global settings.
+if not AdcHatAttached:
+   defines.append('NO_ADCS')
+
+if not Ne10Compatible:
+   defines.append('NO_FFTS')
+
 
 env.Program( source=src,
              CPPDEFINES=defines,

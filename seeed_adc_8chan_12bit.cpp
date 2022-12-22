@@ -1,4 +1,4 @@
-/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
+   /* Copyright 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,38 +16,39 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-#include <memory>
-#include "AudioDisplayBase.h"
-#include "fftRunRate.h"
-#include "fftModifier.h"
+#include <unistd.h> // Needed for close
+#include <wiringPiI2C.h>
+#include "seeed_adc_8chan_12bit.h"
 
-class AudioDisplayFft : public AudioDisplayBase
+SeeedAdc8Ch12Bit::SeeedAdc8Ch12Bit(int deviceAddr): // 0x04 appears to be the default address for this ADC Hat.
+   m_deviceAddr(deviceAddr)
 {
-public:
-   typedef enum
+#ifndef NO_ADCS // Just need to skip the setup call if there are no ADCs. isActive() will make sure the FD isn't used in the future.
+   m_fd = wiringPiI2CSetup(m_deviceAddr);
+#endif
+}
+
+SeeedAdc8Ch12Bit::~SeeedAdc8Ch12Bit()
+{
+   if(isActive())
    {
-      E_GRADIENT_MAG,   // The position on the gradient indications the magnatude.
-      E_BRIGHTNESS_MAG  // The brighness indications the magnatude. The color of each LED is constant.
-   }eFftColorDisplay;
+      close(m_fd);
+   }
+}
 
-   AudioDisplayFft(size_t sampleRate, size_t fftSize, size_t numDisplayPoints, eFftColorDisplay colorDisplay, bool mirror = false);
+bool SeeedAdc8Ch12Bit::isActive()
+{
+   return (m_fd >= 0);
+}
 
-private:
-   // Make uncopyable
-   AudioDisplayFft();
-   AudioDisplayFft(AudioDisplayFft const&);
-   void operator=(AudioDisplayFft const&);
+uint16_t SeeedAdc8Ch12Bit::getAdcValue(int adcNum)
+{
+   uint16_t retVal = 0;
+   if(isActive())
+   {
+      adcNum = adcNum & 0x7;
+      retVal = wiringPiI2CReadReg16(m_fd, ADC_VALUE_REG_ADDR_START + adcNum);
+   }
+   return retVal;
+}
 
-   bool processPcm(const SpecAnLedTypes::tPcmSample* samples) override;
-
-   void fillInDisplayPoints(int gain) override;
-
-   // FFT Stuff
-   std::unique_ptr<FftRunRate> m_fftRun;
-   std::unique_ptr<FftModifier> m_fftModifier;
-
-   SpecAnLedTypes::tFftVector* m_fftResult = nullptr;
-
-   eFftColorDisplay m_brightDisplayType;
-};

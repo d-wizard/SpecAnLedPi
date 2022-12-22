@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -18,40 +18,17 @@
  */
 #pragma once
 
-#include <stdio.h>
 #include <stdint.h>
-#include <unistd.h> // Needed for close
-#include <wiringPiI2C.h>
 
 class SeeedAdc8Ch12Bit
 {
 public:
-   SeeedAdc8Ch12Bit(int deviceAddr = 0x04): // 0x04 appears to be the default address for this ADC Hat.
-      m_deviceAddr(deviceAddr)
-   {
-      m_fd = wiringPiI2CSetup(m_deviceAddr);
-   }
+   SeeedAdc8Ch12Bit(int deviceAddr = 0x04); // 0x04 appears to be the default address for this ADC Hat.
+   virtual ~SeeedAdc8Ch12Bit();
 
-   virtual ~SeeedAdc8Ch12Bit()
-   {
-      if(isActive())
-      {
-         close(m_fd);
-      }
-   }
+   bool isActive();
 
-   bool isActive() { return (m_fd >= 0); }
-
-   uint16_t getAdcValue(int adcNum)
-   {
-      uint16_t retVal = 0;
-      if(isActive())
-      {
-         adcNum = adcNum & 0x7;
-         retVal = wiringPiI2CReadReg16(m_fd, ADC_VALUE_REG_ADDR_START + adcNum);
-      }
-      return retVal;
-   }
+   uint16_t getAdcValue(int adcNum);
    
    // Delete constructors / operations that should not be allowed.
    SeeedAdc8Ch12Bit(SeeedAdc8Ch12Bit const&) = delete;

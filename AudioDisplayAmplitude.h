@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -45,7 +45,7 @@ public:
       E_PEAK_GRAD_MID_CHANGE
    }ePeakType;
    
-   AudioDisplayAmp(size_t frameSize, size_t numDisplayPoints, eAmpDisplayType displayType, float gradient_fadeAwayFactor, ePeakType peakType = E_PEAK_NONE);
+   AudioDisplayAmp(size_t sampleRate, size_t frameSize, size_t numDisplayPoints, eAmpDisplayType displayType, float fullFadeTime, ePeakType peakType, bool mirror = false);
 
 private:
    static constexpr int NO_COLOR_MIN_INDEX = -2; // Set to 2 less than mininum valid index (0). This is to ensure that if a peak is used it will also be able to be less than 0.

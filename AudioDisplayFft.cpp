@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -21,8 +21,8 @@
 
 
 
-AudioDisplayFft::AudioDisplayFft(size_t sampleRate, size_t frameSize, size_t numDisplayPoints, eFftColorDisplay colorDisplay):
-   AudioDisplayBase(frameSize, numDisplayPoints, colorDisplay == E_BRIGHTNESS_MAG ? 1.0 : 0.0),
+AudioDisplayFft::AudioDisplayFft(size_t sampleRate, size_t frameSize, size_t numDisplayPoints, eFftColorDisplay colorDisplay, bool mirror):
+   AudioDisplayBase(frameSize, numDisplayPoints, colorDisplay == E_BRIGHTNESS_MAG ? 1.0 : 0.0, mirror),
    m_fftResult(nullptr),
    m_brightDisplayType(colorDisplay)
 {
@@ -39,7 +39,7 @@ AudioDisplayFft::AudioDisplayFft(size_t sampleRate, size_t frameSize, size_t num
    mod.attenLowStartLevel = 0.2;
    mod.attenLowStopFreq = 6000;
    mod.fadeAwayAmount = (colorDisplay == E_BRIGHTNESS_MAG ? 50 : 30);
-   m_fftModifier.reset(new FftModifier(sampleRate, frameSize, numDisplayPoints, mod));
+   m_fftModifier.reset(new FftModifier(sampleRate, frameSize, m_numDisplayPoints, mod));
 
 }
 

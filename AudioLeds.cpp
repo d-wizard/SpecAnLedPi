@@ -28,6 +28,10 @@
 // FFT Stuff
 #define FFT_SIZE (256) // Base 2 number
 
+// Frame Sizes
+#define MICROPHONE_FRAME_SIZE (FFT_SIZE >> 1) // 2 Microphone frames per FFT.
+#define AMP_DISP_FRAME_SIZE (MICROPHONE_FRAME_SIZE << 1) // Only run every 2 Microphone frames.
+
 
 AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad, 
                       std::shared_ptr<SaveRestoreJson> saveRestore,
@@ -40,11 +44,11 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
                       std::shared_ptr<RotaryEncoder> rightButton,
                       std::shared_ptr<PotentiometerKnob> brightKnob,
                       std::shared_ptr<PotentiometerKnob> gainKnob,
-                      std::shared_ptr<RemoteControl> remoteCtrl ) :
+                      std::shared_ptr<RemoteControl> remoteCtrl,
+                      bool mirrorLedMode ) :
    m_activeAudioDisplayIndex(0),
    m_saveRestore(saveRestore),
    m_ledStrip(ledStrip),
-   m_ledColors(ledStrip->getNumLeds()),
    m_currentGradient(colorGrad->getGradient()),
    m_cycleGrads(cycleGrads),
    m_cycleDisplays(cycleDisplays),
@@ -63,16 +67,20 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
 
    // Set the Audio Displays (do this before creating the thread)
    auto numLeds = ledStrip->getNumLeds();
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_SCALE,    0.7, AudioDisplayAmp::E_PEAK_GRAD_MID_CHANGE));
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_MIN_SAME, 0.7, AudioDisplayAmp::E_PEAK_GRAD_MID_CONST));
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(FFT_SIZE>>1, numLeds, AudioDisplayAmp::E_MAX_SAME, 0.7, AudioDisplayAmp::E_PEAK_GRAD_MIN));
-   m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, numLeds, AudioDisplayFft::E_GRADIENT_MAG));
-   m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, numLeds, AudioDisplayFft::E_BRIGHTNESS_MAG));
-
+   // Amplitude based displays
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, AMP_DISP_FRAME_SIZE, numLeds, AudioDisplayAmp::E_SCALE,    0.125, AudioDisplayAmp::E_PEAK_GRAD_MID_CHANGE, mirrorLedMode));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, AMP_DISP_FRAME_SIZE, numLeds, AudioDisplayAmp::E_MIN_SAME, 0.125, AudioDisplayAmp::E_PEAK_GRAD_MID_CONST, mirrorLedMode));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, AMP_DISP_FRAME_SIZE, numLeds, AudioDisplayAmp::E_MAX_SAME, 0.125, AudioDisplayAmp::E_PEAK_GRAD_MIN, mirrorLedMode));
    for(auto& disp : m_audioDisplayAmp)
       m_audioDisplays.push_back(disp.get());
+
+#ifndef NO_FFTS
+   // Frequency based displays
+   m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, numLeds, AudioDisplayFft::E_GRADIENT_MAG, mirrorLedMode));
+   m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, numLeds, AudioDisplayFft::E_BRIGHTNESS_MAG, mirrorLedMode));
    for(auto& disp : m_audioDisplayFft)
-      m_audioDisplays.push_back(disp.get());
+     m_audioDisplays.push_back(disp.get());
+#endif
 
    // Attempt to Restore settings.
    int restoredDisplayIndex = m_saveRestore->restore_displayIndex();
@@ -83,13 +91,17 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    // Make sure the first display gets set for the current gradient.
    m_audioDisplays[m_activeAudioDisplayIndex]->setGradient(m_currentGradient, m_reverseGrad);
 
-   // Create the processing thread.
+   // Create the PCM Sample processing thread.
    m_pcmProc_buff.reserve(5000);
    m_pcmProc_active = true;
    m_pcmProc_thread = std::thread(&AudioLeds::pcmProcFunc, this);
 
+   // Create the LED Update processing thread.
+   m_ledUpdate_active = true;
+   m_ledUpdate_thread = std::thread(&AudioLeds::ledUpdateFunc, this);
+
    // Start capturing from the microphone.
-   m_mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, FFT_SIZE>>1, 1, alsaMicSamples, this));
+   m_mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, MICROPHONE_FRAME_SIZE, 1, alsaMicSamples, this));
 }
 
 AudioLeds::~AudioLeds()
@@ -101,12 +113,19 @@ AudioLeds::~AudioLeds()
    // Stop getting samples from the microphone.
    m_mic.reset();
 
-   // Kill the proc thread and join.
+   // Kill the PCM Sample processing thread and join.
    m_pcmProc_active = false;
    m_pcmProc_mutex.lock();
    m_pcmProc_bufferReadyCondVar.notify_all();
    m_pcmProc_mutex.unlock();
    m_pcmProc_thread.join();
+
+   // Kill the LED Update processing thread and join.
+   m_ledUpdate_active = false;
+   m_ledUpdate_mutex.lock();
+   m_ledUpdate_bufferReadyCondVar.notify_all();
+   m_ledUpdate_mutex.unlock();
+   m_ledUpdate_thread.join();
 }
 
 void AudioLeds::waitForThreadDone()
@@ -199,24 +218,25 @@ void AudioLeds::buttonMonitorFunc()
 // Processes PCM samples from the Microphone Capture object.
 void AudioLeds::pcmProcFunc()
 {
-   ThreadPriorities::setThisThreadName("PcmProcFunc");
+   ThreadPriorities::setThisThreadName("PcmProcFunc"); // TODO this should have a thread priority
    auto& audioDisplay = m_audioDisplays[m_activeAudioDisplayIndex];
    size_t numSamp = audioDisplay->getFrameSize();
-   SpecAnLedTypes::tPcmBuffer samples(numSamp);
+   SpecAnLedTypes::tRgbVector ledColors;
+   SpecAnLedTypes::tPcmBuffer samplesForProcessing(numSamp);
+   samplesForProcessing.reserve(numSamp);
 
    while(m_pcmProc_active)
    {
       auto& audioDisplay = m_audioDisplays[m_activeAudioDisplayIndex];
       numSamp = audioDisplay->getFrameSize();
-      samples.resize(numSamp);
 
-      bool copySamples = false;
+      bool samplesReady = false;
       {
          std::unique_lock<std::mutex> lock(m_pcmProc_mutex);
 
          // Check if we have samples right now or if we need to wait.
-         copySamples = (m_pcmProc_buff.size() >= numSamp);
-         if(!copySamples)
+         samplesReady = (m_pcmProc_buff.size() >= numSamp);
+         if(!samplesReady)
          {
             auto result = m_pcmProc_bufferReadyCondVar.wait_for(lock, std::chrono::milliseconds(100));
             if(result == std::cv_status::timeout)
@@ -227,32 +247,78 @@ void AudioLeds::pcmProcFunc()
                
                m_pcmProc_active = false; // Exit out of this thread.
             }
-            copySamples = (m_pcmProc_buff.size() >= numSamp);
+            samplesReady = (m_pcmProc_buff.size() >= numSamp);
          }
 
-         copySamples = copySamples && m_pcmProc_active;
-         if(copySamples)
+         samplesReady = samplesReady && m_pcmProc_active;
+         if(samplesReady)
          {
-            memcpy(samples.data(), m_pcmProc_buff.data(), sizeof(samples[0])*numSamp);
-            m_pcmProc_buff.erase(m_pcmProc_buff.begin(),m_pcmProc_buff.begin()+numSamp);
+            if(m_pcmProc_buff.size() == numSamp)
+            {
+               // Exactly the correct number of samples are in the buffer. No need to copy, just swap.
+               samplesForProcessing.resize(0);
+               m_pcmProc_buff.swap(samplesForProcessing);
+            }
+            else
+            {
+               samplesForProcessing.resize(numSamp);
+               memcpy(samplesForProcessing.data(), m_pcmProc_buff.data(), sizeof(samplesForProcessing[0])*numSamp);
+               m_pcmProc_buff.erase(m_pcmProc_buff.begin(),m_pcmProc_buff.begin()+numSamp);
+            }
          }
       }
 
-      if(copySamples)
+      if(samplesReady)
       {
          // Send the samples to the Audio Display to generate the LED Colors.
-         if(audioDisplay->parsePcm(samples.data(), numSamp))
+         if(audioDisplay->parsePcm(samplesForProcessing.data(), numSamp))
          {
             float gain, brightness;
             updateGainBrightness(gain, brightness); // Get the current gain / brightness values.
 
-            audioDisplay->fillInLeds(m_ledColors, brightness, gain);
-            m_ledStrip->set(m_ledColors);
+            ledColors.resize(m_ledStrip->getNumLeds()); // Make sure this is big enough.
+            audioDisplay->fillInLeds(ledColors, brightness, gain);
+
+            // Move the LED color values to the buffer and handle them on another thread.
+            {
+               std::lock_guard<std::mutex> lock(m_ledUpdate_mutex);
+               auto newIndex = m_ledUpdate_buff.size();
+               m_ledUpdate_buff.resize(newIndex+1);
+               ledColors.swap(m_ledUpdate_buff[newIndex]);
+               m_ledUpdate_bufferReadyCondVar.notify_all();
+            }
          }
       }
    }
 }
 
+void AudioLeds::ledUpdateFunc()
+{
+   ThreadPriorities::setThisThreadName("LedUpdateFunc"); // TODO this should have a thread priority
+   std::unique_lock<std::mutex> lock(m_ledUpdate_mutex);
+   while(m_ledUpdate_active)
+   {
+      // If buffer is empty, wait for something to do.
+      while(m_ledUpdate_buff.size() == 0 && m_ledUpdate_active)
+      {
+         m_ledUpdate_bufferReadyCondVar.wait(lock);
+      }
+
+      // Update LED Strip.
+      while(m_ledUpdate_buff.size() > 0 && m_ledUpdate_active)
+      {
+         // Move LED values locally so we can unlock the mutex.
+         SpecAnLedTypes::tRgbVector ledColors;
+         ledColors.swap(m_ledUpdate_buff[0]);
+         m_ledUpdate_buff.erase(m_ledUpdate_buff.begin());
+
+         // Update the LED strip (keep the mutex unlocked while doing this so more LED updates can be added to the buffer while this update is happing).
+         lock.unlock();
+         m_ledStrip->set(ledColors);
+         lock.lock();
+      }
+   }
+}
 
 void AudioLeds::alsaMicSamples(void* usrPtr, int16_t* samples, size_t numSamp)
 {
