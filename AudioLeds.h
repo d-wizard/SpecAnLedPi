@@ -48,7 +48,8 @@ public:
               std::shared_ptr<RotaryEncoder> rightButton,
               std::shared_ptr<PotentiometerKnob> brightKnob,
               std::shared_ptr<PotentiometerKnob> gainKnob,
-              std::shared_ptr<RemoteControl> remoteCtrl );
+              std::shared_ptr<RemoteControl> remoteCtrl,
+              bool mirrorLedMode );
 
    virtual ~AudioLeds();
 

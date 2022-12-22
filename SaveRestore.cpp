@@ -106,6 +106,16 @@ unsigned SaveRestoreJson::restore_numLeds()
    return unsigned(retVal);
 }
 
+bool SaveRestoreJson::restore_mirrorLedMode()
+{
+   std::unique_lock<std::mutex> lock(m_mutex); // Lock around all public functions (they will never call each other).
+
+   Json::Value settingsJson;
+   getJson(SETTINGS_JSON, settingsJson);
+
+   return settingsJson["mirror_led_mode"].asBool();
+}
+
 void SaveRestoreJson::save_gradient(ColorGradient::tGradient& gradToSave)
 {
    std::unique_lock<std::mutex> lock(m_mutex); // Lock around all public functions (they will never call each other).

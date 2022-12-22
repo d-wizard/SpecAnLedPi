@@ -37,6 +37,7 @@ public:
    SaveRestoreJson();
 
    unsigned restore_numLeds();
+   bool restore_mirrorLedMode();
 
    void save_gradient(ColorGradient::tGradient& gradToSave);
 

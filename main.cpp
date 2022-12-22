@@ -77,7 +77,7 @@ static std::shared_ptr<RemoteControl> remoteControl;
 // The Main Thread (i.e. This App's Thread)
 static std::atomic<bool> exitThisApp;
 static std::shared_ptr<std::thread> thisAppThread;
-static void thisAppForeverFunction();
+static void thisAppForeverFunction(bool mirrorLedMode);
 
 static std::shared_ptr<SaveRestoreJson> saveRestore;
 
@@ -211,6 +211,30 @@ unsigned DetermineNumLeds(int argc, char *argv[], std::shared_ptr<SaveRestoreJso
    return numLeds;
 }
 
+bool DetermineMirrorLedMode(int argc, char *argv[], std::shared_ptr<SaveRestoreJson> saveRestore)
+{
+   bool mirrorLedMode = false;
+   bool commandFound = false;
+   
+   // Command line args take priority over JSON entry.
+   for(int i = 1; i < argc; ++i)
+   {
+      std::string arg(argv[i]);
+      if( arg == "-m" || arg == "-M" || arg == "--mirror_led_mode" )
+      {
+         mirrorLedMode = true;
+         commandFound = true;
+         break;
+      }
+   }
+   if(!commandFound )
+   {
+      // Check if specified via JSON
+      mirrorLedMode = saveRestore->restore_mirrorLedMode();
+   }
+   return mirrorLedMode;
+}
+
 int main (int argc, char *argv[])
 {
    wiringPiSetup();
@@ -236,6 +260,7 @@ int main (int argc, char *argv[])
    // Determine whether to start in remote or local control.
    bool useRemoteGainBrightness = DetermineRemoteLocalControl(argc, argv, saveRestore);
    auto numLeds = DetermineNumLeds(argc, argv, saveRestore);
+   bool mirrorLedMode = DetermineMirrorLedMode(argc, argv, saveRestore);
 
    // Init remote control interface.
    remoteControl.reset(new RemoteControl(REMOTE_CTRL_PORT_NUM, useRemoteGainBrightness));
@@ -244,14 +269,14 @@ int main (int argc, char *argv[])
    ledStrip.reset(new LedStrip(numLeds, LedStrip::GRB));
    ledStrip->clear();
 
-   thisAppThread.reset(new std::thread(thisAppForeverFunction));
+   thisAppThread.reset(new std::thread(thisAppForeverFunction, mirrorLedMode));
 
    sleep(0x7FFFFFFF);
 
    return 0;
 }
 
-static void thisAppForeverFunction()
+static void thisAppForeverFunction(bool mirrorLedMode)
 {
    bool skipGradFirst = true;
    exitThisApp = false;
@@ -348,7 +373,8 @@ static void thisAppForeverFunction()
             rightButton,
             brightKnob,
             gainKnob,
-            remoteControl ));
+            remoteControl,
+            mirrorLedMode));
          
          // Wait for User to Exit Audio LED Mode.
          audioLed->waitForThreadDone();

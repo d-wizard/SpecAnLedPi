@@ -44,7 +44,8 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
                       std::shared_ptr<RotaryEncoder> rightButton,
                       std::shared_ptr<PotentiometerKnob> brightKnob,
                       std::shared_ptr<PotentiometerKnob> gainKnob,
-                      std::shared_ptr<RemoteControl> remoteCtrl ) :
+                      std::shared_ptr<RemoteControl> remoteCtrl,
+                      bool mirrorLedMode ) :
    m_activeAudioDisplayIndex(0),
    m_saveRestore(saveRestore),
    m_ledStrip(ledStrip),
@@ -67,16 +68,16 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    // Set the Audio Displays (do this before creating the thread)
    auto numLeds = ledStrip->getNumLeds();
    // Amplitude based displays
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, AMP_DISP_FRAME_SIZE, numLeds, AudioDisplayAmp::E_SCALE,    0.125, AudioDisplayAmp::E_PEAK_GRAD_MID_CHANGE));
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, AMP_DISP_FRAME_SIZE, numLeds, AudioDisplayAmp::E_MIN_SAME, 0.125, AudioDisplayAmp::E_PEAK_GRAD_MID_CONST));
-   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, AMP_DISP_FRAME_SIZE, numLeds, AudioDisplayAmp::E_MAX_SAME, 0.125, AudioDisplayAmp::E_PEAK_GRAD_MIN));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, AMP_DISP_FRAME_SIZE, numLeds, AudioDisplayAmp::E_SCALE,    0.125, AudioDisplayAmp::E_PEAK_GRAD_MID_CHANGE, mirrorLedMode));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, AMP_DISP_FRAME_SIZE, numLeds, AudioDisplayAmp::E_MIN_SAME, 0.125, AudioDisplayAmp::E_PEAK_GRAD_MID_CONST, mirrorLedMode));
+   m_audioDisplayAmp.emplace_back(new AudioDisplayAmp(SAMPLE_RATE, AMP_DISP_FRAME_SIZE, numLeds, AudioDisplayAmp::E_MAX_SAME, 0.125, AudioDisplayAmp::E_PEAK_GRAD_MIN, mirrorLedMode));
    for(auto& disp : m_audioDisplayAmp)
       m_audioDisplays.push_back(disp.get());
 
 #ifndef NO_FFTS
    // Frequency based displays
-   m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, numLeds, AudioDisplayFft::E_GRADIENT_MAG));
-   m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, numLeds, AudioDisplayFft::E_BRIGHTNESS_MAG));
+   m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, numLeds, AudioDisplayFft::E_GRADIENT_MAG, mirrorLedMode));
+   m_audioDisplayFft.emplace_back(new AudioDisplayFft(SAMPLE_RATE, FFT_SIZE, numLeds, AudioDisplayFft::E_BRIGHTNESS_MAG, mirrorLedMode));
    for(auto& disp : m_audioDisplayFft)
      m_audioDisplays.push_back(disp.get());
 #endif
