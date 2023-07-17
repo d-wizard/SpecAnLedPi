@@ -173,6 +173,9 @@ void AudioLeds::buttonMonitorFunc()
          // Make sure the gradient gets updates in the new display (in case it changed since the last time the display was used).
          newGrad = m_currentGradient; 
          loadNewGrad = true;
+
+         // Save off the new display index.
+         m_saveRestore->save_displayIndex(m_activeAudioDisplayIndex);
       }
 
       // Check if the user want to reverse the gradient (use rotary and button).
@@ -184,6 +187,8 @@ void AudioLeds::buttonMonitorFunc()
          m_reverseGrad = !m_reverseGrad;
          loadNewGrad = true;
       }
+      if(remoteToggleGrad)
+         m_saveRestore->save_gradientReverse(m_reverseGrad); // Save the change.
 
       // Check if the user wants to remove a gradient.
       if(m_deleteButton->checkButton() == RotaryEncoder::E_DOUBLE_CLICK)
