@@ -1,4 +1,4 @@
-/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 - 2023 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -16,7 +16,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-
+#include <math.h>
 #include "AudioDisplayAmplitude.h"
 
 AudioDisplayAmp::AudioDisplayAmp(size_t sampleRate, size_t frameSize, size_t numDisplayPoints, eAmpDisplayType displayType, float fullFadeTime, ePeakType peakType, bool mirror):

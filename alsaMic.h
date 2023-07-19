@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2023 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -22,7 +22,6 @@
 #include <pthread.h>
 #include <string>
 #include <vector>
-#include <alsa/asoundlib.h>
 
 
 class AlsaMic
@@ -47,8 +46,7 @@ private:
    int deinit();
 
    // Private Member Variables
-   snd_pcm_t* m_alsaHandle = nullptr;
-   static constexpr snd_pcm_format_t m_alsaFormat = SND_PCM_FORMAT_S16_LE; // Anything other than this is wrong (sorry audiophiles and big endian fans).
+   void* m_alsaHandle = nullptr;
 
    pthread_t m_readThread;
    std::string m_micName;

@@ -1,4 +1,4 @@
-# Copyright 2020, 2022 Dan Williams. All Rights Reserved.
+# Copyright 2020, 2022 - 2023 Dan Williams. All Rights Reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this
 # software and associated documentation files (the "Software"), to deal in the Software
@@ -21,12 +21,23 @@ env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g -Wall -Werror -fdiagnostics-colo
 AdcHatAttached = True # Specifies whether the ADC hat card is attached or not.
 Ne10Compatible = True # NE10 is used to do FFTs. NE10 isn't comptible with ARM6 (Pi W Zeros).
 
+crossCompilePrefix = None
+if crossCompilePrefix != None:
+   env.Replace(CC=crossCompilePrefix+'gcc')
+   env.Replace(CXX=crossCompilePrefix+'g++')
+   env.Replace(AR=crossCompilePrefix+'ar')
+   env.Replace(RANDLIB=crossCompilePrefix+'randlib')
+
+
+################################################################################
+# Portable Library Build
+################################################################################
+
 src = [ 'main.cpp',
         'AudioDisplayBase.cpp',
         'AudioDisplayAmplitude.cpp',
         'AudioDisplayFft.cpp',
         'AudioLeds.cpp',
-        'alsaMic.cpp',
         'DisplayGradient.cpp',
         'specAnFft.cpp',
         'fftModifier.cpp',
@@ -53,6 +64,17 @@ inc = [ './modules/plotperfectclient',
         './modules/rpi_ws281x', 
         './modules/jsoncpp/include', 
         './modules/WiringPi/wiringPi' ]
+
+libPortable = env.StaticLibrary(
+   CPPDEFINES=defines,
+   CPPPATH=inc,
+   target='SpecAnLedPi',
+   source=src
+)
+
+srcNonPortable = [
+   'alsaMic.cpp',
+   ]
 
 lib = ['rt', 'asound', 'pthread', 'NE10', 'ws2811', 'wiringPi', 'jsoncpp_static']
 

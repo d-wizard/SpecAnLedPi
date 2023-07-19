@@ -1,4 +1,4 @@
-/* Copyright 2022 Dan Williams. All Rights Reserved.
+/* Copyright 2022 - 2023 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -128,7 +128,7 @@ void RemoteControl::processPacket(char* packetPtr, unsigned int packetSize)
 
    // Interpretting input packet as string, so make sure it is null terminated.
    std::vector<char> packetCopy(packetSize+1);
-   memcpy(packetCopy.data(), packetPtr, packetSize);
+   memcpy(packetCopy.data(), packetPtr, packetSize & 0x3FFFFFFF); // And with large mask of avoid new GCC warning.
    packetCopy[packetSize] = '\0';
 
    std::string cmdStr(packetCopy.data());
