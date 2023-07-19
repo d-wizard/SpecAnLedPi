@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2023 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -17,10 +17,13 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include <stdio.h>
+#include <alsa/asoundlib.h>
 #include "alsaMic.h"
 #include "ThreadPriorities.h"
 
 #define ALSA_ERR(printStr, err) if(err < 0) {printf("%s - %s\n", printStr, snd_strerror(err)); return err;}
+
+static constexpr snd_pcm_format_t ALSA_MIC_FORMAT = SND_PCM_FORMAT_S16_LE; // Anything other than this is wrong (sorry audiophiles and big endian fans).
 
 AlsaMic::AlsaMic(const char* micName, unsigned int sampleRate, size_t sampPer, size_t numChannels, alsaMicFunctr callbackFunc, void* callbackUsrPtr):
    m_micName(micName),
@@ -53,7 +56,8 @@ int AlsaMic::init()
    snd_pcm_hw_params_t* alsaParams = nullptr;
 
    // Get a handle to the Microphone.
-   err = snd_pcm_open(&m_alsaHandle, m_micName.c_str(), SND_PCM_STREAM_CAPTURE, 0);
+   snd_pcm_t* alsaHandle = (snd_pcm_t*)m_alsaHandle;
+   err = snd_pcm_open(&alsaHandle, m_micName.c_str(), SND_PCM_STREAM_CAPTURE, 0);
    ALSA_ERR("snd_pcm_open", err); // This will early return on error.
    
    // Allocate HW Paramters Settings and fill the settings in.
@@ -61,40 +65,40 @@ int AlsaMic::init()
       err = snd_pcm_hw_params_malloc(&alsaParams);
       ALSA_ERR("snd_pcm_hw_params_malloc", err); // This will early return on error.
       
-      err = snd_pcm_hw_params_any(m_alsaHandle, alsaParams);
+      err = snd_pcm_hw_params_any(alsaHandle, alsaParams);
       ALSA_ERR("snd_pcm_hw_params_any", err); // This will early return on error.
       
-      err = snd_pcm_hw_params_set_format(m_alsaHandle, alsaParams, m_alsaFormat);
+      err = snd_pcm_hw_params_set_format(alsaHandle, alsaParams, ALSA_MIC_FORMAT);
       ALSA_ERR("snd_pcm_hw_params_set_format", err); // This will early return on error.
 
-      err = snd_pcm_hw_params_set_rate_near(m_alsaHandle, alsaParams, &m_sampleRate, 0);
+      err = snd_pcm_hw_params_set_rate_near(alsaHandle, alsaParams, &m_sampleRate, 0);
       ALSA_ERR("snd_pcm_hw_params_set_rate_near", err); // This will early return on error.
 
       if(m_numChannels >= 1) // TODO, if only one channel, can I optimize better? (shouldn't need to interleave)
       {
-         err = snd_pcm_hw_params_set_access(m_alsaHandle, alsaParams, SND_PCM_ACCESS_RW_INTERLEAVED);
+         err = snd_pcm_hw_params_set_access(alsaHandle, alsaParams, SND_PCM_ACCESS_RW_INTERLEAVED);
          ALSA_ERR("snd_pcm_hw_params_set_access", err); // This will early return on error.
 
-         err = snd_pcm_hw_params_set_channels(m_alsaHandle, alsaParams, m_numChannels);
+         err = snd_pcm_hw_params_set_channels(alsaHandle, alsaParams, m_numChannels);
          ALSA_ERR("snd_pcm_hw_params_set_channels", err); // This will early return on error.
       }
 
       // Following example in https://www.alsa-project.org/alsa-doc/alsa-lib/_2test_2latency_8c-example.html#a18 , setparams_bufsize
       snd_pcm_uframes_t periodsize = 2*m_sampPer;
-      err = snd_pcm_hw_params_set_buffer_size_near(m_alsaHandle, alsaParams, &periodsize);
+      err = snd_pcm_hw_params_set_buffer_size_near(alsaHandle, alsaParams, &periodsize);
       ALSA_ERR("snd_pcm_hw_params_set_buffer_size_near", err); // This will early return on error.
 
       periodsize >>= 1;
-      err = snd_pcm_hw_params_set_period_size_near(m_alsaHandle, alsaParams, &periodsize, 0);
+      err = snd_pcm_hw_params_set_period_size_near(alsaHandle, alsaParams, &periodsize, 0);
       ALSA_ERR("snd_pcm_hw_params_set_period_size_near", err); // This will early return on error.
 
-      err = snd_pcm_hw_params(m_alsaHandle, alsaParams);
+      err = snd_pcm_hw_params(alsaHandle, alsaParams);
       ALSA_ERR("snd_pcm_hw_params", err); // This will early return on error.
 
       snd_pcm_hw_params_free(alsaParams);
    }
 
-   err = snd_pcm_prepare(m_alsaHandle);
+   err = snd_pcm_prepare(alsaHandle);
    ALSA_ERR("snd_pcm_prepare", err); // This will early return on error.
 
    return err;
@@ -106,7 +110,7 @@ int AlsaMic::deinit()
    {
       m_running = false;
       pthread_join(m_readThread, nullptr);
-      snd_pcm_close(m_alsaHandle);
+      snd_pcm_close((snd_pcm_t*)m_alsaHandle);
    }
 
    return 0;
@@ -120,7 +124,7 @@ void* AlsaMic::micReadThreadFunction(void* inPtr)
 
    _this->m_buffer.resize(_this->m_sampPer*_this->m_numChannels);
 
-   snd_pcm_t* handle = _this->m_alsaHandle;
+   snd_pcm_t* handle = (snd_pcm_t*)_this->m_alsaHandle;
    void* usrPtr = _this->m_callbackUsrPtr;
    int16_t* buffer = &_this->m_buffer[0];
    size_t numSamp = _this->m_sampPer;

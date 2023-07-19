@@ -30,9 +30,8 @@ if crossCompilePrefix != None:
 
 
 ################################################################################
-# Portable Library Build
+# Portable Code Library Build
 ################################################################################
-
 src = [ 'main.cpp',
         'AudioDisplayBase.cpp',
         'AudioDisplayAmplitude.cpp',
@@ -65,20 +64,23 @@ inc = [ './modules/plotperfectclient',
         './modules/jsoncpp/include', 
         './modules/WiringPi/wiringPi' ]
 
-libPortable = env.StaticLibrary(
+libPortableCode = env.StaticLibrary(
    CPPDEFINES=defines,
    CPPPATH=inc,
-   target='SpecAnLedPi',
+   target='SpecAnLedPiLib',
    source=src
 )
 
+################################################################################
+# The rest of the non-portable code
+################################################################################
 srcNonPortable = [
    'alsaMic.cpp',
    ]
 
-lib = ['rt', 'asound', 'pthread', 'NE10', 'ws2811', 'wiringPi', 'jsoncpp_static']
+lib = ['SpecAnLedPiLib', 'rt', 'asound', 'pthread', 'NE10', 'ws2811', 'wiringPi', 'jsoncpp_static']
 
-libpath = ['./modules/Ne10/build/modules', './modules/rpi_ws281x', './modules/jsoncpp/build/lib', './modules/WiringPi/wiringPi']
+libpath = ['.', './modules/Ne10/build/modules', './modules/rpi_ws281x', './modules/jsoncpp/build/lib', './modules/WiringPi/wiringPi']
 
 # Update build based on some global settings.
 if not AdcHatAttached:
@@ -88,7 +90,7 @@ if not Ne10Compatible:
    defines.append('NO_FFTS')
 
 
-env.Program( source=src,
+env.Program( source=srcNonPortable,
              CPPDEFINES=defines,
              CPPPATH=inc,
              LIBS=lib,
