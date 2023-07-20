@@ -16,46 +16,28 @@
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g -Wall -Werror -fdiagnostics-color=always')
-
 AdcHatAttached = True # Specifies whether the ADC hat card is attached or not.
 Ne10Compatible = True # NE10 is used to do FFTs. NE10 isn't comptible with ARM6 (Pi W Zeros).
 
-crossCompilePrefix = None
+# Cross Compile Parameters. 
+crossCompilePrefix = None # Example: '/path/to/bin/armv6-rpi-linux-gnueabihf-'
+preCompiledPortableLibDirectory = None # If specified the 'Portable Code Library' won't be built.
+
+
+################################################################################
+
+env = Environment(CC = 'gcc', CCFLAGS = '-O2 -g -Wall -Werror -fdiagnostics-color=always')
+
+################################################################################
 if crossCompilePrefix != None:
    env.Replace(CC=crossCompilePrefix+'gcc')
    env.Replace(CXX=crossCompilePrefix+'g++')
    env.Replace(AR=crossCompilePrefix+'ar')
    env.Replace(RANDLIB=crossCompilePrefix+'randlib')
 
-
 ################################################################################
-# Portable Code Library Build
+# Common 
 ################################################################################
-src = [ 'main.cpp',
-        'AudioDisplayBase.cpp',
-        'AudioDisplayAmplitude.cpp',
-        'AudioDisplayFft.cpp',
-        'AudioLeds.cpp',
-        'DisplayGradient.cpp',
-        'specAnFft.cpp',
-        'fftModifier.cpp',
-        'fftRunRate.cpp',
-        'ledStrip.cpp',
-        'colorScale.cpp',
-        'colorGradient.cpp',
-        'gradientToScale.cpp',
-        'GradientUserCues.cpp',
-        'hsvrgb.cpp',
-        'gradientChangeThread.cpp',
-        'RemoteControl.cpp',
-        'rotaryEncoder.cpp',
-        'SaveRestore.cpp',
-        'seeed_adc_8chan_12bit.cpp',
-        'TCPThreads.c',
-        'modules/plotperfectclient/sendMemoryToPlot.cpp', 
-        'modules/plotperfectclient/smartPlotMessage.cpp' ]
-
 defines = []
 
 inc = [ './modules/plotperfectclient', 
@@ -64,35 +46,68 @@ inc = [ './modules/plotperfectclient',
         './modules/jsoncpp/include', 
         './modules/WiringPi/wiringPi' ]
 
-libPortableCode = env.StaticLibrary(
-   CPPDEFINES=defines,
-   CPPPATH=inc,
-   target='SpecAnLedPiLib',
-   source=src
-)
 
 ################################################################################
-# The rest of the non-portable code
+# Portable Code Library Build
 ################################################################################
-srcNonPortable = [
-   'alsaMic.cpp',
-   ]
+if preCompiledPortableLibDirectory == None: # Don't compile if a directory where the pre-compiled library exists is specified.
+   src = [ 'main.cpp',
+           'AudioDisplayBase.cpp',
+           'AudioDisplayAmplitude.cpp',
+           'AudioDisplayFft.cpp',
+           'AudioLeds.cpp',
+           'DisplayGradient.cpp',
+           'specAnFft.cpp',
+           'fftModifier.cpp',
+           'fftRunRate.cpp',
+           'ledStrip.cpp',
+           'colorScale.cpp',
+           'colorGradient.cpp',
+           'gradientToScale.cpp',
+           'GradientUserCues.cpp',
+           'hsvrgb.cpp',
+           'gradientChangeThread.cpp',
+           'RemoteControl.cpp',
+           'rotaryEncoder.cpp',
+           'SaveRestore.cpp',
+           'seeed_adc_8chan_12bit.cpp',
+           'TCPThreads.c',
+           'modules/plotperfectclient/sendMemoryToPlot.cpp', 
+           'modules/plotperfectclient/smartPlotMessage.cpp' ]
 
-lib = ['SpecAnLedPiLib', 'rt', 'asound', 'pthread', 'NE10', 'ws2811', 'wiringPi', 'jsoncpp_static']
+   libPortableCode = env.StaticLibrary(
+      CPPDEFINES=defines,
+      CPPPATH=inc,
+      target='SpecAnLedPiLib',
+      source=src
+   )
 
-libpath = ['.', './modules/Ne10/build/modules', './modules/rpi_ws281x', './modules/jsoncpp/build/lib', './modules/WiringPi/wiringPi']
+################################################################################
+# The Final Binary
+################################################################################
+if crossCompilePrefix == None: # If not cross compiling, build the final binary
+   srcNonPortable = [
+      'alsaMic.cpp',
+      ]
 
-# Update build based on some global settings.
-if not AdcHatAttached:
-   defines.append('NO_ADCS')
+   lib = ['SpecAnLedPiLib', 'rt', 'asound', 'pthread', 'NE10', 'ws2811', 'wiringPi', 'jsoncpp_static']
 
-if not Ne10Compatible:
-   defines.append('NO_FFTS')
+   libpath = ['.', './modules/Ne10/build/modules', './modules/rpi_ws281x', './modules/jsoncpp/build/lib', './modules/WiringPi/wiringPi']
+
+   if preCompiledPortableLibDirectory != None:
+      libpath += [preCompiledPortableLibDirectory]
+
+   # Update build based on some global settings.
+   if not AdcHatAttached:
+      defines.append('NO_ADCS')
+
+   if not Ne10Compatible:
+      defines.append('NO_FFTS')
 
 
-env.Program( source=srcNonPortable,
-             CPPDEFINES=defines,
-             CPPPATH=inc,
-             LIBS=lib,
-             LIBPATH=libpath,
-             target="SpecAnLedPi" )
+   env.Program( source=srcNonPortable,
+               CPPDEFINES=defines,
+               CPPPATH=inc,
+               LIBS=lib,
+               LIBPATH=libpath,
+               target="SpecAnLedPi" )
