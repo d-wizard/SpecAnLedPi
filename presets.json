@@ -130,5 +130,40 @@
 			"reach" : 0.124099,
 			"position" : 1.0
 		}
+	},
+	"5_fire" : 
+	{
+		"0 light purple" : 
+		{
+			"hue" : 0.7,
+			"saturation" : 0.5,
+			"lightness" : 0.5,
+			"reach" : 0.005,
+			"position" : 0.0
+		},
+		"1 yellow" : 
+		{
+			"hue" : 0.08,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.05,
+			"position" : 0.1
+		},
+		"2 orange" : 
+		{
+			"hue" : 0.03,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.2,
+			"position" : 0.5
+		},
+		"3 red" : 
+		{
+			"hue" : 0.0,
+			"saturation" : 1.0,
+			"lightness" : 1.0,
+			"reach" : 0.25,
+			"position" : 1.0
+		}
 	}	
 }
