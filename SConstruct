@@ -40,6 +40,13 @@ if crossCompilePrefix != None:
 ################################################################################
 defines = []
 
+# Update build based on some global settings.
+if not AdcHatAttached:
+   defines.append('NO_ADCS')
+
+if not Ne10Compatible:
+   defines.append('NO_FFTS')
+
 inc = [ './modules/plotperfectclient', 
         './modules/Ne10/inc', 
         './modules/rpi_ws281x', 
@@ -96,14 +103,6 @@ if crossCompilePrefix == None: # If not cross compiling, build the final binary
 
    if preCompiledPortableLibDirectory != None:
       libpath += [preCompiledPortableLibDirectory]
-
-   # Update build based on some global settings.
-   if not AdcHatAttached:
-      defines.append('NO_ADCS')
-
-   if not Ne10Compatible:
-      defines.append('NO_FFTS')
-
 
    env.Program( source=srcNonPortable,
                CPPDEFINES=defines,
