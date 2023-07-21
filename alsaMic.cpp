@@ -56,8 +56,9 @@ int AlsaMic::init()
    snd_pcm_hw_params_t* alsaParams = nullptr;
 
    // Get a handle to the Microphone.
-   snd_pcm_t* alsaHandle = (snd_pcm_t*)m_alsaHandle;
+   snd_pcm_t* alsaHandle = nullptr;
    err = snd_pcm_open(&alsaHandle, m_micName.c_str(), SND_PCM_STREAM_CAPTURE, 0);
+   m_alsaHandle = alsaHandle;
    ALSA_ERR("snd_pcm_open", err); // This will early return on error.
    
    // Allocate HW Paramters Settings and fill the settings in.
