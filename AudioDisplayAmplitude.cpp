@@ -111,7 +111,7 @@ void AudioDisplayAmp::fillInPeak()
    m_overrideStart = desiredPeakLed;
 
    // Accelerate the Fade down of the peak.
-   m_peak_fadeFactorCurrent += (m_peak_fadeFactorStart*0.03);
+   m_peak_fadeFactorCurrent += (m_peak_fadeFactorStart*0.15);
 
 }
 

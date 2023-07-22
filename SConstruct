@@ -16,8 +16,8 @@
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-AdcHatAttached = True # Specifies whether the ADC hat card is attached or not.
-Ne10Compatible = True # NE10 is used to do FFTs. NE10 isn't comptible with ARM6 (Pi W Zeros).
+AdcHatAttached = False # Specifies whether the ADC hat card is attached or not.
+Ne10Compatible = False # NE10 is used to do FFTs. NE10 isn't comptible with ARM6 (Pi W Zeros).
 
 # Cross Compile Parameters. 
 crossCompilePrefix = None # Example: '/path/to/bin/armv6-rpi-linux-gnueabihf-'

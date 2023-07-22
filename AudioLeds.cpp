@@ -1,4 +1,4 @@
-/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 - 2023 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -29,8 +29,8 @@
 #define FFT_SIZE (256) // Base 2 number
 
 // Frame Sizes
-#define MICROPHONE_FRAME_SIZE (FFT_SIZE >> 1) // 2 Microphone frames per FFT.
-#define AMP_DISP_FRAME_SIZE (MICROPHONE_FRAME_SIZE << 1) // Only run every 2 Microphone frames.
+#define MICROPHONE_FRAME_SIZE (SAMPLE_RATE / 60) // 60 Hz
+#define AMP_DISP_FRAME_SIZE (MICROPHONE_FRAME_SIZE << 0) // Only run every 1 Microphone frames.
 
 
 AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad, 
