@@ -1,4 +1,4 @@
-/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 - 2023 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -497,5 +497,22 @@ float SaveRestoreJson::restore_brightness()
          retVal = 0.10; // 10% Brightness
 
    }
+   return retVal;
+}
+
+std::string SaveRestoreJson::restore_microphoneName()
+{
+   std::unique_lock<std::mutex> lock(m_mutex); // Lock around all public functions (they will never call each other).
+
+   std::string retVal = "hw:1"; // default
+
+   Json::Value settingsJson;
+   getJson(SETTINGS_JSON, settingsJson);
+
+   if(settingsJson.isMember("microphone_name"))
+   {
+      retVal = settingsJson["microphone_name"].asString();
+   }
+
    return retVal;
 }

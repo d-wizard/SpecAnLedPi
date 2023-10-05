@@ -1,0 +1,9 @@
+{
+	"brightness_value" : 0.1,
+	"display_index" : 0,
+	"gain_value" : 100.0,
+	"grad_index" : 0,
+	"grad_reverse" : "false",
+	"microphone_name" : "hw:1",
+	"remote_local" : "default"
+}

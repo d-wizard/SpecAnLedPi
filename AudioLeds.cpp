@@ -33,7 +33,8 @@
 #define AMP_DISP_FRAME_SIZE (MICROPHONE_FRAME_SIZE << 0) // Only run every 1 Microphone frames.
 
 
-AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad, 
+AudioLeds::AudioLeds( std::string microphoneName,
+                      std::shared_ptr<ColorGradient> colorGrad, 
                       std::shared_ptr<SaveRestoreJson> saveRestore,
                       std::shared_ptr<LedStrip> ledStrip, 
                       std::shared_ptr<RotaryEncoder> cycleGrads,
@@ -101,7 +102,7 @@ AudioLeds::AudioLeds( std::shared_ptr<ColorGradient> colorGrad,
    m_ledUpdate_thread = std::thread(&AudioLeds::ledUpdateFunc, this);
 
    // Start capturing from the microphone.
-   m_mic.reset(new AlsaMic("hw:1", SAMPLE_RATE, MICROPHONE_FRAME_SIZE, 1, alsaMicSamples, this));
+   m_mic.reset(new AlsaMic(microphoneName.c_str(), SAMPLE_RATE, MICROPHONE_FRAME_SIZE, 1, alsaMicSamples, this));
 }
 
 AudioLeds::~AudioLeds()

@@ -1,4 +1,4 @@
-/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 - 2023 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -60,6 +60,8 @@ public:
    float restore_gain();
    void save_brightness(float brightness);
    float restore_brightness();
+
+   std::string restore_microphoneName();
 
 private:
    // Make uncopyable

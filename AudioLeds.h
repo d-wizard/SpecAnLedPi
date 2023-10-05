@@ -1,4 +1,4 @@
-/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 - 2023 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -37,7 +37,8 @@
 class AudioLeds
 {
 public:
-   AudioLeds( std::shared_ptr<ColorGradient> colorGrad, 
+   AudioLeds( std::string microphoneName,
+              std::shared_ptr<ColorGradient> colorGrad, 
               std::shared_ptr<SaveRestoreJson> saveRestore,
               std::shared_ptr<LedStrip> ledStrip, 
               std::shared_ptr<RotaryEncoder> cycleGrads,

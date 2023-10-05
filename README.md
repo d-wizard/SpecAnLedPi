@@ -17,3 +17,15 @@ cd modules/
 cd ../
 scons
 ```
+
+## Microphone Setup Notes
+The microphone name is specified in "settings.json" in the "microphone_name" field.
+
+To determine the card #, run the following command:
+```
+arecord -l
+```
+
+The microphone name is "hw:#" where # is the card number.
+
+

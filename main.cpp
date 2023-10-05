@@ -1,4 +1,4 @@
-/* Copyright 2020, 2022 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 - 2023 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -366,6 +366,7 @@ static void thisAppForeverFunction(bool mirrorLedMode)
          checkRotaryThread.reset(new std::thread(RotaryUpdateFunction));
 
          audioLed.reset(new AudioLeds(
+            saveRestore->restore_microphoneName(),
             grad,
             saveRestore,
             ledStrip,
