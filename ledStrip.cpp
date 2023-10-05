@@ -18,6 +18,7 @@
  */
 
 #include <stdio.h>
+#include <iostream>
 #include <string.h>
 #include <algorithm>
 #include "ledStrip.h"
@@ -59,7 +60,11 @@ LedStrip::LedStrip(size_t numLeds, eRgbOrder order, unsigned gpio):
    m_ledStrip.channel[0].strip_type = strip_type;
 
    // Initialize the LED strip.
-   ws2811_init(&m_ledStrip);
+   auto ws2811_init_return = ws2811_init(&m_ledStrip);
+   if(ws2811_init_return)
+   {
+      std::cout << "ws2811_init error code: " << ws2811_init_return << std::endl;
+   }
 }
 
 LedStrip::~LedStrip()
