@@ -139,6 +139,10 @@ bool DetermineRemoteLocalControl(int argc, char *argv[], std::shared_ptr<SaveRes
    bool useRemoteGainBrightness = false;
    bool commandFound = false;
    
+#ifdef NO_ADCS // If there are no ADC's available, local control probably won't work. So default to remote in that case.
+   useRemoteGainBrightness = true;
+#endif
+
    // Command line args take priority.
    for(int i = 1; i < argc; ++i)
    {
