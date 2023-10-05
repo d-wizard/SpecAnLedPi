@@ -38,7 +38,7 @@ if crossCompilePrefix != None:
 ################################################################################
 # Common 
 ################################################################################
-defines = []
+defines = ['PLOTTER_FORCE_BACKGROUND_THREAD']
 
 # Update build based on some global settings.
 if not AdcHatAttached:
