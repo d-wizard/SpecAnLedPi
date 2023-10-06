@@ -22,6 +22,12 @@
 #include "ThreadPriorities.h"
 #include "Transform1D.h"
 
+// Debug Code
+// #define PLOT_MICROPHONE_PCM
+#ifdef PLOT_MICROPHONE_PCM
+#include "smartPlotMessage.h"
+#endif
+
 // Audio Stuff
 #define SAMPLE_RATE (44100)
 
@@ -276,6 +282,10 @@ void AudioLeds::pcmProcFunc()
 
       if(samplesReady)
       {
+#ifdef PLOT_MICROPHONE_PCM
+         smartPlot_1D(samplesForProcessing.data(), E_INT_16, numSamp, SAMPLE_RATE, -1, "Mic", "PCM");
+#endif
+
          // Send the samples to the Audio Display to generate the LED Colors.
          if(audioDisplay->parsePcm(samplesForProcessing.data(), numSamp))
          {
