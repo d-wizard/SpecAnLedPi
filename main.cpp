@@ -134,6 +134,41 @@ void RotaryUpdateFunction()
    }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Command Line Argument Parsing Functions
+///////////////////////////////////////////////////////////////////////////////
+
+bool DetermineHelpPrint(int argc, char *argv[])
+{
+   bool printHelp = false;
+
+   // Command line args take priority.
+   for(int i = 1; i < argc; ++i)
+   {
+      std::string arg(argv[i]);
+      if(arg == "-h" || arg == "--help")
+      {
+         printHelp = true;
+         break;
+      }
+   }
+
+   if(printHelp)
+   {
+      printf("Spectrum Analyzer LED - Command Line Options\n");
+      printf(" None of the following command line arguments are necessary.\n If unspecified the values will be defaulted / determined from JSON files.\n");
+      printf("--------------------------------------------\n");
+      printf("   -n | --num_leds : Number of LEDs in the light strip.\n");
+      printf("--------------------------------------------\n");
+      printf("   -m | --mirror_led_mode : If specified, the display will mirror around the center LED.\n");
+      printf("--------------------------------------------\n");
+      printf("   -r | --remote : On-the-fly settings/changes will come via Remote Control.\n");
+      printf("   -l | --local  : On-the-fly settings/changes will come via Local Control.\n");
+   }
+
+   return printHelp;
+}
+
 bool DetermineRemoteLocalControl(int argc, char *argv[], std::shared_ptr<SaveRestoreJson> saveRestore)
 {
    bool useRemoteGainBrightness = false;
@@ -239,8 +274,13 @@ bool DetermineMirrorLedMode(int argc, char *argv[], std::shared_ptr<SaveRestoreJ
    return mirrorLedMode;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 int main (int argc, char *argv[])
 {
+   if(DetermineHelpPrint(argc, argv))
+      return 0;
+
    wiringPiSetup();
 
    // This is used to save / restore Color Gradients.
