@@ -50,11 +50,10 @@ static void signalHandler(int signum)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void fillInLedStrip(std::shared_ptr<LedStrip> ledStrip, ColorGradient& grad)
+void gradToRgbVect(ColorGradient& grad, SpecAnLedTypes::tRgbVector& ledColors, size_t numLeds)
 {
    std::vector<ColorScale::tColorPoint> colors;
-   auto numLeds = ledStrip->getNumLeds();
-   SpecAnLedTypes::tRgbVector ledColors(numLeds);
+   ledColors.resize(numLeds);
    auto gradVect = grad.getGradient();
 
    Convert::convertGradientToScale(gradVect, colors);
@@ -67,8 +66,6 @@ void fillInLedStrip(std::shared_ptr<LedStrip> ledStrip, ColorGradient& grad)
    {
       ledColors[i] = colorScale.getColor((float)i * deltaBetweenPoints, 1.0);
    }
-
-   ledStrip->set(ledColors);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -85,11 +82,8 @@ int main(void)
    // Define a simple gradient and display it.
    ColorGradient::tGradient gradPoints;
    ColorGradient::tGradientPoint gradPoint;
-   gradPoint.hue        = 0.0;
    gradPoint.saturation = 1.0;
    gradPoint.lightness  = 1.0;
-   gradPoint.position   = 0.0;
-   gradPoint.reach      = 0.0;
 
    // Point 1
    gradPoint.hue        = 0.0;
@@ -97,19 +91,38 @@ int main(void)
    gradPoints.push_back(gradPoint);
 
    // Point 2
-   gradPoint.hue        = 0.333333333333333333;
-   gradPoint.position   = 0.5;
+   gradPoint.hue        = 0.25;
+   gradPoint.position   = 0.25;
    gradPoints.push_back(gradPoint);
 
    // Point 3
-   gradPoint.hue        = 0.666666666666666667;
+   gradPoint.hue        = 0.34;
+   gradPoint.position   = 0.5;
+   gradPoints.push_back(gradPoint);
+
+   // Point 4
+   gradPoint.hue        = 0.5;
+   gradPoint.position   = 0.75;
+   gradPoints.push_back(gradPoint);
+
+   // Point 5
+   gradPoint.hue        = 0.0;
    gradPoint.position   = 1.0;
    gradPoints.push_back(gradPoint);
 
 
    ColorGradient grad(gradPoints);
-   fillInLedStrip(g_ledStrip, grad);
+   SpecAnLedTypes::tRgbVector colors;
+   gradToRgbVect(grad, colors, g_ledStrip->getNumLeds());
+   g_ledStrip->set(colors);
 
-   std::this_thread::sleep_for(std::chrono::seconds(0x7FFFFFFF));
+   while(1)
+   {
+      std::this_thread::sleep_for(std::chrono::milliseconds(30));
+      colors.push_back(colors[0]);
+      colors.erase(colors.begin());
+      g_ledStrip->set(colors);
+   }
+
    return 0;
 }
