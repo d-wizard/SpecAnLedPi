@@ -58,7 +58,7 @@ inc = [ './modules/plotperfectclient',
 # Portable Code Library Build
 ################################################################################
 if preCompiledPortableLibDirectory == None: # Don't compile if a directory where the pre-compiled library exists is specified.
-   src = [ 'main.cpp',
+   src = [ 'SpecAnLed.cpp',
            'AudioDisplayBase.cpp',
            'AudioDisplayAmplitude.cpp',
            'AudioDisplayFft.cpp',
@@ -90,11 +90,12 @@ if preCompiledPortableLibDirectory == None: # Don't compile if a directory where
    )
 
 ################################################################################
-# The Final Binary
+# The SpecAnLedPi Binary
 ################################################################################
 if crossCompilePrefix == None: # If not cross compiling, build the final binary
    srcNonPortable = [
       'alsaMic.cpp',
+      'SpecAnLedMain.cpp'
       ]
 
    lib = ['SpecAnLedPiLib', 'rt', 'asound', 'pthread', 'NE10', 'ws2811', 'wiringPi', 'jsoncpp_static']
