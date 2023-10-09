@@ -81,7 +81,7 @@ static void thisAppForeverFunction(bool mirrorLedMode);
 
 static std::shared_ptr<SaveRestoreJson> saveRestore;
 
-void cleanUpBeforeExit()
+static void cleanUpBeforeExit()
 {
    // Let this app's thread know that it needs to exit.
    exitThisApp = true;
@@ -114,13 +114,13 @@ void cleanUpBeforeExit()
    ledStrip.reset();
 }
 
-void signalHandler(int signum)
+static void signalHandler(int signum)
 {
    cleanUpBeforeExit();
    exit(signum); 
 }
 
-void RotaryUpdateFunction()
+static void RotaryUpdateFunction()
 {
    ThreadPriorities::setThisThreadPriorityPolicy(ThreadPriorities::ROTORY_ENCODER_POLL_THREAD_PRIORITY, SCHED_FIFO);
    ThreadPriorities::setThisThreadName("RotEncPoll");
@@ -138,7 +138,7 @@ void RotaryUpdateFunction()
 // Command Line Argument Parsing Functions
 ///////////////////////////////////////////////////////////////////////////////
 
-bool DetermineHelpPrint(int argc, char *argv[])
+static bool DetermineHelpPrint(int argc, char *argv[])
 {
    bool printHelp = false;
 
@@ -169,7 +169,7 @@ bool DetermineHelpPrint(int argc, char *argv[])
    return printHelp;
 }
 
-bool DetermineRemoteLocalControl(int argc, char *argv[], std::shared_ptr<SaveRestoreJson> saveRestore)
+static bool DetermineRemoteLocalControl(int argc, char *argv[], std::shared_ptr<SaveRestoreJson> saveRestore)
 {
    bool useRemoteGainBrightness = false;
    bool commandFound = false;
@@ -218,7 +218,7 @@ bool DetermineRemoteLocalControl(int argc, char *argv[], std::shared_ptr<SaveRes
    return useRemoteGainBrightness;
 }
 
-unsigned DetermineNumLeds(int argc, char *argv[], std::shared_ptr<SaveRestoreJson> saveRestore)
+static unsigned DetermineNumLeds(int argc, char *argv[], std::shared_ptr<SaveRestoreJson> saveRestore)
 {
    unsigned numLeds = DEFAULT_NUM_LEDS;
    bool commandFound = false;
@@ -250,7 +250,7 @@ unsigned DetermineNumLeds(int argc, char *argv[], std::shared_ptr<SaveRestoreJso
    return numLeds;
 }
 
-bool DetermineMirrorLedMode(int argc, char *argv[], std::shared_ptr<SaveRestoreJson> saveRestore)
+static bool DetermineMirrorLedMode(int argc, char *argv[], std::shared_ptr<SaveRestoreJson> saveRestore)
 {
    bool mirrorLedMode = false;
    bool commandFound = false;
@@ -276,7 +276,7 @@ bool DetermineMirrorLedMode(int argc, char *argv[], std::shared_ptr<SaveRestoreJ
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int main (int argc, char *argv[])
+int SpecAnLedMain (int argc, char *argv[])
 {
    if(DetermineHelpPrint(argc, argv))
       return 0;
