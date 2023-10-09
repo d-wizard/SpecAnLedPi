@@ -111,3 +111,30 @@ if crossCompilePrefix == None: # If not cross compiling, build the final binary
                LIBS=lib,
                LIBPATH=libpath,
                target="SpecAnLedPi" )
+
+################################################################################
+# The AmbientDisplay Binary
+################################################################################
+if crossCompilePrefix == None: # If not cross compiling, build the final binary
+   srcNonPortable = [
+      'ambient/AmbientDisplayMain.cpp'
+      ]
+
+   extraIncludes = [
+      '.',
+      'ambient'
+   ]
+
+   lib = ['SpecAnLedPiLib', 'rt', 'asound', 'pthread', 'NE10', 'ws2811', 'wiringPi', 'jsoncpp_static']
+
+   libpath = ['.', './modules/Ne10/build/modules', './modules/rpi_ws281x', './modules/jsoncpp/build/lib', './modules/WiringPi/wiringPi']
+
+   if preCompiledPortableLibDirectory != None:
+      libpath += [preCompiledPortableLibDirectory]
+
+   env.Program( source=srcNonPortable,
+               CPPDEFINES=defines,
+               CPPPATH=inc+extraIncludes,
+               LIBS=lib,
+               LIBPATH=libpath,
+               target="AmbientDisplay" )
