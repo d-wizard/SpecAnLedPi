@@ -85,31 +85,14 @@ int main(void)
    gradPoint.saturation = 1.0;
    gradPoint.lightness  = 1.0;
 
-   // Point 1
-   gradPoint.hue        = 0.0;
-   gradPoint.position   = 0.0;
-   gradPoints.push_back(gradPoint);
-
-   // Point 2
-   gradPoint.hue        = 0.25;
-   gradPoint.position   = 0.25;
-   gradPoints.push_back(gradPoint);
-
-   // Point 3
-   gradPoint.hue        = 0.34;
-   gradPoint.position   = 0.5;
-   gradPoints.push_back(gradPoint);
-
-   // Point 4
-   gradPoint.hue        = 0.5;
-   gradPoint.position   = 0.75;
-   gradPoints.push_back(gradPoint);
-
-   // Point 5
-   gradPoint.hue        = 0.0;
-   gradPoint.position   = 1.0;
-   gradPoints.push_back(gradPoint);
-
+   // Rainbow Gradient
+   static const int numGradPoints = 30;
+   for(int i = 0; i < numGradPoints; ++i)
+   {
+      gradPoint.hue = double(i) / double(numGradPoints-1);
+      gradPoint.position = gradPoint.hue;
+      gradPoints.push_back(gradPoint);
+   }
 
    ColorGradient grad(gradPoints);
    SpecAnLedTypes::tRgbVector colors;
