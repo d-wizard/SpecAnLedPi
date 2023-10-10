@@ -42,7 +42,7 @@ static std::shared_ptr<LedStrip> g_ledStrip;
 
 // Patterns
 static SpecAnLedTypes::tRgbVector g_ledColorPattern_base;
-static std::vector<ColorScale::tBrightnessPoint> g_brightnessPattern_base;
+static ColorScale::tBrightnessScale g_brightnessPattern_base;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -63,7 +63,7 @@ static void signalHandler(int signum)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void gradToRgbVect(ColorGradient& grad, SpecAnLedTypes::tRgbVector& ledColors, std::vector<ColorScale::tBrightnessPoint>& brightPoints, size_t numLeds)
+void gradToRgbVect(ColorGradient& grad, SpecAnLedTypes::tRgbVector& ledColors, ColorScale::tBrightnessScale& brightPoints, size_t numLeds)
 {
    std::vector<ColorScale::tColorPoint> colors;
    ledColors.resize(numLeds);

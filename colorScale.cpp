@@ -22,9 +22,9 @@
 
 #define FULL_SCALE (65536.0f)
 
-void ColorScale::DuplicateBrightness(std::vector<tBrightnessPoint>& brightInOut, unsigned numCopies, bool mirror)
+void ColorScale::DuplicateBrightness(tBrightnessScale& brightInOut, unsigned numCopies, bool mirror)
 {
-   std::vector<tBrightnessPoint> brightOut(brightInOut.size()*numCopies);
+   tBrightnessScale brightOut(brightInOut.size()*numCopies);
    if(numCopies > 0)
    {
       size_t pointIndex = 0;
@@ -60,7 +60,7 @@ void ColorScale::DuplicateBrightness(std::vector<tBrightnessPoint>& brightInOut,
    std::swap(brightOut, brightInOut);
 }
 
-ColorScale::ColorScale(std::vector<tColorPoint>& colorPoints, std::vector<tBrightnessPoint>& brightnessPoints)
+ColorScale::ColorScale(std::vector<tColorPoint>& colorPoints, tBrightnessScale& brightnessPoints)
 {
    size_t colorsSize = colorPoints.size()-1;
    m_red.resize(colorsSize);

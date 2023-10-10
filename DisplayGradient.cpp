@@ -66,7 +66,7 @@ void DisplayGradient::fillInLedStrip(int onlyColorToShow, float constBrightnessL
 
    Convert::convertGradientToScale(gradVect, colors);
    
-   std::vector<ColorScale::tBrightnessPoint> brightPoints{{1,0},{1,1}}; // Full brightness.
+   ColorScale::tBrightnessScale brightPoints{{1,0},{1,1}}; // Full brightness.
    ColorScale colorScale(colors, brightPoints);
 
    float deltaBetweenPoints = (float)65535/(float)(numLeds-1);

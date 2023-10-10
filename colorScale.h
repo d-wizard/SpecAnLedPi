@@ -36,9 +36,11 @@ public:
       float startPoint; // Inclusive (0 to 1)
    }tBrightnessPoint;
 
-   static void DuplicateBrightness(std::vector<tBrightnessPoint>& brightInOut, unsigned numCopies, bool mirror);
+   typedef std::vector<tBrightnessPoint> tBrightnessScale;
 
-   ColorScale(std::vector<tColorPoint>& colorPoints, std::vector<tBrightnessPoint>& brightnessPoints);
+   static void DuplicateBrightness(tBrightnessScale& brightInOut, unsigned numCopies, bool mirror);
+
+   ColorScale(std::vector<tColorPoint>& colorPoints, tBrightnessScale& brightnessPoints);
    virtual ~ColorScale();
 
    SpecAnLedTypes::tRgbColor getColor(uint16_t value, float brightness, bool skipBrightnessNomalization = false);
