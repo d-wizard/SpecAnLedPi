@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2023 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -20,6 +20,46 @@
 #include <math.h>
 #include <assert.h>
 #include "colorGradient.h"
+
+
+void ColorGradient::DuplicateGradient(tGradient& gradInOut, unsigned numCopies, bool mirror)
+{
+   tGradient gradOut(gradInOut.size()*numCopies);
+   if(numCopies > 0)
+   {
+      size_t pointIndex = 0;
+      float posScalar = 1.0 / float(numCopies);
+
+      for(unsigned i = 0; i < numCopies; ++i)
+      {
+         float startPos = float(i)/float(numCopies);
+         if((i&1) && mirror)
+         {
+            // Mirrored Version.
+            for(int j = (int)gradInOut.size()-1; j >= 0; --j)
+            {
+               float position = (1.0 - gradInOut[j].position) * posScalar;
+               gradOut[pointIndex] = gradInOut[j];
+               gradOut[pointIndex].position = startPos + position;
+               ++pointIndex;
+            }
+         }
+         else
+         {
+            // Normal Version.
+            for(size_t j = 0; j < gradInOut.size(); ++j)
+            {
+               float position = gradInOut[j].position * posScalar;
+               gradOut[pointIndex] = gradInOut[j];
+               gradOut[pointIndex].position = startPos + position;
+               ++pointIndex;
+            }
+         }
+      }
+      gradOut[gradOut.size()-1].position = 1.0;
+   }
+   std::swap(gradOut, gradInOut);
+}
 
 
 ColorGradient::ColorGradient(size_t numPoints)
