@@ -52,4 +52,6 @@ private:
    float getMidPoint(float minPoint_pos, float minPoint_val, float maxPoint_pos, float maxPoint_val, float midPoint_pos);
    float getHuePoint(float minPoint_pos, float minPoint_hue, float maxPoint_pos, float maxPoint_hue, float midPoint_pos);
 
+   float avgHuePoints(float point1, float point2);
+
 };

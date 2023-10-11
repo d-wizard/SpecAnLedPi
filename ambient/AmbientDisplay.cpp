@@ -17,10 +17,37 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include <assert.h>
+#include <stdio.h>
 #include <math.h>
 #include "AmbientDisplay.h"
 #include "gradientToScale.h"
 
+
+static bool areTheyClose(float val1, float val2)
+{
+   bool close = false;
+   float ratio = 0.0;
+   if(val1 == val2)
+   {
+      close = true;
+   }
+   else if(val1 != 0.0)
+   {
+      ratio = val2/val1;
+   }
+   else
+   {
+      ratio = val1/val2;
+   }
+
+   // If the values are close, the ratio should be very near +1.0
+   if(close == false && fabs(1.0 - ratio) < 0.00001)
+   {
+      close = true;
+   }
+
+   return close;
+}
 
 AmbientDisplay::AmbientDisplay(ColorGradient::tGradient& grad, ColorScale::tBrightnessScale& brightness):
    m_grad_orig(grad.begin(), grad.end()),
@@ -77,6 +104,30 @@ void AmbientDisplay::gradient_shift(float shiftValue)
       }
       else if(m_grad_current[i].position < 0.0)
          m_grad_current[i].position += 1.0;
+   }
+
+   // Check for duplicates
+   if(m_grad_current.size() > 1)
+   {
+      for(auto iter = m_grad_current.begin(); iter != m_grad_current.end();)
+      {
+         auto nextIter = iter+1;
+         if( (nextIter != m_grad_current.end()) && 
+             (areTheyClose(iter->position, nextIter->position)) )
+         {
+            // The point should pretty much be the same, but even so lets average the 2 points.
+            nextIter->lightness  = (iter->lightness  + nextIter->lightness)  / 2.0;
+            nextIter->saturation = (iter->saturation + nextIter->saturation) / 2.0;
+            nextIter->reach      = (iter->reach      + nextIter->reach)      / 2.0;
+            nextIter->hue        = avgHuePoints(iter->hue, nextIter->hue);
+
+            iter = m_grad_current.erase(iter);
+         }
+         else
+         {
+            ++iter;
+         }
+      }
    }
 
    // See if new first and last values have to added (first must be at zero and last must be at one)
@@ -176,4 +227,18 @@ float AmbientDisplay::getHuePoint(float minPoint_pos, float minPoint_hue, float 
    }
 
    return midPoint_hue;
+}
+
+float AmbientDisplay::avgHuePoints(float point1, float point2)
+{
+   float avgHue = (point1 + point2) / 2.0;
+   float hueDelta = abs(point1 - point2);
+   if(hueDelta > 0.5)
+   {
+      // The real mid point is half way around the hue circle
+      avgHue += 0.5;
+      if(avgHue >= 1.0)
+         avgHue -= 1.0;
+   }
+   return avgHue;
 }
