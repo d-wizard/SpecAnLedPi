@@ -117,7 +117,8 @@ if crossCompilePrefix == None: # If not cross compiling, build the final binary
 ################################################################################
 if crossCompilePrefix == None: # If not cross compiling, build the final binary
    srcNonPortable = [
-      'ambient/AmbientDisplayMain.cpp'
+      'ambient/AmbientDisplayMain.cpp',
+      'ambient/AmbientDisplay.cpp'
       ]
 
    extraIncludes = [

@@ -24,6 +24,10 @@
 class ColorScale
 {
 public:
+
+   static constexpr float FULL_SCALE = 65536.0f;
+   static constexpr float MIN_RESOLUTION = 1.0f / FULL_SCALE;
+
    typedef struct 
    {
       SpecAnLedTypes::tRgbColor color;

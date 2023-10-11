@@ -23,11 +23,15 @@
 #include "gradientToScale.h"
 
 
-static bool areTheyClose(float val1, float val2)
+static bool areTheyClose(float val1, float val2, float minDelta = ColorScale::MIN_RESOLUTION)
 {
    bool close = false;
    float ratio = 0.0;
    if(val1 == val2)
+   {
+      close = true;
+   }
+   else if(fabs(val1 - val2) < minDelta)
    {
       close = true;
    }
@@ -49,6 +53,17 @@ static bool areTheyClose(float val1, float val2)
    return close;
 }
 
+static bool setIfTheyAreClose(float& val, float desired)
+{
+   if(val != desired && areTheyClose(val, desired))
+   {
+      val = desired;
+      return true;
+   }
+   return false;
+}
+
+
 AmbientDisplay::AmbientDisplay(ColorGradient::tGradient& grad, ColorScale::tBrightnessScale& brightness):
    m_grad_orig(grad.begin(), grad.end()),
    m_grad_current(grad.begin(), grad.end()),
@@ -69,12 +84,12 @@ void AmbientDisplay::gradient_shift(float shiftValue)
 
    // Update the current shift value.
    m_gradShiftVal = getNewShiftValue(m_gradShiftVal, shiftValue);
-   size_t finalSize = m_grad_orig.size();
+   size_t origGradSize = m_grad_orig.size();
 
    // Determine where the new start point will be after the shift is applied.
    size_t newBeginIndex = 0;
    bool shiftIsPositive = (m_gradShiftVal > 0);
-   for(size_t i = 0; i < finalSize; ++i)
+   for(size_t i = 0; i < origGradSize; ++i)
    {
       float shiftedValue = m_grad_orig[i].position + m_gradShiftVal;
       if( ( shiftIsPositive && shiftedValue >  1.0) || 
@@ -88,17 +103,17 @@ void AmbientDisplay::gradient_shift(float shiftValue)
    // Re-order
    m_grad_current.assign(m_grad_orig.begin()+newBeginIndex, m_grad_orig.end());
    m_grad_current.insert(m_grad_current.end(), m_grad_orig.begin(), m_grad_orig.begin()+newBeginIndex);
-   assert(m_grad_current.size() == finalSize);
+   assert(m_grad_current.size() == origGradSize);
 
    // Fix the Position Values that have be Shifted.
-   for(size_t i = 0; i < finalSize; ++i)
+   for(size_t i = 0; i < origGradSize; ++i)
    {
       m_grad_current[i].position += m_gradShiftVal;
       if(m_grad_current[i].position >= 1.0)
       {
          // A value of 1 is allowed, but only if it is the last point in the gradient.
          bool exactlyOne = (m_grad_current[i].position == 1.0);
-         bool lastPoint = (i == (finalSize-1));
+         bool lastPoint = (i == (origGradSize-1));
          if(!exactlyOne || !lastPoint)
             m_grad_current[i].position -= 1.0;
       }
@@ -129,6 +144,10 @@ void AmbientDisplay::gradient_shift(float shiftValue)
          }
       }
    }
+
+   // Fix first and last.
+   setIfTheyAreClose(m_grad_current[0].position, 0.0);
+   setIfTheyAreClose(m_grad_current[m_grad_current.size()-1].position, 1.0);
 
    // See if new first and last values have to added (first must be at zero and last must be at one)
    auto beginVal = m_grad_current[0];
@@ -169,12 +188,100 @@ void AmbientDisplay::gradient_shift(float shiftValue)
 
 void AmbientDisplay::brightness_shift(float shiftValue)
 {
-   if(shiftValue != 0.0)
-   {
-      m_brightShiftVal = getNewShiftValue(m_brightShiftVal, shiftValue);
+   if(shiftValue == 0.0)
+      return; // Early return since there is nothing to do.
 
-      // Start over from the original.
-      m_bright_current.assign(m_bright_orig.begin(), m_bright_orig.end());
+   // Update the current shift value.
+   m_brightShiftVal = getNewShiftValue(m_brightShiftVal, shiftValue);
+   size_t origBrightSize = m_bright_orig.size();
+
+   // Determine where the new start point will be after the shift is applied.
+   size_t newBeginIndex = 0;
+   bool shiftIsPositive = (m_brightShiftVal > 0);
+   for(size_t i = 0; i < origBrightSize; ++i)
+   {
+      float shiftedValue = m_bright_orig[i].startPoint + m_brightShiftVal;
+      if( ( shiftIsPositive && shiftedValue >  1.0) || 
+         (!shiftIsPositive && shiftedValue >= 0.0) )
+      {
+         newBeginIndex = i;
+         break;
+      }
+   }
+
+   // Re-order
+   m_bright_current.assign(m_bright_orig.begin()+newBeginIndex, m_bright_orig.end());
+   m_bright_current.insert(m_bright_current.end(), m_bright_orig.begin(), m_bright_orig.begin()+newBeginIndex);
+   assert(m_bright_current.size() == origBrightSize);
+
+   // Fix the Position Values that have be Shifted.
+   for(size_t i = 0; i < origBrightSize; ++i)
+   {
+      m_bright_current[i].startPoint += m_brightShiftVal;
+      if(m_bright_current[i].startPoint >= 1.0)
+      {
+         // A value of 1 is allowed, but only if it is the last point in the brightness scale.
+         bool exactlyOne = (m_bright_current[i].startPoint == 1.0);
+         bool lastPoint = (i == (origBrightSize-1));
+         if(!exactlyOne || !lastPoint)
+            m_bright_current[i].startPoint -= 1.0;
+      }
+      else if(m_bright_current[i].startPoint < 0.0)
+         m_bright_current[i].startPoint += 1.0;
+   }
+
+   // Check for duplicates
+   if(m_bright_current.size() > 1)
+   {
+      for(auto iter = m_bright_current.begin(); iter != m_bright_current.end();)
+      {
+         auto nextIter = iter+1;
+         if( (nextIter != m_bright_current.end()) && 
+             (areTheyClose(iter->startPoint, nextIter->startPoint)) )
+         {
+            // The point should pretty much be the same, but even so lets average the 2 points.
+            nextIter->brightness = (iter->brightness + nextIter->brightness) / 2.0;
+            iter = m_bright_current.erase(iter);
+         }
+         else
+         {
+            ++iter;
+         }
+      }
+   }
+
+   // Fix first and last.
+   setIfTheyAreClose(m_bright_current[0].startPoint, 0.0);
+   setIfTheyAreClose(m_bright_current[m_bright_current.size()-1].startPoint, 1.0);
+
+   // See if new first and last values have to added (first must be at zero and last must be at one)
+   auto beginVal = m_bright_current[0];
+   auto endVal = m_bright_current[m_bright_current.size()-1];
+
+   assert(beginVal.startPoint >= 0.0);
+   assert(endVal.startPoint <= 1.0);
+
+   if(beginVal.startPoint > 0.0)
+   {
+      // Need to define a new beginning point that is actually at zero.
+      float minPos = endVal.startPoint - 1.0;
+      float maxPos = beginVal.startPoint;
+
+      ColorScale::tBrightnessPoint brightPoint;
+      brightPoint.startPoint = 0.0;
+      brightPoint.brightness = getMidPoint(minPos, endVal.brightness, maxPos, beginVal.brightness, brightPoint.startPoint);
+      m_bright_current.insert(m_bright_current.begin(), brightPoint);
+   }
+   if(endVal.startPoint < 1.0)
+   {
+      // Need to define a new ending point that is actually one.
+      float minPos = endVal.startPoint;
+      float maxPos = beginVal.startPoint + 1.0;
+
+      ColorScale::tBrightnessPoint brightPoint;
+      brightPoint.startPoint = 1.0;
+      brightPoint.brightness  = getMidPoint(minPos, endVal.brightness, maxPos, beginVal.brightness, brightPoint.startPoint);
+      m_bright_current.push_back(brightPoint);
    }
 }
 

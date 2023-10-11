@@ -20,8 +20,6 @@
 #include <math.h>
 #include "colorScale.h"
 
-#define FULL_SCALE (65536.0f)
-
 void ColorScale::DuplicateBrightness(tBrightnessScale& brightInOut, unsigned numCopies, bool mirror)
 {
    tBrightnessScale brightOut(brightInOut.size()*numCopies);
