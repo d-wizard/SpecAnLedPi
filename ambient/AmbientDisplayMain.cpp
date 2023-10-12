@@ -28,16 +28,19 @@
 #include "colorGradient.h"
 #include "colorScale.h"
 #include "gradientToScale.h"
+#include "WaveformGen.h"
+#include "AmbientDisplay.h"
 #include "smartPlotMessage.h" // Debug Plotting
 
+
 // 
-#define GRADIENT_NUM_LEDS (60)
-#define BRIGHTNESS_PATTERN_NUM_LEDS (60)
+#define GRADIENT_NUM_LEDS (45)
+#define BRIGHTNESS_PATTERN_NUM_LEDS (45)
 #define BRIGHTNESS_PATTERN_HI_LEVEL (1.0)
 #define BRIGHTNESS_PATTERN_LO_LEVEL (0.0)
 
 // LED Stuff
-#define DEFAULT_NUM_LEDS (60)
+#define DEFAULT_NUM_LEDS (45)
 static std::shared_ptr<LedStrip> g_ledStrip;
 
 // Patterns
@@ -100,48 +103,49 @@ int main(void)
    gradPoint.lightness  = 1.0;
 
    // Rainbow Gradient
-   static const int numGradPoints = 30;
+   static const int numGradPoints = 10;
    for(int i = 0; i < numGradPoints; ++i)
    {
-      gradPoint.hue = 0.6;//double(i) / double(numGradPoints-1);
+      gradPoint.hue = double(i) / double(numGradPoints-1);
       gradPoint.position = gradPoint.hue;
       gradPoints.push_back(gradPoint);
    }
 
    // Sinc func for brightness
+   WaveformGen<float> brightValGen(BRIGHTNESS_PATTERN_NUM_LEDS);
+   brightValGen.Sinc(-1000, 1000);
+   brightValGen.absoluteValue();
+   brightValGen.scale(BRIGHTNESS_PATTERN_HI_LEVEL - BRIGHTNESS_PATTERN_LO_LEVEL);
+   brightValGen.shift(BRIGHTNESS_PATTERN_LO_LEVEL);
+   brightValGen.quarterCircle_above();
+
+   WaveformGen<float> brightPosGen(BRIGHTNESS_PATTERN_NUM_LEDS);
+   brightPosGen.Linear(0, 1);
+
    g_brightnessPattern_base.resize(BRIGHTNESS_PATTERN_NUM_LEDS);
-   int centerOffset = (BRIGHTNESS_PATTERN_NUM_LEDS >> 1);
-   float scalar = (BRIGHTNESS_PATTERN_HI_LEVEL - BRIGHTNESS_PATTERN_LO_LEVEL);
    for(int i = 0; i < BRIGHTNESS_PATTERN_NUM_LEDS; ++i)
    {
-      float x = i - centerOffset;
-      float brightness = (x == 0.0) ? 1.0 : abs(sin(x) / x);
-
-      // Scale
-      brightness = ( brightness * scalar + BRIGHTNESS_PATTERN_LO_LEVEL );
-      g_brightnessPattern_base[i].brightness = brightness;
-      g_brightnessPattern_base[i].startPoint = float(i) / float(BRIGHTNESS_PATTERN_NUM_LEDS-1);
+      g_brightnessPattern_base[i].brightness = brightValGen.getPoints()[i];
+      g_brightnessPattern_base[i].startPoint = brightPosGen.getPoints()[i];
+      smartPlot_2D(&g_brightnessPattern_base[i].startPoint, E_FLOAT_32, &g_brightnessPattern_base[i].brightness, E_FLOAT_32, 1, 100, -1, "2D", "val");
    }
+
+   ColorGradient::DuplicateGradient(gradPoints, 2, true);
+   ColorScale::DuplicateBrightness(g_brightnessPattern_base, 1, false);
 
    ColorGradient grad(gradPoints);
    gradToRgbVect(grad, g_ledColorPattern_base, g_brightnessPattern_base, g_ledStrip->getNumLeds());
    g_ledStrip->set(g_ledColorPattern_base);
 
+   AmbientDisplay ambDisp(gradPoints, g_brightnessPattern_base);
+
    while(1)
    {
-      std::this_thread::sleep_for(std::chrono::milliseconds(60));
-      g_ledColorPattern_base.push_back(g_ledColorPattern_base[0]);
-      g_ledColorPattern_base.erase(g_ledColorPattern_base.begin());
-
-      auto brightness0 = g_brightnessPattern_base[0].brightness;
-      for(size_t i = 0; i < g_brightnessPattern_base.size()-1; ++i)
-      {
-         g_brightnessPattern_base[i].brightness = g_brightnessPattern_base[i+1].brightness;
-      }
-      g_brightnessPattern_base[g_brightnessPattern_base.size()-1].brightness = brightness0;
-
-      gradToRgbVect(grad, g_ledColorPattern_base, g_brightnessPattern_base, g_ledStrip->getNumLeds());
+      std::this_thread::sleep_for(std::chrono::microseconds(10000));
+      ambDisp.toRgbVect(g_ledColorPattern_base, g_ledStrip->getNumLeds());
       g_ledStrip->set(g_ledColorPattern_base);
+      ambDisp.gradient_shift(-0.002);
+      ambDisp.brightness_shift(0.008);
    }
 
    return 0;
