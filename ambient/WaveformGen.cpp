@@ -18,7 +18,7 @@
  */
 #include <math.h>
 #include "WaveformGen.h"
-
+#include "Transform1D.h"
 
 
 template<class T>
@@ -82,5 +82,25 @@ void WaveformGen<T>::shift(T shiftVal)
    for(size_t i = 0; i < numPoints; ++i)
    {
       m_points[i] += shiftVal;
+   }
+}
+
+template<class T>
+void WaveformGen<T>::quarterCircle_above()
+{
+   size_t numPoints = m_points.size();
+   for(size_t i = 0; i < numPoints; ++i)
+   {
+      m_points[i] = Transform1D::Unit::quarterCircle_above(m_points[i]);
+   }
+}
+
+template<class T>
+void WaveformGen<T>::quarterCircle_below()
+{
+   size_t numPoints = m_points.size();
+   for(size_t i = 0; i < numPoints; ++i)
+   {
+      m_points[i] = Transform1D::Unit::quarterCircle_below(m_points[i]);
    }
 }

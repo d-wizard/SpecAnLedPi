@@ -39,10 +39,14 @@ public:
    void Sinc(T startPhase, T endPhase);
    void Linear(T startVal, T endVal);
 
-   // Manipulations
+   // Standard Math Manipulations
    void absoluteValue();
    void scale(T scalar);
    void shift(T shiftVal);
+
+   // Quarter Circle Transforms (only really valid for values between 0 and 1)
+   void quarterCircle_above();
+   void quarterCircle_below();
 
 private:
    std::vector<T> m_points;
