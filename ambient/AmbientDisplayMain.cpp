@@ -32,7 +32,6 @@
 #include "AmbientDisplay.h"
 #include "smartPlotMessage.h" // Debug Plotting
 
-
 // 
 #define GRADIENT_NUM_LEDS (45)
 #define BRIGHTNESS_PATTERN_NUM_LEDS (45)
@@ -66,25 +65,6 @@ static void signalHandler(int signum)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void gradToRgbVect(ColorGradient& grad, SpecAnLedTypes::tRgbVector& ledColors, ColorScale::tBrightnessScale& brightPoints, size_t numLeds)
-{
-   std::vector<ColorScale::tColorPoint> colors;
-   ledColors.resize(numLeds);
-   auto gradVect = grad.getGradient();
-
-   Convert::convertGradientToScale(gradVect, colors);
-
-   ColorScale colorScale(colors, brightPoints);
-
-   float deltaBetweenPoints = (float)65535/(float)(numLeds-1);
-   for(size_t i = 0 ; i < numLeds; ++i)
-   {
-      ledColors[i] = colorScale.getColor((float)i * deltaBetweenPoints, 1.0);
-   }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 int main(void)
 {
    smartPlot_createFlushThread_withPriorityPolicy(200, 30, SCHED_FIFO);
@@ -92,11 +72,15 @@ int main(void)
    // Setup Signal Handler for ctrl+c
    signal(SIGINT, signalHandler);
 
+   /////////////////////////////////////////////////////////////////////////////
    // Setup LED strip.
+   /////////////////////////////////////////////////////////////////////////////
    g_ledStrip.reset(new LedStrip(DEFAULT_NUM_LEDS, LedStrip::GRB));
    g_ledStrip->clear();
 
-   // Define a simple gradient and display it.
+   /////////////////////////////////////////////////////////////////////////////
+   // Define the Gradient.
+   /////////////////////////////////////////////////////////////////////////////
    ColorGradient::tGradient gradPoints;
    ColorGradient::tGradientPoint gradPoint;
    gradPoint.saturation = 1.0;
@@ -111,7 +95,9 @@ int main(void)
       gradPoints.push_back(gradPoint);
    }
 
-   // Sinc func for brightness
+   /////////////////////////////////////////////////////////////////////////////
+   // Define Brightness Scale
+   /////////////////////////////////////////////////////////////////////////////
    WaveformGen<float> brightValGen(BRIGHTNESS_PATTERN_NUM_LEDS);
    brightValGen.Sinc(-1000, 1000);
    brightValGen.absoluteValue();
@@ -127,18 +113,20 @@ int main(void)
    {
       g_brightnessPattern_base[i].brightness = brightValGen.getPoints()[i];
       g_brightnessPattern_base[i].startPoint = brightPosGen.getPoints()[i];
-      smartPlot_2D(&g_brightnessPattern_base[i].startPoint, E_FLOAT_32, &g_brightnessPattern_base[i].brightness, E_FLOAT_32, 1, 100, -1, "2D", "val");
+      // smartPlot_2D(&g_brightnessPattern_base[i].startPoint, E_FLOAT_32, &g_brightnessPattern_base[i].brightness, E_FLOAT_32, 1, 100, -1, "2D", "val");
    }
 
+   /////////////////////////////////////////////////////////////////////////////
+   // Setup the Display
+   /////////////////////////////////////////////////////////////////////////////
    ColorGradient::DuplicateGradient(gradPoints, 2, true);
    ColorScale::DuplicateBrightness(g_brightnessPattern_base, 1, false);
 
-   ColorGradient grad(gradPoints);
-   gradToRgbVect(grad, g_ledColorPattern_base, g_brightnessPattern_base, g_ledStrip->getNumLeds());
-   g_ledStrip->set(g_ledColorPattern_base);
-
    AmbientDisplay ambDisp(gradPoints, g_brightnessPattern_base);
 
+   /////////////////////////////////////////////////////////////////////////////
+   // Main Loop
+   /////////////////////////////////////////////////////////////////////////////
    while(1)
    {
       std::this_thread::sleep_for(std::chrono::microseconds(10000));
