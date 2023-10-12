@@ -30,6 +30,7 @@
 #include "gradientToScale.h"
 #include "WaveformGen.h"
 #include "AmbientDisplay.h"
+#include "AmbientMovement.h"
 #include "smartPlotMessage.h" // Debug Plotting
 
 // 
@@ -125,6 +126,16 @@ int main(void)
    AmbientDisplay ambDisp(gradPoints, g_brightnessPattern_base);
 
    /////////////////////////////////////////////////////////////////////////////
+   // Setup the Display Movement
+   /////////////////////////////////////////////////////////////////////////////
+   AmbientMovementF::tAmbientMoveProps ambMoveProps;
+   ambMoveProps.source = AmbientMovementF::E_AMB_MOVE_SRC__FIXED;
+   ambMoveProps.transform = AmbientMovementF::E_AMB_MOVE_TYPE__SIN;
+   ambMoveProps.fixed_incr = 0.008;
+
+   AmbientMovementF ambMove(ambMoveProps);
+
+   /////////////////////////////////////////////////////////////////////////////
    // Main Loop
    /////////////////////////////////////////////////////////////////////////////
    while(1)
@@ -132,8 +143,8 @@ int main(void)
       std::this_thread::sleep_for(std::chrono::microseconds(10000));
       ambDisp.toRgbVect(g_ledColorPattern_base, g_ledStrip->getNumLeds());
       g_ledStrip->set(g_ledColorPattern_base);
-      ambDisp.gradient_shift(-0.002);
-      ambDisp.brightness_shift(0.008);
+      // ambDisp.gradient_shift(-0.002);
+      ambDisp.brightness_shift(ambMove.move());
    }
 
    return 0;
