@@ -19,8 +19,9 @@
 #include "AmbientMovement.h"
 
 template<class T>
-AmbientMovement<T>::AmbientMovement(const AmbientMovement::tAmbientMoveProps& prop):
-   m_moveProps(prop)
+AmbientMovement<T>::AmbientMovement(const AmbientMovement::tAmbientMoveProps& prop, T scalar):
+   m_moveProps(prop),
+   m_scalar(scalar)
 {
 
 }
@@ -87,5 +88,5 @@ T AmbientMovement<T>::move()
       break;
    }
 
-   return m_postTransformMovement - orig_postTransformMovement; // Return the change (use the 'get' function to get the full value)
+   return (m_postTransformMovement - orig_postTransformMovement)*m_scalar; // Return the change (use the 'get' function to get the full value)
 }

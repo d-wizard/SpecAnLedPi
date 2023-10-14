@@ -33,15 +33,17 @@
 #include "AmbientMovement.h"
 #include "smartPlotMessage.h" // Debug Plotting
 
-// 
-#define GRADIENT_NUM_LEDS (45)
-#define BRIGHTNESS_PATTERN_NUM_LEDS (45)
-#define BRIGHTNESS_PATTERN_HI_LEVEL (1.0)
+// LED Stuff
+#define DEFAULT_NUM_LEDS (198)
+static std::shared_ptr<LedStrip> g_ledStrip;
+
+// Brightness Constants.
+#define BRIGHTNESS_PATTERN_NUM_POINTS (51)
+#define BRIGHTNESS_PATTERN_HI_LEVEL (.75)
 #define BRIGHTNESS_PATTERN_LO_LEVEL (0.0)
 
-// LED Stuff
-#define DEFAULT_NUM_LEDS (45)
-static std::shared_ptr<LedStrip> g_ledStrip;
+// 
+#define GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO (10.0)
 
 // Patterns
 static SpecAnLedTypes::tRgbVector g_ledColorPattern_base;
@@ -99,18 +101,17 @@ int main(void)
    /////////////////////////////////////////////////////////////////////////////
    // Define Brightness Scale
    /////////////////////////////////////////////////////////////////////////////
-   WaveformGen<float> brightValGen(BRIGHTNESS_PATTERN_NUM_LEDS);
-   brightValGen.Sinc(-1000, 1000);
+   WaveformGen<float> brightValGen(BRIGHTNESS_PATTERN_NUM_POINTS);
+   brightValGen.Sinc(-100, 100);
    brightValGen.absoluteValue();
    brightValGen.scale(BRIGHTNESS_PATTERN_HI_LEVEL - BRIGHTNESS_PATTERN_LO_LEVEL);
    brightValGen.shift(BRIGHTNESS_PATTERN_LO_LEVEL);
-   brightValGen.quarterCircle_above();
 
-   WaveformGen<float> brightPosGen(BRIGHTNESS_PATTERN_NUM_LEDS);
+   WaveformGen<float> brightPosGen(BRIGHTNESS_PATTERN_NUM_POINTS);
    brightPosGen.Linear(0, 1);
 
-   g_brightnessPattern_base.resize(BRIGHTNESS_PATTERN_NUM_LEDS);
-   for(int i = 0; i < BRIGHTNESS_PATTERN_NUM_LEDS; ++i)
+   g_brightnessPattern_base.resize(BRIGHTNESS_PATTERN_NUM_POINTS);
+   for(int i = 0; i < BRIGHTNESS_PATTERN_NUM_POINTS; ++i)
    {
       g_brightnessPattern_base[i].brightness = brightValGen.getPoints()[i];
       g_brightnessPattern_base[i].startPoint = brightPosGen.getPoints()[i];
@@ -121,19 +122,18 @@ int main(void)
    // Setup the Display
    /////////////////////////////////////////////////////////////////////////////
    ColorGradient::DuplicateGradient(gradPoints, 2, true);
-   ColorScale::DuplicateBrightness(g_brightnessPattern_base, 1, false);
+   ColorScale::DuplicateBrightness(g_brightnessPattern_base, int(GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO), false);
 
    AmbientDisplay ambDisp(gradPoints, g_brightnessPattern_base);
 
    /////////////////////////////////////////////////////////////////////////////
    // Setup the Display Movement
    /////////////////////////////////////////////////////////////////////////////
-   AmbientMovementF::tAmbientMoveProps ambMoveProps;
-   ambMoveProps.source = AmbientMovementF::E_AMB_MOVE_SRC__FIXED;
-   ambMoveProps.transform = AmbientMovementF::E_AMB_MOVE_TYPE__SIN;
-   ambMoveProps.fixed_incr = 0.008;
-
-   AmbientMovementF ambMove(ambMoveProps);
+   AmbientMovementF::tAmbientMoveProps ambMovePropsSine;
+   ambMovePropsSine.source = AmbientMovementF::E_AMB_MOVE_SRC__FIXED;
+   ambMovePropsSine.transform = AmbientMovementF::E_AMB_MOVE_TYPE__SIN;
+   ambMovePropsSine.fixed_incr = 0.01;
+   AmbientMovementF ambMoveSin(ambMovePropsSine, 0.5/GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO);
 
    /////////////////////////////////////////////////////////////////////////////
    // Main Loop
@@ -141,10 +141,11 @@ int main(void)
    while(1)
    {
       std::this_thread::sleep_for(std::chrono::microseconds(10000));
-      ambDisp.toRgbVect(g_ledColorPattern_base, g_ledStrip->getNumLeds());
+      ambDisp.toRgbVect(g_ledColorPattern_base, GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO*g_ledStrip->getNumLeds());
+      g_ledColorPattern_base.resize(g_ledStrip->getNumLeds());
       g_ledStrip->set(g_ledColorPattern_base);
-      // ambDisp.gradient_shift(-0.002);
-      ambDisp.brightness_shift(ambMove.move());
+      ambDisp.gradient_shift(-0.0002);
+      ambDisp.brightness_shift(ambMoveSin.move());
    }
 
    return 0;

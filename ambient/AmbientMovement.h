@@ -60,7 +60,7 @@ public:
    }tAmbientMoveProps;
 
 public:
-   AmbientMovement(const tAmbientMoveProps& prop);
+   AmbientMovement(const tAmbientMoveProps& prop, T scalar = 1.0);
    virtual ~AmbientMovement();
 
    // Make uncopyable
@@ -70,10 +70,12 @@ public:
 
    T move(); // returns the movement change. Use the 'get' function for total movement.
 
-   T get(){return m_postTransformMovement;}
+   T get(){return m_postTransformMovement*m_scalar;}
 
 private:
    tAmbientMoveProps m_moveProps;
+
+   T m_scalar = 1.0;
 
    T m_preTransformMovement = 0.0;
    T m_postTransformMovement = 0.0;
