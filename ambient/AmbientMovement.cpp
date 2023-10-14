@@ -21,7 +21,8 @@
 template<class T>
 AmbientMovement<T>::AmbientMovement(const AmbientMovement::tAmbientMoveProps& prop, T scalar):
    m_moveProps(prop),
-   m_scalar(scalar)
+   m_outputScalar_orig(scalar),
+   m_outputScalar_current(scalar)
 {
 
 }
@@ -32,30 +33,28 @@ AmbientMovement<T>::~AmbientMovement()
 
 }
 
+
 template<class T>
-T AmbientMovement<T>::move()
+T AmbientMovement<T>::getDeltaVal(tAmbientMoveProps& prop)
 {
-   /////////////////////////////////////////////////////////////////////////////
-   // Determine the update value.
-   /////////////////////////////////////////////////////////////////////////////
    T preTransformUpdateVal = 0.0;
-   if(m_moveProps.source == E_AMB_MOVE_SRC__FIXED)
+   if(prop.source == E_AMB_MOVE_SRC__FIXED)
    {
-      preTransformUpdateVal = m_moveProps.fixed_incr;
+      preTransformUpdateVal = prop.fixed_incr;
    }
-   else if(m_moveProps.source == E_AMB_MOVE_SRC__RANDOM)
+   else if(prop.source == E_AMB_MOVE_SRC__RANDOM)
    {
-      switch(m_moveProps.randType)
+      switch(prop.randType)
       {
          case E_AMB_MOVE_RAND_DIST__UNIFORM:
          {
-            std::uniform_real_distribution<T> dist(m_moveProps.rand_paramA, m_moveProps.rand_paramB);
+            std::uniform_real_distribution<T> dist(prop.rand_paramA, prop.rand_paramB);
             preTransformUpdateVal = dist(m_randGen);
          }
          break;
          case E_AMB_MOVE_RAND_DIST__NORMAL:
          {
-            std::normal_distribution<T> dist(m_moveProps.rand_paramA, m_moveProps.rand_paramB);
+            std::normal_distribution<T> dist(prop.rand_paramA, prop.rand_paramB);
             preTransformUpdateVal = dist(m_randGen);
          }
          break;
@@ -65,6 +64,38 @@ T AmbientMovement<T>::move()
       }
    }
    // else: Do nothing. Keep preTransformUpdateVal at 0.0
+   return preTransformUpdateVal;
+}
+
+template<class T>
+T AmbientMovement<T>::transform(tAmbientMoveProps& prop, T valToTransform)
+{
+   T retVal = 0.0;
+   switch(prop.transform)
+   {
+      // Fall through is intended. Make default the same as the linear case.
+      default:
+      case E_AMB_MOVE_TYPE__LINEAR:
+      {
+         retVal = valToTransform;
+      }
+      break;
+      case E_AMB_MOVE_TYPE__SIN:
+      {
+         retVal = sin(valToTransform);
+      }
+      break;
+   }
+   return retVal;
+}
+
+template<class T>
+T AmbientMovement<T>::move()
+{
+   /////////////////////////////////////////////////////////////////////////////
+   // Determine the update value.
+   /////////////////////////////////////////////////////////////////////////////
+   T preTransformUpdateVal = getDeltaVal(m_moveProps)*m_moveScalar_current;
 
    /////////////////////////////////////////////////////////////////////////////
    // Transform the value.
@@ -72,21 +103,20 @@ T AmbientMovement<T>::move()
    T orig_postTransformMovement = m_postTransformMovement; // Store off the before value, so we can return the delta.
    m_preTransformMovement += preTransformUpdateVal; // Update the pre-transform value.
 
-   switch(m_moveProps.transform)
-   {
-      // Fall through is intended. Make default the same as the linear case.
-      default:
-      case E_AMB_MOVE_TYPE__LINEAR:
-      {
-         m_postTransformMovement = m_preTransformMovement;
-      }
-      break;
-      case E_AMB_MOVE_TYPE__SIN:
-      {
-         m_postTransformMovement = sin(m_preTransformMovement);
-      }
-      break;
-   }
+   m_postTransformMovement = transform(m_moveProps, m_preTransformMovement);
 
-   return (m_postTransformMovement - orig_postTransformMovement)*m_scalar; // Return the change (use the 'get' function to get the full value)
+   return (m_postTransformMovement - orig_postTransformMovement)*m_outputScalar_current; // Return the change (use the 'get' function to get the full value)
 }
+
+template<class T>
+void AmbientMovement<T>::scaleOutputScalar(tAmbientMoveProps& props)
+{
+   m_outputScalar_current = m_outputScalar_orig * transform(props, getDeltaVal(props));
+}
+
+template<class T>
+void AmbientMovement<T>::scaleMovementScalar(tAmbientMoveProps& props)
+{
+   m_moveScalar_current = m_moveScalar_orig * transform(props, getDeltaVal(props));
+}
+

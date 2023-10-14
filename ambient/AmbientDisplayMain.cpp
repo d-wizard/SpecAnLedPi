@@ -43,7 +43,7 @@ static std::shared_ptr<LedStrip> g_ledStrip;
 #define BRIGHTNESS_PATTERN_LO_LEVEL (0.0)
 
 // 
-#define GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO (10.0)
+#define GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO (3.0)
 
 // Patterns
 static SpecAnLedTypes::tRgbVector g_ledColorPattern_base;
@@ -133,19 +133,37 @@ int main(void)
    ambMovePropsSine.source = AmbientMovementF::E_AMB_MOVE_SRC__FIXED;
    ambMovePropsSine.transform = AmbientMovementF::E_AMB_MOVE_TYPE__SIN;
    ambMovePropsSine.fixed_incr = 0.01;
-   AmbientMovementF ambMoveSin(ambMovePropsSine, 0.5/GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO);
+   AmbientMovementF ambMoveSin(ambMovePropsSine, 0.4/GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO);
+
+   /////////////////////////////////////////////////////////////////////////////
+   // Random Mod to the Brightness Speed
+   /////////////////////////////////////////////////////////////////////////////
+   AmbientMovementF::tAmbientMoveProps modBrightMoveProps;
+   modBrightMoveProps.source = AmbientMovementF::E_AMB_MOVE_SRC__RANDOM;
+   modBrightMoveProps.transform = AmbientMovementF::E_AMB_MOVE_TYPE__LINEAR;
+   modBrightMoveProps.randType = AmbientMovementF::E_AMB_MOVE_RAND_DIST__NORMAL;
+   modBrightMoveProps.rand_paramA = 1.0;
+   modBrightMoveProps.rand_paramB = 0.5;
+
 
    /////////////////////////////////////////////////////////////////////////////
    // Main Loop
    /////////////////////////////////////////////////////////////////////////////
+   uint32_t changeBrightSpeedCount = 0;
    while(1)
    {
-      std::this_thread::sleep_for(std::chrono::microseconds(10000));
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
       ambDisp.toRgbVect(g_ledColorPattern_base, GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO*g_ledStrip->getNumLeds());
       g_ledColorPattern_base.resize(g_ledStrip->getNumLeds());
       g_ledStrip->set(g_ledColorPattern_base);
       ambDisp.gradient_shift(-0.0002);
       ambDisp.brightness_shift(ambMoveSin.move());
+
+      if(++changeBrightSpeedCount == 33)
+      {
+         changeBrightSpeedCount = 0;
+         ambMoveSin.scaleMovementScalar(modBrightMoveProps);
+      }
    }
 
    return 0;

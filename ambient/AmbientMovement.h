@@ -60,7 +60,7 @@ public:
    }tAmbientMoveProps;
 
 public:
-   AmbientMovement(const tAmbientMoveProps& prop, T scalar = 1.0);
+   AmbientMovement(const tAmbientMoveProps& prop, T outputScalar = 1.0);
    virtual ~AmbientMovement();
 
    // Make uncopyable
@@ -70,17 +70,27 @@ public:
 
    T move(); // returns the movement change. Use the 'get' function for total movement.
 
-   T get(){return m_postTransformMovement*m_scalar;}
+   T get(){return m_postTransformMovement*m_outputScalar_current;}
+
+   void scaleOutputScalar(tAmbientMoveProps& props);
+   void scaleMovementScalar(tAmbientMoveProps& props);
 
 private:
    tAmbientMoveProps m_moveProps;
 
-   T m_scalar = 1.0;
+   T m_outputScalar_orig = 1.0;
+   T m_outputScalar_current = 1.0;
+
+   T m_moveScalar_orig = 1.0;
+   T m_moveScalar_current = 1.0;
 
    T m_preTransformMovement = 0.0;
    T m_postTransformMovement = 0.0;
 
    std::default_random_engine m_randGen;
+
+   T getDeltaVal(tAmbientMoveProps& prop);
+   T transform(tAmbientMoveProps& prop, T valToTransform);
 };
 
 typedef AmbientMovement<float> AmbientMovementF;
