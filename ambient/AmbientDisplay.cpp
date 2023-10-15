@@ -23,6 +23,10 @@
 #include "gradientToScale.h"
 
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 static bool areTheyClose(float val1, float val2, float minDelta = ColorScale::MIN_RESOLUTION)
 {
    bool close = false;
@@ -63,21 +67,75 @@ static bool setIfTheyAreClose(float& val, float desired)
    return false;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-AmbientDisplay::AmbientDisplay(ColorGradient::tGradient& grad, ColorScale::tBrightnessScale& brightness):
+float AmbientDisplayBase::getNewShiftValue(float currentShift, float newShiftVal)
+{
+   currentShift += newShiftVal;
+   if(currentShift > 1.0)
+      currentShift = fmod(currentShift, 1.0); // Modulo to keep between 0.0 and 1.0
+   else if(currentShift < -1.0)
+      currentShift = -fmod(-currentShift, 1.0); // Don't remember how mod works on negative numbers to convert to positive before mod then convert back.
+   return currentShift;
+}
+
+float AmbientDisplayBase::getMidPoint(float minPoint_pos, float minPoint_val, float maxPoint_pos, float maxPoint_val, float midPoint_pos)
+{
+   if(maxPoint_pos == minPoint_pos)
+      return (minPoint_val + maxPoint_val) / 2.0 ; // Return early to prevent divide by zero. Just return the average between the two points.
+
+   float midPointScaled = (midPoint_pos - minPoint_pos) / (maxPoint_pos - minPoint_pos);
+   return midPointScaled * (maxPoint_val - minPoint_val) + minPoint_val;
+}
+
+float AmbientDisplayBase::getHuePoint(float minPoint_pos, float minPoint_hue, float maxPoint_pos, float maxPoint_hue, float midPoint_pos)
+{
+   float midPoint_hue = getMidPoint(minPoint_pos, minPoint_hue, maxPoint_pos, maxPoint_hue, midPoint_pos);
+
+   float hueDelta = abs(maxPoint_hue - minPoint_hue);
+   if(hueDelta > 0.5)
+   {
+      // The real mid point is half way around the hue circle
+      midPoint_hue += 0.5;
+      if(midPoint_hue >= 1.0)
+         midPoint_hue -= 1.0;
+   }
+
+   return midPoint_hue;
+}
+
+float AmbientDisplayBase::avgHuePoints(float point1, float point2)
+{
+   float avgHue = (point1 + point2) / 2.0;
+   float hueDelta = abs(point1 - point2);
+   if(hueDelta > 0.5)
+   {
+      // The real mid point is half way around the hue circle
+      avgHue += 0.5;
+      if(avgHue >= 1.0)
+         avgHue -= 1.0;
+   }
+   return avgHue;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+AmbientDisplayGradient::AmbientDisplayGradient(ColorGradient::tGradient& grad):
    m_grad_orig(grad.begin(), grad.end()),
-   m_grad_current(grad.begin(), grad.end()),
-   m_bright_orig(brightness.begin(), brightness.end()),
-   m_bright_current(brightness.begin(), brightness.end())
+   m_grad_current(grad.begin(), grad.end())
 {
 }
 
-AmbientDisplay::~AmbientDisplay()
+AmbientDisplayGradient::~AmbientDisplayGradient()
 {
 
 }
 
-void AmbientDisplay::gradient_shift(float shiftValue)
+void AmbientDisplayGradient::shift(float shiftValue)
 {
    if(shiftValue == 0.0)
       return; // Early return since there is nothing to do.
@@ -186,7 +244,22 @@ void AmbientDisplay::gradient_shift(float shiftValue)
    }
 }
 
-void AmbientDisplay::brightness_shift(float shiftValue)
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+AmbientDisplayBrightness::AmbientDisplayBrightness(ColorScale::tBrightnessScale& brightness):
+   m_bright_orig(brightness.begin(), brightness.end()),
+   m_bright_current(brightness.begin(), brightness.end())
+{
+}
+
+AmbientDisplayBrightness::~AmbientDisplayBrightness()
+{
+
+}
+
+void AmbientDisplayBrightness::shift(float shiftValue)
 {
    if(shiftValue == 0.0)
       return; // Early return since there is nothing to do.
@@ -285,67 +358,45 @@ void AmbientDisplay::brightness_shift(float shiftValue)
    }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+AmbientDisplay::AmbientDisplay(ColorGradient::tGradient& grad, ColorScale::tBrightnessScale& brightness):
+   m_gradient(grad),
+   m_brightness(brightness)
+{
+
+}
+
+AmbientDisplay::~AmbientDisplay()
+{
+
+}
+
+void AmbientDisplay::gradient_shift(float shiftValue)
+{
+   m_gradient.shift(shiftValue);
+}
+
+void AmbientDisplay::brightness_shift(float shiftValue)
+{
+   m_brightness.shift(shiftValue);
+}
+
+
 void AmbientDisplay::toRgbVect(SpecAnLedTypes::tRgbVector& ledColors, size_t numLeds)
 {
    std::vector<ColorScale::tColorPoint> colors;
    ledColors.resize(numLeds);
 
-   Convert::convertGradientToScale(m_grad_current, colors);
+   Convert::convertGradientToScale(m_gradient.get(), colors);
 
-   ColorScale colorScale(colors, m_bright_current);
+   ColorScale colorScale(colors, m_brightness.get());
 
    float deltaBetweenPoints = (float)65535/(float)(numLeds-1);
    for(size_t i = 0 ; i < numLeds; ++i)
    {
       ledColors[i] = colorScale.getColor((float)i * deltaBetweenPoints, 1.0);
    }
-}
-
-float AmbientDisplay::getNewShiftValue(float currentShift, float newShiftVal)
-{
-   currentShift += newShiftVal;
-   if(currentShift > 1.0)
-      currentShift = fmod(currentShift, 1.0); // Modulo to keep between 0.0 and 1.0
-   else if(currentShift < -1.0)
-      currentShift = -fmod(-currentShift, 1.0); // Don't remember how mod works on negative numbers to convert to positive before mod then convert back.
-   return currentShift;
-}
-
-float AmbientDisplay::getMidPoint(float minPoint_pos, float minPoint_val, float maxPoint_pos, float maxPoint_val, float midPoint_pos)
-{
-   if(maxPoint_pos == minPoint_pos)
-      return (minPoint_val + maxPoint_val) / 2.0 ; // Return early to prevent divide by zero. Just return the average between the two points.
-
-   float midPointScaled = (midPoint_pos - minPoint_pos) / (maxPoint_pos - minPoint_pos);
-   return midPointScaled * (maxPoint_val - minPoint_val) + minPoint_val;
-}
-
-float AmbientDisplay::getHuePoint(float minPoint_pos, float minPoint_hue, float maxPoint_pos, float maxPoint_hue, float midPoint_pos)
-{
-   float midPoint_hue = getMidPoint(minPoint_pos, minPoint_hue, maxPoint_pos, maxPoint_hue, midPoint_pos);
-
-   float hueDelta = abs(maxPoint_hue - minPoint_hue);
-   if(hueDelta > 0.5)
-   {
-      // The real mid point is half way around the hue circle
-      midPoint_hue += 0.5;
-      if(midPoint_hue >= 1.0)
-         midPoint_hue -= 1.0;
-   }
-
-   return midPoint_hue;
-}
-
-float AmbientDisplay::avgHuePoints(float point1, float point2)
-{
-   float avgHue = (point1 + point2) / 2.0;
-   float hueDelta = abs(point1 - point2);
-   if(hueDelta > 0.5)
-   {
-      // The real mid point is half way around the hue circle
-      avgHue += 0.5;
-      if(avgHue >= 1.0)
-         avgHue -= 1.0;
-   }
-   return avgHue;
 }

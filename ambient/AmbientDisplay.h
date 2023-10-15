@@ -22,36 +22,62 @@
 #include "colorGradient.h"
 #include "colorScale.h"
 
+////////////////////////////////////////////////////////////////////////////////
+class AmbientDisplayBase
+{
+public:
+   AmbientDisplayBase(){};
+   virtual ~AmbientDisplayBase(){};
+   AmbientDisplayBase(AmbientDisplayBase const&) = delete; void operator=(AmbientDisplayBase const&) = delete; // delete a bunch of constructors.
+protected:
+   float getNewShiftValue(float currentShift, float newShiftVal);
+   float getMidPoint(float minPoint_pos, float minPoint_val, float maxPoint_pos, float maxPoint_val, float midPoint_pos);
+   float getHuePoint(float minPoint_pos, float minPoint_hue, float maxPoint_pos, float maxPoint_hue, float midPoint_pos);
+   float avgHuePoints(float point1, float point2);
+};
+////////////////////////////////////////////////////////////////////////////////
+class AmbientDisplayGradient: public AmbientDisplayBase
+{
+public:
+   AmbientDisplayGradient(ColorGradient::tGradient& grad);
+   virtual ~AmbientDisplayGradient();
+   AmbientDisplayGradient() = delete; AmbientDisplayGradient(AmbientDisplayGradient const&) = delete; void operator=(AmbientDisplayGradient const&) = delete; // delete a bunch of constructors.
+
+   void shift(float shiftValue); // Shift values should be between -1 and 1
+   ColorGradient::tGradient& get(){return m_grad_current;}
+private:
+   ColorGradient::tGradient m_grad_orig;
+   ColorGradient::tGradient m_grad_current;
+   float m_gradShiftVal = 0.0;
+};
+////////////////////////////////////////////////////////////////////////////////
+class AmbientDisplayBrightness: public AmbientDisplayBase
+{
+public:
+   AmbientDisplayBrightness(ColorScale::tBrightnessScale& brightness);
+   virtual ~AmbientDisplayBrightness();
+   AmbientDisplayBrightness() = delete; AmbientDisplayBrightness(AmbientDisplayBrightness const&) = delete; void operator=(AmbientDisplayBrightness const&) = delete; // delete a bunch of constructors.
+
+   void shift(float shiftValue); // Shift values should be between -1 and 1
+   ColorScale::tBrightnessScale& get(){return m_bright_current;}
+private:
+   ColorScale::tBrightnessScale m_bright_orig;
+   ColorScale::tBrightnessScale m_bright_current;
+   float m_brightShiftVal = 0.0;
+};
+////////////////////////////////////////////////////////////////////////////////
 class AmbientDisplay
 {
 public:
    AmbientDisplay(ColorGradient::tGradient& grad, ColorScale::tBrightnessScale& brightness);
    virtual ~AmbientDisplay();
-
-   // Make uncopyable
-   AmbientDisplay();
-   AmbientDisplay(AmbientDisplay const&);
-   void operator=(AmbientDisplay const&);
+   AmbientDisplay() = delete; AmbientDisplay(AmbientDisplay const&) = delete; void operator=(AmbientDisplay const&) = delete; // delete a bunch of constructors.
 
    void gradient_shift(float shiftValue); // Shift values should be between -1 and 1
    void brightness_shift(float shiftValue); // Shift values should be between -1 and 1
 
    void toRgbVect(SpecAnLedTypes::tRgbVector& ledColors, size_t numLeds);
-
 private:
-   ColorGradient::tGradient m_grad_orig;
-   ColorGradient::tGradient m_grad_current;
-   float m_gradShiftVal = 0.0;
-
-   ColorScale::tBrightnessScale m_bright_orig;
-   ColorScale::tBrightnessScale m_bright_current;
-   float m_brightShiftVal = 0.0;
-
-   float getNewShiftValue(float currentShift, float newShiftVal);
-
-   float getMidPoint(float minPoint_pos, float minPoint_val, float maxPoint_pos, float maxPoint_val, float midPoint_pos);
-   float getHuePoint(float minPoint_pos, float minPoint_hue, float maxPoint_pos, float maxPoint_hue, float midPoint_pos);
-
-   float avgHuePoints(float point1, float point2);
-
+   AmbientDisplayGradient m_gradient;
+   AmbientDisplayBrightness m_brightness;
 };
