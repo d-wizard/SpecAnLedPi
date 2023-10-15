@@ -55,18 +55,21 @@ template<class T>
 class LinearSource : public SourceBase<T>
 {
 public:
-   LinearSource(T incr, T firstVal = 0):m_nextValue(firstVal), m_incr(incr) {}
+   LinearSource(T incr, T firstVal = 0):m_nextValue(firstVal), m_incr_orig(incr), m_incr_cur(incr){}
    virtual ~LinearSource(){}
    virtual T getNextValue() override
    {
       T retVal = m_nextValue;
-      m_nextValue += m_incr;
+      m_nextValue += m_incr_cur;
       return retVal;
    }
+   void setIncr(T newIncr){m_incr_orig = m_incr_cur = newIncr;}
+   void scaleIncr(T scalar){m_incr_cur = m_incr_orig * scalar;}
    LinearSource() = delete; LinearSource(LinearSource const&) = delete; void operator=(LinearSource const&) = delete; // delete a bunch of constructors.
 private:
    T m_nextValue;
-   T m_incr;
+   T m_incr_orig;
+   T m_incr_cur;
 };
 ////////////////////////////////////////////////////////////////////////////////
 template<class T>
@@ -108,16 +111,22 @@ template<class T>
 class LinearTransform : public TransformBase<T>
 {
 public:
-   LinearTransform(T m, T b = 0):m_m(m), m_b(b) {}
+   LinearTransform(T m, T b = 0):m_m_orig(m), m_m_cur(m), m_b_orig(b), m_b_cur(b) {}
    virtual ~LinearTransform(){}
    virtual T transform(T input) override
    {
-      return input * m_m + m_b;
+      return input * m_m_cur + m_b_cur;
    }
+   void setM(T newM){m_m_orig = m_m_cur = newM;}
+   void setB(T newB){m_b_orig = m_b_cur = newB;}
+   void scaleM(T scalar){m_m_cur = m_m_orig * scalar;}
+   void scaleB(T scalar){m_b_cur = m_b_orig * scalar;}
    LinearTransform() = delete; LinearTransform(LinearTransform const&) = delete; void operator=(LinearTransform const&) = delete; // delete a bunch of constructors.
 private:
-   T m_m;
-   T m_b;
+   T m_m_orig;
+   T m_m_cur;
+   T m_b_orig;
+   T m_b_cur;
 };
 ////////////////////////////////////////////////////////////////////////////////
 template<class T>
@@ -165,7 +174,7 @@ public:
    Generator(SourcePtr<T> source, TransformPtr<T> transform):m_source(source){m_transforms.push_back(transform);} // Single transforms.
    Generator(SourcePtr<T> source, std::vector<TransformPtr<T>>& transforms):m_source(source), m_transforms(transforms){}; // Multiple transforms.
 
-   T getRaw()
+   T getNext()
    {
       T val = m_source->getNextValue();
       for(auto& transform : m_transforms)
@@ -174,11 +183,13 @@ public:
       return m_lastVal;
    }
    
-   T getDelta()
+   T getNextDelta()
    {
       T last = m_lastVal;
-      return getRaw() - last;
+      return getNext() - last;
    }
+
+   T getLast(){return m_lastVal;}
 
    Generator() = delete; Generator(Generator const&) = delete; void operator=(Generator const&) = delete; // delete a bunch of constructors.
 private:
