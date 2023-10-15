@@ -124,7 +124,7 @@ float AmbientDisplayBase::avgHuePoints(float point1, float point2)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-AmbientDisplayGradient::AmbientDisplayGradient(ColorGradient::tGradient& grad):
+AmbientDisplayGradient::AmbientDisplayGradient(const ColorGradient::tGradient& grad):
    m_grad_orig(grad.begin(), grad.end()),
    m_grad_current(grad.begin(), grad.end())
 {
@@ -248,7 +248,7 @@ void AmbientDisplayGradient::shift(float shiftValue)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-AmbientDisplayBrightness::AmbientDisplayBrightness(ColorScale::tBrightnessScale& brightness):
+AmbientDisplayBrightness::AmbientDisplayBrightness(const ColorScale::tBrightnessScale& brightness):
    m_bright_orig(brightness.begin(), brightness.end()),
    m_bright_current(brightness.begin(), brightness.end())
 {
@@ -362,11 +362,19 @@ void AmbientDisplayBrightness::shift(float shiftValue)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-AmbientDisplay::AmbientDisplay(ColorGradient::tGradient& grad, ColorScale::tBrightnessScale& brightness):
-   m_gradient(grad),
-   m_brightness(brightness)
+AmbientDisplay::AmbientDisplay(const ColorGradient::tGradient& grad, const ColorScale::tBrightnessScale& brightness):
+   m_gradient(grad)
 {
+   m_brightness_separate.push_back(std::make_unique<AmbientDisplayBrightness>(brightness));
+}
 
+AmbientDisplay::AmbientDisplay(const ColorGradient::tGradient& grad, const std::vector<ColorScale::tBrightnessScale>& brightness):
+   m_gradient(grad)
+{
+   for(const auto& b : brightness)
+   {
+      m_brightness_separate.push_back(std::make_unique<AmbientDisplayBrightness>(b));
+   }
 }
 
 AmbientDisplay::~AmbientDisplay()
@@ -379,9 +387,13 @@ void AmbientDisplay::gradient_shift(float shiftValue)
    m_gradient.shift(shiftValue);
 }
 
-void AmbientDisplay::brightness_shift(float shiftValue)
+void AmbientDisplay::brightness_shift(float shiftValue, size_t index)
 {
-   m_brightness.shift(shiftValue);
+   auto curSize = m_brightness_separate.size();
+   if(curSize > 0 && index >= 0 && index < curSize)
+   { 
+      m_brightness_separate[index]->shift(shiftValue);
+   }
 }
 
 
@@ -392,7 +404,7 @@ void AmbientDisplay::toRgbVect(SpecAnLedTypes::tRgbVector& ledColors, size_t num
 
    Convert::convertGradientToScale(m_gradient.get(), colors);
 
-   ColorScale colorScale(colors, m_brightness.get());
+   ColorScale colorScale(colors, m_brightness_separate[0]->get());
 
    float deltaBetweenPoints = (float)65535/(float)(numLeds-1);
    for(size_t i = 0 ; i < numLeds; ++i)

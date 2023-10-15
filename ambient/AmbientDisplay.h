@@ -18,6 +18,7 @@
  */
 #pragma once
 #include <vector>
+#include <memory>
 #include "specAnLedPiTypes.h"
 #include "colorGradient.h"
 #include "colorScale.h"
@@ -39,7 +40,7 @@ protected:
 class AmbientDisplayGradient: public AmbientDisplayBase
 {
 public:
-   AmbientDisplayGradient(ColorGradient::tGradient& grad);
+   AmbientDisplayGradient(const ColorGradient::tGradient& grad);
    virtual ~AmbientDisplayGradient();
    AmbientDisplayGradient() = delete; AmbientDisplayGradient(AmbientDisplayGradient const&) = delete; void operator=(AmbientDisplayGradient const&) = delete; // delete a bunch of constructors.
 
@@ -54,7 +55,7 @@ private:
 class AmbientDisplayBrightness: public AmbientDisplayBase
 {
 public:
-   AmbientDisplayBrightness(ColorScale::tBrightnessScale& brightness);
+   AmbientDisplayBrightness(const ColorScale::tBrightnessScale& brightness);
    virtual ~AmbientDisplayBrightness();
    AmbientDisplayBrightness() = delete; AmbientDisplayBrightness(AmbientDisplayBrightness const&) = delete; void operator=(AmbientDisplayBrightness const&) = delete; // delete a bunch of constructors.
 
@@ -69,15 +70,19 @@ private:
 class AmbientDisplay
 {
 public:
-   AmbientDisplay(ColorGradient::tGradient& grad, ColorScale::tBrightnessScale& brightness);
+   AmbientDisplay(const ColorGradient::tGradient& grad, const ColorScale::tBrightnessScale& brightness);
+   AmbientDisplay(const ColorGradient::tGradient& grad, const std::vector<ColorScale::tBrightnessScale>& brightness);
    virtual ~AmbientDisplay();
    AmbientDisplay() = delete; AmbientDisplay(AmbientDisplay const&) = delete; void operator=(AmbientDisplay const&) = delete; // delete a bunch of constructors.
 
    void gradient_shift(float shiftValue); // Shift values should be between -1 and 1
-   void brightness_shift(float shiftValue); // Shift values should be between -1 and 1
+   void brightness_shift(float shiftValue, size_t index = 0); // Shift values should be between -1 and 1
 
    void toRgbVect(SpecAnLedTypes::tRgbVector& ledColors, size_t numLeds);
 private:
    AmbientDisplayGradient m_gradient;
-   AmbientDisplayBrightness m_brightness;
+   std::vector<std::unique_ptr<AmbientDisplayBrightness>> m_brightness_separate;
+   std::unique_ptr<AmbientDisplayBrightness> m_brightness_combined;
+
+   void combineBrightnessValues();
 };
