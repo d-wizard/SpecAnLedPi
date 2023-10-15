@@ -35,6 +35,7 @@ public:
    SourceBase(){}
    virtual ~SourceBase(){}
    virtual T getNextValue() = 0;
+   SourceBase(SourceBase const&) = delete; void operator=(SourceBase const&) = delete; // delete a bunch of constructors.
 };
 ////////////////////////////////////////////////////////////////////////////////
 template<class T>
@@ -44,6 +45,7 @@ public:
    TransformBase(){}
    virtual ~TransformBase(){}
    virtual T transform(T input) = 0;
+   TransformBase(TransformBase const&) = delete; void operator=(TransformBase const&) = delete; // delete a bunch of constructors.
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -61,6 +63,7 @@ public:
       m_nextValue += m_incr;
       return retVal;
    }
+   LinearSource() = delete; LinearSource(LinearSource const&) = delete; void operator=(LinearSource const&) = delete; // delete a bunch of constructors.
 private:
    T m_nextValue;
    T m_incr;
@@ -76,6 +79,7 @@ public:
    {
       return m_dist(m_randGen);
    }
+   RandUniformSource() = delete; RandUniformSource(RandUniformSource const&) = delete; void operator=(RandUniformSource const&) = delete; // delete a bunch of constructors.
 private:
    std::uniform_real_distribution<T> m_dist;
    std::default_random_engine m_randGen;
@@ -91,7 +95,7 @@ public:
    {
       return m_dist(m_randGen);
    }
-   RandNormalSource() = 0; RandNormalSource(RandNormalSource const&) = 0; void operator=(RandNormalSource const&) = 0; // delete a bunch of constructors.
+   RandNormalSource() = delete; RandNormalSource(RandNormalSource const&) = delete; void operator=(RandNormalSource const&) = delete; // delete a bunch of constructors.
 private:
    std::normal_distribution<T> m_dist;
    std::default_random_engine m_randGen;
@@ -110,6 +114,7 @@ public:
    {
       return input * m_m + m_b;
    }
+   LinearTransform() = delete; LinearTransform(LinearTransform const&) = delete; void operator=(LinearTransform const&) = delete; // delete a bunch of constructors.
 private:
    T m_m;
    T m_b;
@@ -125,6 +130,7 @@ public:
    {
       return sin(input);
    }
+   SineTransform(SineTransform const&) = delete; void operator=(SineTransform const&) = delete; // delete a bunch of constructors.
 };
 ////////////////////////////////////////////////////////////////////////////////
 template<class T>
@@ -138,6 +144,7 @@ public:
       m_sum += input;
       return sin(m_sum);
    }
+   SumTransform(SumTransform const&) = delete; void operator=(SumTransform const&) = delete; // delete a bunch of constructors.
 private:
    T m_sum;
 };
@@ -173,6 +180,7 @@ public:
       return getRaw() - last;
    }
 
+   Generator() = delete; Generator(Generator const&) = delete; void operator=(Generator const&) = delete; // delete a bunch of constructors.
 private:
    SourcePtr<T> m_source;
    std::vector<TransformPtr<T>> m_transforms;
