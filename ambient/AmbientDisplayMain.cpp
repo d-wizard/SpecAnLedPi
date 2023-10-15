@@ -49,6 +49,8 @@ static std::shared_ptr<LedStrip> g_ledStrip;
 static SpecAnLedTypes::tRgbVector g_ledColorPattern_base;
 static ColorScale::tBrightnessScale g_brightnessPattern_base;
 
+// Types
+typedef float AmbDispFltType; // Use a typedef to easily switch between float and double.
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -101,13 +103,13 @@ int main(void)
    /////////////////////////////////////////////////////////////////////////////
    // Define Brightness Scale
    /////////////////////////////////////////////////////////////////////////////
-   WaveformGen<float> brightValGen(BRIGHTNESS_PATTERN_NUM_POINTS);
+   WaveformGen<AmbDispFltType> brightValGen(BRIGHTNESS_PATTERN_NUM_POINTS);
    brightValGen.Sinc(-100, 100);
    brightValGen.absoluteValue();
    brightValGen.scale(BRIGHTNESS_PATTERN_HI_LEVEL - BRIGHTNESS_PATTERN_LO_LEVEL);
    brightValGen.shift(BRIGHTNESS_PATTERN_LO_LEVEL);
 
-   WaveformGen<float> brightPosGen(BRIGHTNESS_PATTERN_NUM_POINTS);
+   WaveformGen<AmbDispFltType> brightPosGen(BRIGHTNESS_PATTERN_NUM_POINTS);
    brightPosGen.Linear(0, 1);
 
    g_brightnessPattern_base.resize(BRIGHTNESS_PATTERN_NUM_POINTS);
@@ -129,27 +131,15 @@ int main(void)
    /////////////////////////////////////////////////////////////////////////////
    // Setup the Display Movement
    /////////////////////////////////////////////////////////////////////////////
-   AmbientMovementF::tAmbientMoveProps ambMovePropsSine;
-   ambMovePropsSine.source = AmbientMovementF::E_AMB_MOVE_SRC__FIXED;
-   ambMovePropsSine.transform = AmbientMovementF::E_AMB_MOVE_TYPE__SIN;
-   ambMovePropsSine.fixed_incr = 0.01;
-   AmbientMovementF ambMoveSin(ambMovePropsSine, 0.4/GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO);
-
-   /////////////////////////////////////////////////////////////////////////////
-   // Random Mod to the Brightness Speed
-   /////////////////////////////////////////////////////////////////////////////
-   AmbientMovementF::tAmbientMoveProps modBrightMoveProps;
-   modBrightMoveProps.source = AmbientMovementF::E_AMB_MOVE_SRC__RANDOM;
-   modBrightMoveProps.transform = AmbientMovementF::E_AMB_MOVE_TYPE__LINEAR;
-   modBrightMoveProps.randType = AmbientMovementF::E_AMB_MOVE_RAND_DIST__NORMAL;
-   modBrightMoveProps.rand_paramA = 1.0;
-   modBrightMoveProps.rand_paramB = 0.5;
-
+   AmbientMovement::SourcePtr<AmbDispFltType> ls = std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.01);
+   std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> vt;
+   vt.push_back( std::make_shared<AmbientMovement::SineTransform<AmbDispFltType>>() );
+   vt.push_back( std::make_shared<AmbientMovement::LinearTransform<AmbDispFltType>>(0.4/GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO) );
+   AmbientMovement::Generator<AmbDispFltType> gen(ls, vt);
 
    /////////////////////////////////////////////////////////////////////////////
    // Main Loop
    /////////////////////////////////////////////////////////////////////////////
-   uint32_t changeBrightSpeedCount = 0;
    while(1)
    {
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -157,13 +147,7 @@ int main(void)
       g_ledColorPattern_base.resize(g_ledStrip->getNumLeds());
       g_ledStrip->set(g_ledColorPattern_base);
       ambDisp.gradient_shift(-0.0002);
-      ambDisp.brightness_shift(ambMoveSin.move());
-
-      if(++changeBrightSpeedCount == 33)
-      {
-         changeBrightSpeedCount = 0;
-         ambMoveSin.scaleMovementScalar(modBrightMoveProps);
-      }
+      ambDisp.brightness_shift(gen.getDelta());
    }
 
    return 0;

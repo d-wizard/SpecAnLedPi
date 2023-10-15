@@ -19,81 +19,163 @@
 #pragma once
 #include <stdint.h>
 #include <random>
+#include <math.h>
+#include <vector>
+#include <memory>
 
+namespace AmbientMovement
+{
+////////////////////////////////////////////////////////////////////////////////
+// Base Classes
+////////////////////////////////////////////////////////////////////////////////
 template<class T>
-class AmbientMovement
+class SourceBase
 {
 public:
-   // Types
-   typedef enum
-   {
-      E_AMB_MOVE_TYPE__SIN,
-      E_AMB_MOVE_TYPE__LINEAR
-   }eAmbientMoveTransform;
-
-   typedef enum
-   {
-      E_AMB_MOVE_SRC__FIXED,
-      E_AMB_MOVE_SRC__RANDOM
-   }eAmbientMoveSource;
-
-   typedef enum
-   {
-      E_AMB_MOVE_RAND_DIST__UNIFORM,
-      E_AMB_MOVE_RAND_DIST__NORMAL
-   }eAmbientMoveRandType;
-
-   typedef struct tAmbientMoveProps
-   {
-      tAmbientMoveProps(): transform(E_AMB_MOVE_TYPE__LINEAR), source(E_AMB_MOVE_SRC__FIXED), randType(E_AMB_MOVE_RAND_DIST__UNIFORM), fixed_incr(0), rand_paramA(0), rand_paramB(0){}
-
-      eAmbientMoveTransform transform;
-      eAmbientMoveSource    source;
-      eAmbientMoveRandType  randType;
-
-      // Value used by Fixed Movement sources.
-      T fixed_incr;
-
-      // Values used to define random distributions.
-      T rand_paramA; // example: lower bound for uniform dist, mean for normal dist.
-      T rand_paramB; // example: upper bound for uniform dist, standard deviation for normal dist.
-   }tAmbientMoveProps;
-
+   SourceBase(){}
+   virtual ~SourceBase(){}
+   virtual T getNextValue() = 0;
+};
+////////////////////////////////////////////////////////////////////////////////
+template<class T>
+class TransformBase
+{
 public:
-   AmbientMovement(const tAmbientMoveProps& prop, T outputScalar = 1.0);
-   virtual ~AmbientMovement();
-
-   // Make uncopyable
-   AmbientMovement();
-   AmbientMovement(AmbientMovement const&);
-   void operator=(AmbientMovement const&);
-
-   T move(); // returns the movement change. Use the 'get' function for total movement.
-
-   T get(){return m_postTransformMovement*m_outputScalar_current;}
-
-   void scaleOutputScalar(tAmbientMoveProps& props);
-   void scaleMovementScalar(tAmbientMoveProps& props);
-
-private:
-   tAmbientMoveProps m_moveProps;
-
-   T m_outputScalar_orig = 1.0;
-   T m_outputScalar_current = 1.0;
-
-   T m_moveScalar_orig = 1.0;
-   T m_moveScalar_current = 1.0;
-
-   T m_preTransformMovement = 0.0;
-   T m_postTransformMovement = 0.0;
-
-   std::default_random_engine m_randGen;
-
-   T getDeltaVal(tAmbientMoveProps& prop);
-   T transform(tAmbientMoveProps& prop, T valToTransform);
+   TransformBase(){}
+   virtual ~TransformBase(){}
+   virtual T transform(T input) = 0;
 };
 
-typedef AmbientMovement<float> AmbientMovementF;
-typedef AmbientMovement<double> AmbientMovementD;
+////////////////////////////////////////////////////////////////////////////////
+// Derived Classes - Sources
+////////////////////////////////////////////////////////////////////////////////
+template<class T>
+class LinearSource : public SourceBase<T>
+{
+public:
+   LinearSource(T incr, T firstVal = 0):m_nextValue(firstVal), m_incr(incr) {}
+   virtual ~LinearSource(){}
+   virtual T getNextValue() override
+   {
+      T retVal = m_nextValue;
+      m_nextValue += m_incr;
+      return retVal;
+   }
+private:
+   T m_nextValue;
+   T m_incr;
+};
+////////////////////////////////////////////////////////////////////////////////
+template<class T>
+class RandUniformSource : public SourceBase<T>
+{
+public:
+   RandUniformSource(T minVal, T maxVal):m_dist(minVal, maxVal) {}
+   virtual ~RandUniformSource(){}
+   virtual T getNextValue() override
+   {
+      return m_dist(m_randGen);
+   }
+private:
+   std::uniform_real_distribution<T> m_dist;
+   std::default_random_engine m_randGen;
+};
+////////////////////////////////////////////////////////////////////////////////
+template<class T>
+class RandNormalSource : public SourceBase<T>
+{
+public:
+   RandNormalSource(T mean, T standardDeviation):m_dist(mean, standardDeviation) {}
+   virtual ~RandNormalSource(){}
+   virtual T getNextValue() override
+   {
+      return m_dist(m_randGen);
+   }
+   RandNormalSource() = 0; RandNormalSource(RandNormalSource const&) = 0; void operator=(RandNormalSource const&) = 0; // delete a bunch of constructors.
+private:
+   std::normal_distribution<T> m_dist;
+   std::default_random_engine m_randGen;
+};
 
-#include "AmbientMovement.cpp"
+////////////////////////////////////////////////////////////////////////////////
+// Derived Classes - Transforms
+////////////////////////////////////////////////////////////////////////////////
+template<class T>
+class LinearTransform : public TransformBase<T>
+{
+public:
+   LinearTransform(T m, T b = 0):m_m(m), m_b(b) {}
+   virtual ~LinearTransform(){}
+   virtual T transform(T input) override
+   {
+      return input * m_m + m_b;
+   }
+private:
+   T m_m;
+   T m_b;
+};
+////////////////////////////////////////////////////////////////////////////////
+template<class T>
+class SineTransform : public TransformBase<T>
+{
+public:
+   SineTransform(){}
+   virtual ~SineTransform(){}
+   virtual T transform(T input) override
+   {
+      return sin(input);
+   }
+};
+////////////////////////////////////////////////////////////////////////////////
+template<class T>
+class SumTransform : public TransformBase<T>
+{
+public:
+   SumTransform(T sumStart = 0):m_sum(sumStart){}
+   virtual ~SumTransform(){}
+   virtual T transform(T input) override
+   {
+      m_sum += input;
+      return sin(m_sum);
+   }
+private:
+   T m_sum;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// Final Class
+////////////////////////////////////////////////////////////////////////////////
+template<class T>
+using SourcePtr = std::shared_ptr<SourceBase<T>>;
+template<class T>
+using TransformPtr = std::shared_ptr<TransformBase<T>>;
+
+template<class T>
+class Generator
+{
+public:
+   Generator(SourcePtr<T> source):m_source(source){} // No transforms.
+   Generator(SourcePtr<T> source, TransformPtr<T> transform):m_source(source){m_transforms.push_back(transform);} // Single transforms.
+   Generator(SourcePtr<T> source, std::vector<TransformPtr<T>>& transforms):m_source(source), m_transforms(transforms){}; // Multiple transforms.
+
+   T getRaw()
+   {
+      T val = m_source->getNextValue();
+      for(auto& transform : m_transforms)
+         val = transform->transform(val);
+      m_lastVal = val;
+      return m_lastVal;
+   }
+   
+   T getDelta()
+   {
+      T last = m_lastVal;
+      return getRaw() - last;
+   }
+
+private:
+   SourcePtr<T> m_source;
+   std::vector<TransformPtr<T>> m_transforms;
+   T m_lastVal = 0;
+};
+}
