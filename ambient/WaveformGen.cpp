@@ -86,6 +86,26 @@ void WaveformGen<T>::shift(T shiftVal)
 }
 
 template<class T>
+void WaveformGen<T>::boundHi(T maxVal)
+{
+   size_t numPoints = m_points.size();
+   for(size_t i = 0; i < numPoints; ++i)
+   {
+      m_points[i] = (m_points[i] > maxVal) ? maxVal : m_points[i];
+   }
+}
+
+template<class T>
+void WaveformGen<T>::boundLo(T minVal)
+{
+   size_t numPoints = m_points.size();
+   for(size_t i = 0; i < numPoints; ++i)
+   {
+      m_points[i] = (m_points[i] < minVal) ? minVal : m_points[i];
+   }
+}
+
+template<class T>
 void WaveformGen<T>::quarterCircle_above()
 {
    size_t numPoints = m_points.size();

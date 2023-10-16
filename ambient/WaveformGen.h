@@ -44,6 +44,10 @@ public:
    void scale(T scalar);
    void shift(T shiftVal);
 
+   // Bounding Functions
+   void boundHi(T maxVal);
+   void boundLo(T minVal);
+
    // Quarter Circle Transforms (only really valid for values between 0 and 1)
    void quarterCircle_above();
    void quarterCircle_below();
