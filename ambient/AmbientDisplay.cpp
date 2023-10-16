@@ -19,6 +19,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <math.h>
+#include <algorithm>
+#include <list>
 #include "AmbientDisplay.h"
 #include "gradientToScale.h"
 
@@ -404,11 +406,59 @@ void AmbientDisplay::toRgbVect(SpecAnLedTypes::tRgbVector& ledColors, size_t num
 
    Convert::convertGradientToScale(m_gradient.get(), colors);
 
-   ColorScale colorScale(colors, m_brightness_separate[0]->get());
+   bool singleBrightScale = (m_brightness_separate.size() == 1);
+   ColorScale colorScale(colors, singleBrightScale ? m_brightness_separate[0]->get() : combineBrightnessValues());
 
    float deltaBetweenPoints = (float)65535/(float)(numLeds-1);
    for(size_t i = 0 ; i < numLeds; ++i)
    {
       ledColors[i] = colorScale.getColor((float)i * deltaBetweenPoints, 1.0);
    }
+}
+
+ColorScale::tBrightnessScale& AmbientDisplay::combineBrightnessValues()
+{
+   // Combine. Combine values into a sortable list.
+   std::list<ColorScale::tBrightnessPoint> combined;
+   for(auto& brightness : m_brightness_separate)
+   {
+      auto& brightPoints = brightness->get();
+      for(auto& brightPoint : brightPoints)
+      {
+         combined.push_back(brightPoint);
+      }
+   }
+
+   // Sort.
+   combined.sort();
+
+   // Prune. Remove values that are too close. Use the max between points that are too close.
+   for(auto iter = combined.begin(); iter != combined.end();)
+   {
+      auto nextIter = iter;
+      ++nextIter;
+      if( (nextIter != combined.end()) && (areTheyClose(iter->startPoint, nextIter->startPoint)) )
+      {
+         if(iter->brightness > nextIter->brightness)
+         {
+            // iter is brighter than nextIter. Keep the brighter one. 
+            *nextIter = *iter; // iter is being removed so set nextIter to iter.
+         }
+         // else nextIter is brighter, and it is the one being kept. So nothing to do.
+         iter = combined.erase(iter);
+      }
+      else
+      {
+         ++iter;
+      }
+   }
+
+   // Write to the final vector.
+   m_brightness_combined.resize(0);
+   for(auto iter = combined.begin(); iter != combined.end(); ++iter)
+   {
+      m_brightness_combined.push_back(*iter);
+   }
+
+   return m_brightness_combined;
 }

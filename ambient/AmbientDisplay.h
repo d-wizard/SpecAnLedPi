@@ -82,7 +82,7 @@ public:
 private:
    AmbientDisplayGradient m_gradient;
    std::vector<std::unique_ptr<AmbientDisplayBrightness>> m_brightness_separate;
-   std::unique_ptr<AmbientDisplayBrightness> m_brightness_combined;
+   ColorScale::tBrightnessScale m_brightness_combined;
 
-   void combineBrightnessValues();
+   ColorScale::tBrightnessScale& combineBrightnessValues();
 };

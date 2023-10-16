@@ -34,10 +34,27 @@ public:
       float startPoint; // Inclusive (0 to 1)
    }tColorPoint;
    
-   typedef struct 
+   typedef struct tBrightnessPoint
    {
       float brightness; // 0 to 1
       float startPoint; // Inclusive (0 to 1)
+      
+      bool operator>(const tBrightnessPoint& rhs) const
+      {
+         return startPoint > rhs.startPoint;
+      }
+      bool operator<(const tBrightnessPoint& rhs) const
+      {
+         return startPoint < rhs.startPoint;
+      }
+      bool operator>=(const tBrightnessPoint& rhs) const
+      {
+         return !(operator<(rhs));
+      }
+      bool operator<=(const tBrightnessPoint& rhs) const
+      {
+         return !(operator>(rhs));
+      }
    }tBrightnessPoint;
 
    typedef std::vector<tBrightnessPoint> tBrightnessScale;
