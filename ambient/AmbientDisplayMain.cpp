@@ -34,12 +34,12 @@
 #include "smartPlotMessage.h" // Debug Plotting
 
 // LED Stuff
-#define DEFAULT_NUM_LEDS (198)
+#define DEFAULT_NUM_LEDS (296)
 static std::shared_ptr<LedStrip> g_ledStrip;
 
 // Brightness Constants.
 #define BRIGHTNESS_PATTERN_NUM_POINTS (51)
-#define BRIGHTNESS_PATTERN_HI_LEVEL (.75)
+#define BRIGHTNESS_PATTERN_HI_LEVEL (.35)
 #define BRIGHTNESS_PATTERN_LO_LEVEL (0.0)
 
 // 
@@ -126,42 +126,49 @@ int main(void)
    ColorGradient::DuplicateGradient(gradPoints, 2, true);
    ColorScale::DuplicateBrightness(g_brightnessPattern_base, int(GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO), false);
 
-   AmbientDisplay ambDisp(gradPoints, g_brightnessPattern_base);
+   AmbientDisplay ambDisp(gradPoints, {g_brightnessPattern_base, g_brightnessPattern_base, g_brightnessPattern_base});
 
    /////////////////////////////////////////////////////////////////////////////
    // Setup the Brightness Movement
    /////////////////////////////////////////////////////////////////////////////
-   auto brightMoveSrc = std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.01);
+   auto brightMoveSrc0 = std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.01);
+   auto brightMoveSrc1 = std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.004381984);
+   auto brightMoveSrc2 = std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.003984116);
    auto brightTransforms_sine  = std::make_shared<AmbientMovement::SineTransform<AmbDispFltType>>();
    auto brightTransforms_scale = std::make_shared<AmbientMovement::LinearTransform<AmbDispFltType>>(0.4/GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO);
    std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> brightTransforms;
    brightTransforms.push_back( brightTransforms_sine  );
    brightTransforms.push_back( brightTransforms_scale );
-   AmbientMovement::Generator<AmbDispFltType> brightMoveGen(brightMoveSrc, brightTransforms);
+   AmbientMovement::Generator<AmbDispFltType> brightMoveGen0(brightMoveSrc0, brightTransforms);
+   AmbientMovement::Generator<AmbDispFltType> brightMoveGen1(brightMoveSrc1, brightTransforms);
+   AmbientMovement::Generator<AmbDispFltType> brightMoveGen2(brightMoveSrc2, brightTransforms);
 
    /////////////////////////////////////////////////////////////////////////////
    // Add some randomness to the brightness movement speed
    /////////////////////////////////////////////////////////////////////////////
    AmbientMovement::Generator<AmbDispFltType> brightMoveSpeedModGen(std::make_shared<AmbientMovement::RandNormalSource<AmbDispFltType>>(1.0, 0.9));
 
-
    /////////////////////////////////////////////////////////////////////////////
    // Main Loop
    /////////////////////////////////////////////////////////////////////////////
    uint32_t brightMoveSpeedModGenCount = 0;
+   auto numLeds = g_ledStrip->getNumLeds();
    while(1)
    {
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      ambDisp.toRgbVect(g_ledColorPattern_base, GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO*g_ledStrip->getNumLeds());
-      g_ledColorPattern_base.resize(g_ledStrip->getNumLeds());
+      ambDisp.toRgbVect(GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO*numLeds, g_ledColorPattern_base, numLeds);
       g_ledStrip->set(g_ledColorPattern_base);
-      ambDisp.gradient_shift(-0.0002);
-      ambDisp.brightness_shift(brightMoveGen.getNextDelta());
+      ambDisp.gradient_shift(-0.002);
+      ambDisp.brightness_shift(brightMoveGen0.getNextDelta(), 0);
+      ambDisp.brightness_shift(brightMoveGen1.getNextDelta(), 1);
+      ambDisp.brightness_shift(brightMoveGen2.getNextDelta(), 2);
 
       if(++brightMoveSpeedModGenCount == 33)
       {
          brightMoveSpeedModGenCount = 0;
-         brightMoveSrc->scaleIncr(brightMoveSpeedModGen.getNext());
+         brightMoveSrc0->scaleIncr(brightMoveSpeedModGen.getNext());
+         brightMoveSrc1->scaleIncr(brightMoveSpeedModGen.getNext());
+         brightMoveSrc2->scaleIncr(brightMoveSpeedModGen.getNext());
       }
    }
 

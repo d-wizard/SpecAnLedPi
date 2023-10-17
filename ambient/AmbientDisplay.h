@@ -78,11 +78,11 @@ public:
    void gradient_shift(float shiftValue); // Shift values should be between -1 and 1
    void brightness_shift(float shiftValue, size_t index = 0); // Shift values should be between -1 and 1
 
-   void toRgbVect(SpecAnLedTypes::tRgbVector& ledColors, size_t numLeds);
+   void toRgbVect(size_t numGenPoints, SpecAnLedTypes::tRgbVector& ledColors, size_t numLeds);
 private:
    AmbientDisplayGradient m_gradient;
    std::vector<std::unique_ptr<AmbientDisplayBrightness>> m_brightness_separate;
    ColorScale::tBrightnessScale m_brightness_combined;
 
-   ColorScale::tBrightnessScale& combineBrightnessValues();
+   ColorScale::tBrightnessScale& combineBrightnessValues(float minBetweenPoints = ColorScale::MIN_RESOLUTION);
 };

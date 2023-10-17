@@ -399,24 +399,24 @@ void AmbientDisplay::brightness_shift(float shiftValue, size_t index)
 }
 
 
-void AmbientDisplay::toRgbVect(SpecAnLedTypes::tRgbVector& ledColors, size_t numLeds)
+void AmbientDisplay::toRgbVect(size_t numGenPoints, SpecAnLedTypes::tRgbVector& ledColors, size_t numLeds)
 {
    std::vector<ColorScale::tColorPoint> colors;
-   ledColors.resize(numLeds);
 
    Convert::convertGradientToScale(m_gradient.get(), colors);
 
    bool singleBrightScale = (m_brightness_separate.size() == 1);
-   ColorScale colorScale(colors, singleBrightScale ? m_brightness_separate[0]->get() : combineBrightnessValues());
+   ColorScale colorScale(colors, singleBrightScale ? m_brightness_separate[0]->get() : combineBrightnessValues(1.0 / float(numLeds-1)));
 
-   float deltaBetweenPoints = (float)65535/(float)(numLeds-1);
+   float deltaBetweenPoints = (float)65535/(float)(numGenPoints-1);
+   ledColors.resize(numLeds);
    for(size_t i = 0 ; i < numLeds; ++i)
    {
       ledColors[i] = colorScale.getColor((float)i * deltaBetweenPoints, 1.0);
    }
 }
 
-ColorScale::tBrightnessScale& AmbientDisplay::combineBrightnessValues()
+ColorScale::tBrightnessScale& AmbientDisplay::combineBrightnessValues(float minBetweenPoints)
 {
    // Combine. Combine values into a sortable list.
    std::list<ColorScale::tBrightnessPoint> combined;
@@ -437,7 +437,7 @@ ColorScale::tBrightnessScale& AmbientDisplay::combineBrightnessValues()
    {
       auto nextIter = iter;
       ++nextIter;
-      if( (nextIter != combined.end()) && (areTheyClose(iter->startPoint, nextIter->startPoint)) )
+      if( (nextIter != combined.end()) && (areTheyClose(iter->startPoint, nextIter->startPoint, minBetweenPoints)) )
       {
          if(iter->brightness >= nextIter->brightness)
          {
