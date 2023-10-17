@@ -439,7 +439,7 @@ ColorScale::tBrightnessScale& AmbientDisplay::combineBrightnessValues()
       ++nextIter;
       if( (nextIter != combined.end()) && (areTheyClose(iter->startPoint, nextIter->startPoint)) )
       {
-         if(iter->brightness > nextIter->brightness)
+         if(iter->brightness >= nextIter->brightness)
          {
             // iter is brighter than nextIter. Keep the brighter one. 
             *nextIter = *iter; // iter is being removed so set nextIter to iter.
