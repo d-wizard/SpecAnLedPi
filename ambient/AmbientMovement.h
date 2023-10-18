@@ -157,6 +157,25 @@ public:
 private:
    T m_sum;
 };
+////////////////////////////////////////////////////////////////////////////////
+template<class T>
+class SawTransform : public TransformBase<T>
+{
+// Saw wave. Kinda like sine in terms of shape, but repeats every 1.0 (instead of 2pi). Still goes between +1.0 and -1.0 like sine.
+public:
+   SawTransform(){}
+   virtual ~SawTransform(){}
+   virtual T transform(T input) override
+   {
+      bool negative = (input < 0);
+      T modTwo = fmod(negative ? -input : input, 2.0);
+      T out = (modTwo <= 0.5) ? modTwo : 
+              (modTwo <= 1.5) ? 1.0 - modTwo : 
+              /* else */        modTwo - 2.0;
+      return negative ? -2.0 * out : 2.0 * out; // Scale to +/- 1.0
+   }
+   SawTransform(SawTransform const&) = delete; void operator=(SawTransform const&) = delete; // delete a bunch of constructors.
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Final Class
