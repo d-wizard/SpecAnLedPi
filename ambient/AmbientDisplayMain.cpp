@@ -131,22 +131,23 @@ int main(void)
    /////////////////////////////////////////////////////////////////////////////
    // Setup the Brightness Movement
    /////////////////////////////////////////////////////////////////////////////
-   auto brightMoveSrc0 = std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.01);
-   auto brightMoveSrc1 = std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.004381984);
-   auto brightMoveSrc2 = std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.003984116);
-   auto brightTransforms_sine  = std::make_shared<AmbientMovement::SineTransform<AmbDispFltType>>();
-   auto brightTransforms_scale = std::make_shared<AmbientMovement::LinearTransform<AmbDispFltType>>(0.4/GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO);
-   std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> brightTransforms;
-   brightTransforms.push_back( brightTransforms_sine  );
-   brightTransforms.push_back( brightTransforms_scale );
-   AmbientMovement::Generator<AmbDispFltType> brightMoveGen0(brightMoveSrc0, brightTransforms);
-   AmbientMovement::Generator<AmbDispFltType> brightMoveGen1(brightMoveSrc1, brightTransforms);
-   AmbientMovement::Generator<AmbDispFltType> brightMoveGen2(brightMoveSrc2, brightTransforms);
+   auto brightMoveSrc0 = std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.001);
+   auto brightMoveSrc1 = std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.0008381984);
+   auto brightMoveSrc2 = std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.0003984116);
+   auto brightTransforms_saw    = std::make_shared<AmbientMovement::SawTransform<AmbDispFltType>>();
+   auto brightTransforms_scale  = std::make_shared<AmbientMovement::LinearTransform<AmbDispFltType>>(0.4/GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO);
+   std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> brightTransformsSawScale = {brightTransforms_saw, brightTransforms_scale};
+   std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> brightTransformsLinScale = {brightTransforms_scale};
+   AmbientMovement::Generator<AmbDispFltType> brightMoveGen0(brightMoveSrc0, brightTransformsSawScale);
+   AmbientMovement::Generator<AmbDispFltType> brightMoveGen1(brightMoveSrc1, brightTransformsLinScale);
+   AmbientMovement::Generator<AmbDispFltType> brightMoveGen2(brightMoveSrc2, brightTransformsLinScale);
 
    /////////////////////////////////////////////////////////////////////////////
    // Add some randomness to the brightness movement speed
    /////////////////////////////////////////////////////////////////////////////
-   AmbientMovement::Generator<AmbDispFltType> brightMoveSpeedModGen(std::make_shared<AmbientMovement::RandNormalSource<AmbDispFltType>>(1.0, 0.9));
+   AmbientMovement::Generator<AmbDispFltType> brightMoveSpeedModGen(
+      std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.5, 1.25), // Generator
+      std::make_shared<AmbientMovement::RandNegateTransform<AmbDispFltType>>());
 
    /////////////////////////////////////////////////////////////////////////////
    // Main Loop

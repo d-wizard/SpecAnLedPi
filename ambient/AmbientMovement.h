@@ -176,6 +176,25 @@ public:
    }
    SawTransform(SawTransform const&) = delete; void operator=(SawTransform const&) = delete; // delete a bunch of constructors.
 };
+////////////////////////////////////////////////////////////////////////////////
+template<class T>
+class RandNegateTransform : public TransformBase<T>
+{
+   // Randomly negates the input value (i.e. half the time the output will be -input)
+public:
+   RandNegateTransform():m_dist(0,1){}
+   virtual ~RandNegateTransform(){}
+   virtual T transform(T input) override
+   {
+      return m_dist(m_randGen) ? input : -input;
+   }
+   RandNegateTransform(RandNegateTransform const&) = delete; void operator=(RandNegateTransform const&) = delete; // delete a bunch of constructors.
+private:
+   std::uniform_int_distribution<int> m_dist;
+   std::default_random_engine m_randGen;
+};
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Final Class
