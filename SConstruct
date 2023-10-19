@@ -118,12 +118,14 @@ if crossCompilePrefix == None: # If not cross compiling, build the final binary
 if crossCompilePrefix == None: # If not cross compiling, build the final binary
    srcNonPortable = [
       'ambient/AmbientDisplayMain.cpp',
-      'ambient/AmbientDisplay.cpp'
+      'ambient/AmbientDisplay.cpp',
+      'ambient/displays/AmbDisp3SpotLights.cpp'
       ]
 
    extraIncludes = [
       '.',
-      'ambient'
+      'ambient',
+      'ambient/displays'
    ]
 
    lib = ['SpecAnLedPiLib', 'rt', 'asound', 'pthread', 'NE10', 'ws2811', 'wiringPi', 'jsoncpp_static']
