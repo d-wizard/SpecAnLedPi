@@ -21,6 +21,7 @@
 #include <random>
 #include <math.h>
 #include <vector>
+#include <chrono>
 #include <memory>
 
 namespace AmbientMovement
@@ -32,20 +33,34 @@ template<class T>
 class SourceBase
 {
 public:
-   SourceBase(){}
+   SourceBase()
+   {
+      std::random_device rd;
+      uint64_t ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+      m_randGen.seed(rd() ^ ms);
+   }
    virtual ~SourceBase(){}
    virtual T getNextValue() = 0;
    SourceBase(SourceBase const&) = delete; void operator=(SourceBase const&) = delete; // delete a bunch of constructors.
+protected:
+   std::mt19937 m_randGen;
 };
 ////////////////////////////////////////////////////////////////////////////////
 template<class T>
 class TransformBase
 {
 public:
-   TransformBase(){}
+   TransformBase()
+   {
+      std::random_device rd;
+      uint64_t ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+      m_randGen.seed(rd() ^ ms);
+   }
    virtual ~TransformBase(){}
    virtual T transform(T input) = 0;
    TransformBase(TransformBase const&) = delete; void operator=(TransformBase const&) = delete; // delete a bunch of constructors.
+protected:
+   std::mt19937 m_randGen;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -80,12 +95,11 @@ public:
    virtual ~RandUniformSource(){}
    virtual T getNextValue() override
    {
-      return m_dist(m_randGen);
+      return m_dist(SourceBase<T>::m_randGen);
    }
    RandUniformSource() = delete; RandUniformSource(RandUniformSource const&) = delete; void operator=(RandUniformSource const&) = delete; // delete a bunch of constructors.
 private:
    std::uniform_real_distribution<T> m_dist;
-   std::default_random_engine m_randGen;
 };
 ////////////////////////////////////////////////////////////////////////////////
 template<class T>
@@ -96,12 +110,11 @@ public:
    virtual ~RandNormalSource(){}
    virtual T getNextValue() override
    {
-      return m_dist(m_randGen);
+      return m_dist(SourceBase<T>::m_randGen);
    }
    RandNormalSource() = delete; RandNormalSource(RandNormalSource const&) = delete; void operator=(RandNormalSource const&) = delete; // delete a bunch of constructors.
 private:
    std::normal_distribution<T> m_dist;
-   std::default_random_engine m_randGen;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -186,12 +199,11 @@ public:
    virtual ~RandNegateTransform(){}
    virtual T transform(T input) override
    {
-      return m_dist(m_randGen) ? input : -input;
+      return m_dist(TransformBase<T>::m_randGen) ? input : -input;
    }
    RandNegateTransform(RandNegateTransform const&) = delete; void operator=(RandNegateTransform const&) = delete; // delete a bunch of constructors.
 private:
    std::uniform_int_distribution<int> m_dist;
-   std::default_random_engine m_randGen;
 };
 
 
