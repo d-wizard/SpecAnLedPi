@@ -44,7 +44,7 @@ AmbDisp3SpotLights::AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const
 
 AmbDisp3SpotLights::~AmbDisp3SpotLights()
 {
-
+   stopThread();
 }
 
 void AmbDisp3SpotLights::init()

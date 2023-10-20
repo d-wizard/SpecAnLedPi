@@ -58,9 +58,7 @@ public:
    AmbientLedStripBase() = delete; AmbientLedStripBase(AmbientLedStripBase const&) = delete; void operator=(AmbientLedStripBase const&) = delete; // delete a bunch of constructors.
    virtual ~AmbientLedStripBase()
    {
-      m_threadActive = false;
-      if(m_thread.joinable())
-         m_thread.join();
+      stopThread();
    }
 
    virtual void setGradient(const ColorGradient::tGradient& gradient)
@@ -78,6 +76,15 @@ protected:
    {
       m_threadActive = true;
       m_thread = std::thread(&AmbientLedStripBase::threadFunc, this);
+   }
+   void stopThread()
+   {
+      if(m_threadActive.load())
+      {
+         m_threadActive = false;
+         if(m_thread.joinable())
+            m_thread.join();
+      }
    }
 private:
    std::thread m_thread;
