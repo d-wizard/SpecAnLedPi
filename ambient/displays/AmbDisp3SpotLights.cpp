@@ -102,7 +102,8 @@ void AmbDisp3SpotLights::init()
    m_brightMoveSpeedModGen = std::make_unique<AmbMoveGen>(
       std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.5, 1.25), // Generator
       std::make_shared<AmbientMovement::RandNegateTransform<AmbDispFltType>>());
-
+   m_brightMoveSpeedModRandNumGen = std::make_unique<AmbMoveGen>(
+      std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.0, 1.0));
 }
 
 void AmbDisp3SpotLights::updateLedStrip()
@@ -116,10 +117,9 @@ void AmbDisp3SpotLights::updateLedStrip()
       m_ambDisp->brightness_shift(m_movementGenerators[i]->getNextDelta(), i);
    }
 
-   if(++m_brightMoveSpeedModGenCount >= 33)
+   for(size_t i = 0; i < m_movementSources.size(); ++i)
    {
-      m_brightMoveSpeedModGenCount = 0;
-      for(size_t i = 0; i < m_movementSources.size(); ++i)
+      if(m_brightMoveSpeedModRandNumGen->getNext() < 0.02)
       {
          m_movementSources[i]->scaleIncr(m_brightMoveSpeedModGen->getNext());
       }

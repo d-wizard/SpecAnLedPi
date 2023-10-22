@@ -42,6 +42,7 @@ private:
    std::vector<AmbMoveGenPtr> m_movementGenerators;
 
    AmbMoveGenPtr m_brightMoveSpeedModGen;
+   AmbMoveGenPtr m_brightMoveSpeedModRandNumGen;
 
    int m_brightMoveSpeedModGenCount = 0;
 
