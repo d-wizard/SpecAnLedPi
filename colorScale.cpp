@@ -58,7 +58,7 @@ void ColorScale::DuplicateBrightness(tBrightnessScale& brightInOut, unsigned num
    std::swap(brightOut, brightInOut);
 }
 
-ColorScale::ColorScale(std::vector<tColorPoint>& colorPoints, tBrightnessScale& brightnessPoints)
+ColorScale::ColorScale(tColorScale& colorPoints, tBrightnessScale& brightnessPoints)
 {
    size_t colorsSize = colorPoints.size()-1;
    m_red.resize(colorsSize);

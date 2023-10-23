@@ -38,7 +38,7 @@ AudioDisplayBase::AudioDisplayBase(size_t frameSize, size_t numDisplayPoints, fl
 void AudioDisplayBase::setGradient(ColorGradient::tGradient& gradient, bool reverseGrad)
 {
    // Convert input gradient and set brightness.
-   std::vector<ColorScale::tColorPoint> colors;
+   ColorScale::tColorScale colors;
    if(reverseGrad)
    {
       auto revGrad = Convert::reverseGradient(gradient);

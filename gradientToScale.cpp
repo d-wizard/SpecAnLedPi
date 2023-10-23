@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2023 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -32,7 +32,7 @@ static HsvColor gradientToHsv(ColorGradient::tGradientPoint grad)
 }
 
 void convertGradientToScale( ColorGradient::tGradient& gradPoints, 
-                             std::vector<ColorScale::tColorPoint>& colorPoints )
+                             ColorScale::tColorScale& colorPoints )
 {
    // Color Points.
    colorPoints.resize(gradPoints.size()*2);
