@@ -20,6 +20,44 @@
 #include <math.h>
 #include "colorScale.h"
 
+void ColorScale::DuplicateColorScale(tColorScale& colorScaleInOut, unsigned numCopies, bool mirror)
+{
+   tColorScale colorScaleOut(colorScaleInOut.size()*numCopies);
+   if(numCopies > 0)
+   {
+      size_t pointIndex = 0;
+      float posScalar = 1.0 / float(numCopies);
+
+      for(unsigned i = 0; i < numCopies; ++i)
+      {
+         float startPos = float(i)/float(numCopies);
+         if((i&1) && mirror)
+         {
+            // Mirrored Version.
+            for(int j = (int)colorScaleInOut.size()-1; j >= 0; --j)
+            {
+               float position = (1.0 - colorScaleInOut[j].startPoint) * posScalar;
+               colorScaleOut[pointIndex] = colorScaleInOut[j];
+               colorScaleOut[pointIndex].startPoint = startPos + position;
+               ++pointIndex;
+            }
+         }
+         else
+         {
+            // Normal Version.
+            for(size_t j = 0; j < colorScaleInOut.size(); ++j)
+            {
+               float position = colorScaleInOut[j].startPoint * posScalar;
+               colorScaleOut[pointIndex] = colorScaleInOut[j];
+               colorScaleOut[pointIndex].startPoint = startPos + position;
+               ++pointIndex;
+            }
+         }
+      }
+   }
+   std::swap(colorScaleOut, colorScaleInOut);
+}
+
 void ColorScale::DuplicateBrightness(tBrightnessScale& brightInOut, unsigned numCopies, bool mirror)
 {
    tBrightnessScale brightOut(brightInOut.size()*numCopies);

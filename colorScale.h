@@ -60,6 +60,7 @@ public:
    typedef std::vector<tColorPoint> tColorScale;
    typedef std::vector<tBrightnessPoint> tBrightnessScale;
 
+   static void DuplicateColorScale(tColorScale& colorScaleInOut, unsigned numCopies, bool mirror);
    static void DuplicateBrightness(tBrightnessScale& brightInOut, unsigned numCopies, bool mirror);
 
    ColorScale(tColorScale& colorPoints, tBrightnessScale& brightnessPoints);

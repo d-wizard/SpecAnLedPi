@@ -401,7 +401,7 @@ void AmbientDisplay::brightness_shift(float shiftValue, size_t index)
 
 void AmbientDisplay::toRgbVect(size_t numGenPoints, SpecAnLedTypes::tRgbVector& ledColors, size_t numLeds)
 {
-   std::vector<ColorScale::tColorPoint> colors;
+   ColorScale::tColorScale colors;
 
    Convert::convertGradientToScale(m_gradient.get(), colors);
 

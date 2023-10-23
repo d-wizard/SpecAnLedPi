@@ -31,7 +31,7 @@ static HsvColor gradientToHsv(ColorGradient::tGradientPoint grad)
    return hsv;
 }
 
-void convertGradientToScale( ColorGradient::tGradient& gradPoints, 
+void convertGradientToScale( const ColorGradient::tGradient& gradPoints, 
                              ColorScale::tColorScale& colorPoints )
 {
    // Color Points.
@@ -81,6 +81,13 @@ void convertGradientToScale( ColorGradient::tGradient& gradPoints,
       }
    }
 
+}
+
+ColorScale::tColorScale convertGradientToScale(const ColorGradient::tGradient& gradPoints)
+{
+   ColorScale::tColorScale retVal;
+   convertGradientToScale(gradPoints, retVal);
+   return retVal;
 }
 
 SpecAnLedTypes::tRgbColor convertGradientPointToRGB(ColorGradient::tGradientPoint in)

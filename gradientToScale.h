@@ -23,8 +23,10 @@
 
 namespace Convert
 {
-   void convertGradientToScale( ColorGradient::tGradient& gradPoints, 
+   void convertGradientToScale( const ColorGradient::tGradient& gradPoints, 
                                 ColorScale::tColorScale& colorPoints );
+
+   ColorScale::tColorScale convertGradientToScale(const ColorGradient::tGradient& gradPoints);
 
    SpecAnLedTypes::tRgbColor convertGradientPointToRGB(ColorGradient::tGradientPoint in);
 
