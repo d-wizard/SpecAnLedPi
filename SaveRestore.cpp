@@ -89,7 +89,9 @@ static Json::Value gradVectToJson(std::vector<ColorGradient::tGradient>& gradsIn
 //---------------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------------
 
-SaveRestoreJson::SaveRestoreJson()
+SaveRestoreJson::SaveRestoreJson(std::string settingsJsonPath, std::string presetGradJsonPath):
+   SETTINGS_JSON(settingsJsonPath),
+   PRESET_GRADIENT_JSON(presetGradJsonPath)
 {
 }
 

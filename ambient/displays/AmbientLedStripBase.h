@@ -33,21 +33,9 @@ typedef float AmbDispFltType; // Use a typedef to easily switch between float an
 public:
    AmbientLedStripBase(std::shared_ptr<LedStrip> ledStrip):
       m_ledStrip(ledStrip),
+      m_gradient(ColorGradient::GetRainbowGradient()),
       m_numLeds(ledStrip->getNumLeds())
    {
-      // Rainbow Gradient
-      ColorGradient::tGradientPoint gradPoint;
-      gradPoint.saturation = 1.0;
-      gradPoint.lightness  = 1.0;
-
-      // Rainbow Gradient
-      static const int numGradPoints = 10;
-      for(int i = 0; i < numGradPoints; ++i)
-      {
-         gradPoint.hue = double(i) / double(numGradPoints-1);
-         gradPoint.position = gradPoint.hue;
-         m_gradient.push_back(gradPoint);
-      }
    }
    AmbientLedStripBase(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient):
       m_ledStrip(ledStrip),

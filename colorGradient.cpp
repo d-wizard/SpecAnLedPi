@@ -61,6 +61,24 @@ void ColorGradient::DuplicateGradient(tGradient& gradInOut, unsigned numCopies, 
    std::swap(gradOut, gradInOut);
 }
 
+ColorGradient::tGradient ColorGradient::GetRainbowGradient(unsigned numGradPoints)
+{
+   // Rainbow Gradient
+   ColorGradient::tGradient retVal;
+   ColorGradient::tGradientPoint gradPoint;
+   gradPoint.saturation = 1.0;
+   gradPoint.lightness  = 1.0;
+
+   // Rainbow Gradient
+   for(unsigned i = 0; i < numGradPoints; ++i)
+   {
+      gradPoint.hue = double(i) / double(numGradPoints-1);
+      gradPoint.position = gradPoint.hue;
+      retVal.push_back(gradPoint);
+   }
+   return retVal;
+}
+
 
 ColorGradient::ColorGradient(size_t numPoints)
 {

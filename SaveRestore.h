@@ -34,7 +34,7 @@ public:
       E_REMOTE
    }eRemoteLocalOptions;
 
-   SaveRestoreJson();
+   SaveRestoreJson(std::string settingsJsonPath = "settings.json", std::string presetGradJsonPath = "presets.json");
 
    unsigned restore_numLeds();
    bool restore_mirrorLedMode();

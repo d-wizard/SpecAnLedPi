@@ -19,7 +19,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <string>
 #include "ledStrip.h"
+#include "SaveRestore.h"
 #include "AmbDisp3SpotLights.h"
 #include "smartPlotMessage.h" // Debug Plotting
 
@@ -28,6 +30,11 @@
 static std::shared_ptr<LedStrip> g_ledStrip;
 
 static std::unique_ptr<AmbientLedStripBase> g_activeAmbient;
+static std::unique_ptr<SaveRestoreJson> g_saveRestoreJson;
+
+static std::string g_settingsJsonPath = "ambient/AmbientDisplaySettings.json";
+static std::string g_presetJsonPath = "presets.json";
+static int g_presetGradIndex = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -46,10 +53,22 @@ static void signalHandler(int signum)
    cleanUpBeforeExit();
    exit(signum); 
 }
+////////////////////////////////////////////////////////////////////////////////
+
+static void parseCmdLineArgs(int argc, char *argv[])
+{
+   // argv[1] is g_presetJsonPath, argv[2] is g_settingsJsonPath, argv[3] is the gradient index
+   if(argc > 1)
+      g_presetGradIndex = std::stoi(argv[1]);
+   if(argc > 2)
+      g_presetJsonPath = std::string(argv[2]);
+   if(argc > 3)
+      g_settingsJsonPath = std::string(argv[3]);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int main(void)
+int main(int argc, char *argv[])
 {
    smartPlot_createFlushThread_withPriorityPolicy(200, 30, SCHED_FIFO);
 
@@ -57,12 +76,28 @@ int main(void)
    signal(SIGINT, signalHandler);
 
    /////////////////////////////////////////////////////////////////////////////
+   // Setup settings.
+   /////////////////////////////////////////////////////////////////////////////
+   auto gradient = ColorGradient::GetRainbowGradient();
+   if(argc > 1)
+   {
+      parseCmdLineArgs(argc, argv);
+      g_saveRestoreJson = std::make_unique<SaveRestoreJson>(g_settingsJsonPath, g_presetJsonPath);
+      gradient = g_saveRestoreJson->restore_gradient();
+      if(g_presetGradIndex > 0)
+      {
+         for(int i = 0; i < g_presetGradIndex; ++i)
+            gradient = g_saveRestoreJson->restore_gradientNext();
+      }
+   }
+
+   /////////////////////////////////////////////////////////////////////////////
    // Setup LED strip.
    /////////////////////////////////////////////////////////////////////////////
    g_ledStrip.reset(new LedStrip(DEFAULT_NUM_LEDS, LedStrip::GRB));
    g_ledStrip->clear();
 
-   g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip);
+   g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient);
 
    /////////////////////////////////////////////////////////////////////////////
    // Main Loop
