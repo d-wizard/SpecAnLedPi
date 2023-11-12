@@ -34,13 +34,15 @@ public:
    AmbientLedStripBase(std::shared_ptr<LedStrip> ledStrip):
       m_ledStrip(ledStrip),
       m_gradient(ColorGradient::GetRainbowGradient()),
-      m_numLeds(ledStrip->getNumLeds())
+      m_numLeds(ledStrip->getNumLeds()),
+      m_numGradDuplicates(0) // Zero means use default settings.
    {
    }
-   AmbientLedStripBase(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient):
+   AmbientLedStripBase(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, unsigned numGradDuplicates = 0):
       m_ledStrip(ledStrip),
       m_gradient(gradient),
-      m_numLeds(ledStrip->getNumLeds())
+      m_numLeds(ledStrip->getNumLeds()),
+      m_numGradDuplicates(numGradDuplicates)
    {
    }
    AmbientLedStripBase() = delete; AmbientLedStripBase(AmbientLedStripBase const&) = delete; void operator=(AmbientLedStripBase const&) = delete; // delete a bunch of constructors.
@@ -57,6 +59,7 @@ protected:
    std::shared_ptr<LedStrip> m_ledStrip;
    ColorGradient::tGradient m_gradient;
    size_t m_numLeds;
+   unsigned m_numGradDuplicates;
 
    virtual void updateLedStrip() = 0;
    

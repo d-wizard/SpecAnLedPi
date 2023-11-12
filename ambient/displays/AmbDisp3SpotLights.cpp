@@ -35,8 +35,8 @@ AmbDisp3SpotLights::AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip):
    startThread();
 }
 
-AmbDisp3SpotLights::AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient):
-   AmbientLedStripBase(ledStrip, gradient)
+AmbDisp3SpotLights::AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, unsigned numGradDuplicates):
+   AmbientLedStripBase(ledStrip, gradient, numGradDuplicates)
 {
    init();
    startThread();
@@ -73,7 +73,8 @@ void AmbDisp3SpotLights::init()
    // Setup the Display
    /////////////////////////////////////////////////////////////////////////////
    auto gradPoints = m_gradient;
-   ColorGradient::DuplicateGradient(gradPoints, 2, true);
+   unsigned numDuplicates = (m_numGradDuplicates > 0) ? m_numGradDuplicates : 2; // If the number of gradient duplicates is specified, use that value. Otherwise use the default value.
+   ColorGradient::DuplicateGradient(gradPoints, numDuplicates, true);
    ColorScale::DuplicateBrightness(spotLightBrightness, int(GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO), false);
 
    std::vector<ColorScale::tBrightnessScale> spotLights;
