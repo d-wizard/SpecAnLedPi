@@ -70,6 +70,7 @@ public:
    /////////////////////////////////////////////////////////////////////////////
    static void DuplicateGradient(tGradient& gradInOut, unsigned numCopies, bool mirror);
    static tGradient GetRainbowGradient(unsigned numGradPoints = 10);
+   static ColorGradient::tGradient ConvertToZeroReach(const ColorGradient::tGradient& inGrad);
 
    /////////////////////////////////////////////////////////////////////////////
    // Member Functions

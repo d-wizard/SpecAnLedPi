@@ -79,6 +79,69 @@ ColorGradient::tGradient ColorGradient::GetRainbowGradient(unsigned numGradPoint
    return retVal;
 }
 
+ColorGradient::tGradient ColorGradient::ConvertToZeroReach(const ColorGradient::tGradient& inGrad)
+{
+   // Needs to be at least a start and stop point.
+   if(inGrad.size() < 2)
+      return inGrad;
+
+   ColorGradient::tGradient retVal;
+   ColorGradient::tGradientPoint gradPoint;
+
+   // First Point(s)
+   gradPoint = inGrad[0];
+   gradPoint.reach = 0;
+   retVal.push_back(gradPoint);
+   if(inGrad[0].reach > 0)
+   {
+      gradPoint.position = inGrad[0].reach;
+      retVal.push_back(gradPoint);
+   }
+
+   // Middle Points
+   if(inGrad.size() > 2)
+   {
+      for(size_t i = 1; i < (inGrad.size()-1); ++i)
+      {
+         if(inGrad[i].reach > 0)
+         {
+            // Need to add two points.
+            gradPoint = inGrad[i];
+            gradPoint.reach = 0;
+            gradPoint.position = inGrad[i].position - inGrad[i].reach/2.0;
+            retVal.push_back(gradPoint);
+            gradPoint.position = inGrad[i].position + inGrad[i].reach/2.0;
+            retVal.push_back(gradPoint);
+         }
+         else
+         {
+            // No reach, just add the one point.
+            retVal.push_back(inGrad[i]);
+         }
+      }
+   }
+
+   // Last Point(s)
+   size_t lastIndex = inGrad.size()-1;
+   if(inGrad[lastIndex].reach > 0)
+   {
+      // Two last points.
+      gradPoint = inGrad[lastIndex];
+      gradPoint.reach = 0;
+      gradPoint.position = 1.0 - inGrad[lastIndex].reach;
+      retVal.push_back(gradPoint);
+      gradPoint.position = 1.0;
+      retVal.push_back(gradPoint);
+   }
+   else
+   {
+      // Last point has no reach. Only 1 last gradient point.
+      retVal.push_back(inGrad[lastIndex]);
+   }
+
+   return retVal;
+}
+
 
 ColorGradient::ColorGradient(size_t numPoints)
 {

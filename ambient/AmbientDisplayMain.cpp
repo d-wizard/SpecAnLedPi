@@ -57,7 +57,7 @@ static void signalHandler(int signum)
 
 static void parseCmdLineArgs(int argc, char *argv[])
 {
-   // argv[1] is g_presetJsonPath, argv[2] is g_settingsJsonPath, argv[3] is the gradient index
+   // argv[1] is g_presetGradIndex, argv[2] is g_presetJsonPath, argv[3] is g_settingsJsonPath
    if(argc > 1)
       g_presetGradIndex = std::stoi(argv[1]);
    if(argc > 2)
@@ -89,6 +89,7 @@ int main(int argc, char *argv[])
          for(int i = 0; i < g_presetGradIndex; ++i)
             gradient = g_saveRestoreJson->restore_gradientNext();
       }
+      gradient = ColorGradient::ConvertToZeroReach(gradient); // The Ambient Display wants gradients with the reach value set to zero.
    }
 
    /////////////////////////////////////////////////////////////////////////////
