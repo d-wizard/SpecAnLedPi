@@ -205,6 +205,39 @@ public:
 private:
    std::uniform_int_distribution<int> m_dist;
 };
+////////////////////////////////////////////////////////////////////////////////
+template<class T>
+class BlockFastSignChanges : public TransformBase<T>
+{
+   // Prevents the sign of the output value from changing quickly.
+public:
+   BlockFastSignChanges(double minTimeBetweenSignChanges):m_lastSignChangeTime(std::chrono::steady_clock::now()), m_minTimeBetweenSignChanges(minTimeBetweenSignChanges){}
+   virtual ~BlockFastSignChanges(){}
+   virtual T transform(T inOut) override
+   {
+      bool inputIsPositive = (inOut > 0.0);
+      auto nowTime = std::chrono::steady_clock::now();
+      int64_t timeBetweenNs = std::chrono::duration_cast<std::chrono::nanoseconds>(nowTime - m_lastSignChangeTime).count();
+      double timeBetween = double(timeBetweenNs) * double(1e-9);
+      if(timeBetween >= m_minTimeBetweenSignChanges)
+      {
+         m_lastSignChangeTime = nowTime;
+         m_lastSignPositive = inputIsPositive;
+      }
+      else
+      {
+         // Not enough time has passed. Don't allow a sign change.
+         if(m_lastSignPositive != inputIsPositive)
+            inOut = -inOut;
+      }
+      return inOut;
+   }
+   BlockFastSignChanges(BlockFastSignChanges const&) = delete; void operator=(BlockFastSignChanges const&) = delete; // delete a bunch of constructors.
+private:
+   std::chrono::steady_clock::time_point m_lastSignChangeTime;
+   const double m_minTimeBetweenSignChanges;
+   bool m_lastSignPositive = true;
+};
 
 
 
@@ -222,7 +255,7 @@ class Generator
 public:
    Generator(SourcePtr<T> source):m_source(source){} // No transforms.
    Generator(SourcePtr<T> source, TransformPtr<T> transform):m_source(source){m_transforms.push_back(transform);} // Single transforms.
-   Generator(SourcePtr<T> source, std::vector<TransformPtr<T>>& transforms):m_source(source), m_transforms(transforms){}; // Multiple transforms.
+   Generator(SourcePtr<T> source, const std::vector<TransformPtr<T>>& transforms):m_source(source), m_transforms(transforms){}; // Multiple transforms.
 
    T getNext()
    {

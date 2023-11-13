@@ -100,9 +100,12 @@ void AmbDisp3SpotLights::init()
    /////////////////////////////////////////////////////////////////////////////
    // Add some randomness to the brightness movement speed
    /////////////////////////////////////////////////////////////////////////////
+   std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> brightMoveTransforms;
+   brightMoveTransforms.emplace_back(std::make_shared<AmbientMovement::RandNegateTransform<AmbDispFltType>>()); // Randomly change the direction of the movement.
+   brightMoveTransforms.emplace_back(std::make_shared<AmbientMovement::BlockFastSignChanges<AmbDispFltType>>(5.0)); // Keep direction of movement from change too quickly.
    m_brightMoveSpeedModGen = std::make_unique<AmbMoveGen>(
       std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.5, 1.25), // Generator
-      std::make_shared<AmbientMovement::RandNegateTransform<AmbDispFltType>>());
+      brightMoveTransforms); // Transforms.
    m_brightMoveSpeedModRandNumGen = std::make_unique<AmbMoveGen>(
       std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.0, 1.0));
 }
