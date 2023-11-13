@@ -69,7 +69,7 @@ public:
    // Static Functions
    /////////////////////////////////////////////////////////////////////////////
    static void DuplicateGradient(tGradient& gradInOut, unsigned numCopies, bool mirror);
-   static tGradient GetRainbowGradient(unsigned numGradPoints = 10);
+   static tGradient GetRainbowGradient(unsigned numGradPoints = 10, float saturation = 1.0);
    static ColorGradient::tGradient ConvertToZeroReach(const ColorGradient::tGradient& inGrad);
 
    /////////////////////////////////////////////////////////////////////////////
