@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
    /////////////////////////////////////////////////////////////////////////////
    // Setup settings.
    /////////////////////////////////////////////////////////////////////////////
-   auto gradient = ColorGradient::GetRainbowGradient();
+   auto gradient = ColorGradient::GetRainbowGradient(10, 0.6);
    if(argc > 1)
    {
       parseCmdLineArgs(argc, argv);

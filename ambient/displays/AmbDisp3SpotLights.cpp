@@ -85,9 +85,9 @@ void AmbDisp3SpotLights::init()
    /////////////////////////////////////////////////////////////////////////////
    // Setup the Brightness Movement
    /////////////////////////////////////////////////////////////////////////////
-   m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.001));
-   m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.0008381984));
-   m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.0003984116));
+   m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.001, 0.1));
+   m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.0008381984, 0.4));
+   m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.0003984116, 0.7));
    auto brightTransforms_saw    = std::make_shared<AmbientMovement::SawTransform<AmbDispFltType>>();
    auto brightTransforms_scale  = std::make_shared<AmbientMovement::LinearTransform<AmbDispFltType>>(0.4/GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO);
    std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> brightTransformsSawScale = {brightTransforms_saw, brightTransforms_scale};
@@ -123,7 +123,7 @@ void AmbDisp3SpotLights::updateLedStrip()
 
    for(size_t i = 0; i < m_movementSources.size(); ++i)
    {
-      if(m_brightMoveSpeedModRandNumGen->getNext() < 0.02)
+      if(m_brightMoveSpeedModRandNumGen->getNext() < 0.02) // 2% chance of hitting
       {
          m_movementSources[i]->scaleIncr(m_brightMoveSpeedModGen->getNext());
       }
