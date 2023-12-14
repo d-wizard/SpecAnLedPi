@@ -452,6 +452,7 @@ ColorScale::tBrightnessScale& AmbientDisplay::combineBrightnessValues(float minB
          ++iter;
       }
    }
+   combined.begin()->startPoint = 0.0;
 
    // Write to the final vector.
    m_brightness_combined.resize(0);
