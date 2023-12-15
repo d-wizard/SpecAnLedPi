@@ -364,13 +364,17 @@ void AmbientDisplayBrightness::shift(float shiftValue)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-AmbientDisplay::AmbientDisplay(const ColorGradient::tGradient& grad, const ColorScale::tBrightnessScale& brightness):
+AmbientDisplay::AmbientDisplay(size_t numGenPoints, size_t numLeds, const ColorGradient::tGradient& grad, const ColorScale::tBrightnessScale& brightness):
+   m_numGenPoints(numGenPoints),
+   m_numLeds(numLeds),
    m_gradient(grad)
 {
    m_brightness_separate.push_back(std::make_unique<AmbientDisplayBrightness>(brightness));
 }
 
-AmbientDisplay::AmbientDisplay(const ColorGradient::tGradient& grad, const std::vector<ColorScale::tBrightnessScale>& brightness):
+AmbientDisplay::AmbientDisplay(size_t numGenPoints, size_t numLeds, const ColorGradient::tGradient& grad, const std::vector<ColorScale::tBrightnessScale>& brightness):
+   m_numGenPoints(numGenPoints),
+   m_numLeds(numLeds),
    m_gradient(grad)
 {
    for(const auto& b : brightness)
@@ -399,18 +403,18 @@ void AmbientDisplay::brightness_shift(float shiftValue, size_t index)
 }
 
 
-void AmbientDisplay::toRgbVect(size_t numGenPoints, SpecAnLedTypes::tRgbVector& ledColors, size_t numLeds)
+void AmbientDisplay::toRgbVect(SpecAnLedTypes::tRgbVector& ledColors)
 {
    ColorScale::tColorScale colors;
 
    Convert::convertGradientToScale(m_gradient.get(), colors);
 
    bool singleBrightScale = (m_brightness_separate.size() == 1);
-   ColorScale colorScale(colors, singleBrightScale ? m_brightness_separate[0]->get() : combineBrightnessValues(1.0 / float(numLeds-1)));
+   ColorScale colorScale(colors, singleBrightScale ? m_brightness_separate[0]->get() : combineBrightnessValues(1.0 / float(m_numLeds-1)));
 
-   float deltaBetweenPoints = (float)65535/(float)(numGenPoints-1);
-   ledColors.resize(numLeds);
-   for(size_t i = 0 ; i < numLeds; ++i)
+   float deltaBetweenPoints = (float)65535/(float)(m_numGenPoints-1);
+   ledColors.resize(m_numLeds);
+   for(size_t i = 0 ; i < m_numLeds; ++i)
    {
       ledColors[i] = colorScale.getColor((float)i * deltaBetweenPoints, 1.0);
    }

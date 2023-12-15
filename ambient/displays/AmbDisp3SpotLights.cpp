@@ -80,7 +80,7 @@ void AmbDisp3SpotLights::init()
    std::vector<ColorScale::tBrightnessScale> spotLights;
    for(int i = 0; i < NUM_SPOT_LIGHTS; ++i)
       spotLights.push_back(spotLightBrightness);
-   m_ambDisp = std::make_unique<AmbientDisplay>(gradPoints, spotLights);
+   m_ambDisp = std::make_unique<AmbientDisplay>(GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO*m_numLeds, m_numLeds, gradPoints, spotLights);
 
    /////////////////////////////////////////////////////////////////////////////
    // Setup the Brightness Movement
@@ -113,7 +113,7 @@ void AmbDisp3SpotLights::init()
 void AmbDisp3SpotLights::updateLedStrip()
 {
    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-   m_ambDisp->toRgbVect(GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO*m_numLeds, m_ledColorPattern, m_numLeds);
+   m_ambDisp->toRgbVect(m_ledColorPattern);
    m_ledStrip->set(m_ledColorPattern);
    m_ambDisp->gradient_shift(-0.002);
    for(size_t i = 0; i < m_movementGenerators.size(); ++i)

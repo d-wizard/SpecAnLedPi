@@ -70,16 +70,18 @@ private:
 class AmbientDisplay
 {
 public:
-   AmbientDisplay(const ColorGradient::tGradient& grad, const ColorScale::tBrightnessScale& brightness);
-   AmbientDisplay(const ColorGradient::tGradient& grad, const std::vector<ColorScale::tBrightnessScale>& brightness);
+   AmbientDisplay(size_t numGenPoints, size_t numLeds, const ColorGradient::tGradient& grad, const ColorScale::tBrightnessScale& brightness); // Single Brightness Scale.
+   AmbientDisplay(size_t numGenPoints, size_t numLeds, const ColorGradient::tGradient& grad, const std::vector<ColorScale::tBrightnessScale>& brightness); // Multiple Brightness Scales.
    virtual ~AmbientDisplay();
    AmbientDisplay() = delete; AmbientDisplay(AmbientDisplay const&) = delete; void operator=(AmbientDisplay const&) = delete; // delete a bunch of constructors.
 
    void gradient_shift(float shiftValue); // Shift values should be between -1 and 1
    void brightness_shift(float shiftValue, size_t index = 0); // Shift values should be between -1 and 1
 
-   void toRgbVect(size_t numGenPoints, SpecAnLedTypes::tRgbVector& ledColors, size_t numLeds);
+   void toRgbVect(SpecAnLedTypes::tRgbVector& ledColors);
 private:
+   size_t m_numGenPoints;
+   size_t m_numLeds;
    AmbientDisplayGradient m_gradient;
    std::vector<std::unique_ptr<AmbientDisplayBrightness>> m_brightness_separate;
    ColorScale::tBrightnessScale m_brightness_combined;

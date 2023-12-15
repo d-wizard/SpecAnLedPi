@@ -84,7 +84,7 @@ static void displayGradient(ColorGradient::tGradient& gradient, size_t numDispla
 {
    float brightVal = 0.25;
    ColorScale::tBrightnessScale brightness = {{brightVal,0},{brightVal,1}};
-   AmbientDisplay gradToRgb(gradient, brightness);
+   AmbientDisplay gradToRgb(numDisplayLEDs, numDisplayLEDs, gradient, brightness);
 
    const size_t leds_total = totalLEDs;
    const size_t leds_grad = numDisplayLEDs;
@@ -92,7 +92,7 @@ static void displayGradient(ColorGradient::tGradient& gradient, size_t numDispla
    const size_t leds_left  = (leds_total-leds_grad-leds_right);
 
    SpecAnLedTypes::tRgbVector rgb;
-   gradToRgb.toRgbVect(leds_grad, rgb, leds_grad);
+   gradToRgb.toRgbVect(rgb);
    SpecAnLedTypes::tRgbColor black;
    black.u32 = SpecAnLedTypes::COLOR_BLACK;
    rgb.insert(rgb.begin(), leds_right, black);
