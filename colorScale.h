@@ -66,7 +66,7 @@ public:
    ColorScale(tColorScale& colorPoints, tBrightnessScale& brightnessPoints);
    virtual ~ColorScale();
 
-   SpecAnLedTypes::tRgbColor getColor(uint16_t value, float brightness, bool skipBrightnessNomalization = false);
+   SpecAnLedTypes::tRgbColor getColor(uint16_t value, float brightness, bool skipBrightnessNormalization = false);
 
 private:
    // Make uncopyable

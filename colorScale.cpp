@@ -158,7 +158,7 @@ ColorScale::~ColorScale()
 }
 
 
-SpecAnLedTypes::tRgbColor ColorScale::getColor(uint16_t value, float brightness, bool skipBrightnessNomalization)
+SpecAnLedTypes::tRgbColor ColorScale::getColor(uint16_t value, float brightness, bool skipBrightnessNormalization)
 {
    int colorIndex = pointIndex(m_colorPoints.data(), m_colorPoints.size(), value);
    int brghtIndex = pointIndex(m_brightnessPoints.data(), m_brightnessPoints.size(), value);
@@ -172,7 +172,7 @@ SpecAnLedTypes::tRgbColor ColorScale::getColor(uint16_t value, float brightness,
    float startBrightness = sqrtf(red*red + green*green + blue*blue);
    float brightnessScalar = desiredBrightness * brightness / startBrightness;
 
-   if(skipBrightnessNomalization)
+   if(skipBrightnessNormalization)
       brightnessScalar = brightness; // Just use the input brighness as the scalar.
 
    red   *= brightnessScalar;
