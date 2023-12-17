@@ -18,6 +18,7 @@
  */
 #pragma once
 #include <vector>
+#include <list>
 #include <memory>
 #include "specAnLedPiTypes.h"
 #include "colorGradient.h"
@@ -87,4 +88,6 @@ private:
    ColorScale::tBrightnessScale m_brightness_combined;
 
    ColorScale::tBrightnessScale& combineBrightnessValues(float minBetweenPoints = ColorScale::MIN_RESOLUTION);
+   void combineBrightnessValues_compute(const std::list<ColorScale::tBrightnessPoint>& allTheBrightPoints, ColorScale::tBrightnessScale& computedBrightness);
+   float combineBrightnessValues_getBrightVal(const ColorScale::tBrightnessScale& singleBrightScale, float position_zeroToOne);
 };

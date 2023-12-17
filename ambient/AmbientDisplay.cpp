@@ -17,6 +17,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include <assert.h>
+#include <algorithm>
 #include <stdio.h>
 #include <math.h>
 #include <algorithm>
@@ -436,34 +437,89 @@ ColorScale::tBrightnessScale& AmbientDisplay::combineBrightnessValues(float minB
    // Sort.
    combined.sort();
 
-   // Prune. Remove values that are too close. Use the max between points that are too close.
-   for(auto iter = combined.begin(); iter != combined.end();)
-   {
-      auto nextIter = iter;
-      ++nextIter;
-      if( (nextIter != combined.end()) && (areTheyClose(iter->startPoint, nextIter->startPoint, minBetweenPoints)) )
-      {
-         if(iter->brightness >= nextIter->brightness)
-         {
-            // iter is brighter than nextIter. Keep the brighter one. 
-            *nextIter = *iter; // iter is being removed so set nextIter to iter.
-         }
-         // else nextIter is brighter, and it is the one being kept. So nothing to do.
-         iter = combined.erase(iter);
-      }
-      else
-      {
-         ++iter;
-      }
-   }
-   combined.begin()->startPoint = 0.0;
-
-   // Write to the final vector.
-   m_brightness_combined.resize(0);
-   for(auto iter = combined.begin(); iter != combined.end(); ++iter)
-   {
-      m_brightness_combined.push_back(*iter);
-   }
+   combineBrightnessValues_compute(combined, m_brightness_combined);
 
    return m_brightness_combined;
+}
+
+void AmbientDisplay::combineBrightnessValues_compute(const std::list<ColorScale::tBrightnessPoint>& allTheBrightPoints, ColorScale::tBrightnessScale& computedBrightness)
+{
+   const size_t numBright = m_brightness_separate.size();
+   if(numBright < 1)
+      return;
+
+   computedBrightness.resize(allTheBrightPoints.size());
+
+   // First One (just set brightness to the first brightness scale values).
+   size_t brightIndex = 0;
+   auto brightScale = m_brightness_separate[brightIndex]->get();
+   size_t i = 0;
+   for(auto& bp : allTheBrightPoints)
+   {
+      computedBrightness[i].startPoint = bp.startPoint;
+      computedBrightness[i].brightness = combineBrightnessValues_getBrightVal(brightScale, bp.startPoint);
+      ++i;
+   }
+
+   // The Rest (set brightness to the max brightness scale values).
+   for(brightIndex = 1; brightIndex < numBright; ++brightIndex)
+   {
+      brightScale = m_brightness_separate[brightIndex]->get();
+      i = 0;
+      for(auto& bp : allTheBrightPoints)
+      {
+         computedBrightness[i].brightness = std::max(computedBrightness[i].brightness, combineBrightnessValues_getBrightVal(brightScale, bp.startPoint));
+         ++i;
+      }
+   }
+
+}
+
+float AmbientDisplay::combineBrightnessValues_getBrightVal(const ColorScale::tBrightnessScale& singleBrightScale, float position_zeroToOne)
+{
+   if(position_zeroToOne < 0.0)
+      position_zeroToOne = 0.0;
+   else if(position_zeroToOne > 1.0)
+      position_zeroToOne = 1.0;
+   
+   auto numBrightPoints = singleBrightScale.size();
+   if(numBrightPoints < 1)
+      return 0;
+   else if(numBrightPoints < 2)
+      return singleBrightScale[0].brightness;
+      
+   // TODO make this binary search.
+   size_t firstBiggerIndex = numBrightPoints; // Set to invalid index (this will be checked for later in this function).
+   for(size_t i = 0; i < numBrightPoints; ++i)
+   {
+      auto position = singleBrightScale[i].startPoint;
+      if(position == position_zeroToOne)
+      {
+         return singleBrightScale[i].brightness; // Exact match, just return the correct value.
+      }
+      else if(position > position_zeroToOne)
+      {
+         firstBiggerIndex = i;
+         break;
+      }
+   }
+
+   // Linear Interpolate Between.
+   if(firstBiggerIndex == 0)
+   {
+      return singleBrightScale[0].brightness; // TODO I think this is right.
+   }
+   else if(firstBiggerIndex >= numBrightPoints)
+   {
+      return singleBrightScale[numBrightPoints-1].brightness; // TODO I think this is right.
+   }
+   // else index is valid.
+
+   float brightLo = singleBrightScale[firstBiggerIndex-1].brightness;
+   float brightHi = singleBrightScale[firstBiggerIndex].brightness;
+   float posLo = singleBrightScale[firstBiggerIndex-1].startPoint;
+   float posHi = singleBrightScale[firstBiggerIndex].startPoint;
+   float midPoint = (position_zeroToOne - posLo) / (posHi - posLo);
+
+   return (brightHi - brightLo) * midPoint + brightLo;
 }
