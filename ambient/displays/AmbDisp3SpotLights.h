@@ -27,7 +27,7 @@ class AmbDisp3SpotLights : public AmbientLedStripBase
 {
 public:
    AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip);
-   AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, float gradientsToDisplayAtATime, bool forceGradientMirror = true);
+   AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, float gradientsToDisplayAtATime, float gradientSpeedScalar = 1.0, bool forceGradientMirror = true);
    virtual ~AmbDisp3SpotLights();
 
 private:
@@ -45,6 +45,8 @@ private:
    AmbMoveGenPtr m_brightMoveSpeedModRandNumGen;
 
    int m_brightMoveSpeedModGenCount = 0;
+
+   float m_gradientSpeedScalar = 1.0;
 
    void init();
 };

@@ -33,8 +33,9 @@ AmbDisp3SpotLights::AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip):
    startThread();
 }
 
-AmbDisp3SpotLights::AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, float gradientsToDisplayAtATime, bool forceGradientMirror):
-   AmbientLedStripBase(ledStrip, gradient, gradientsToDisplayAtATime, forceGradientMirror)
+AmbDisp3SpotLights::AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, float gradientsToDisplayAtATime, float gradientSpeedScalar, bool forceGradientMirror):
+   AmbientLedStripBase(ledStrip, gradient, gradientsToDisplayAtATime, forceGradientMirror),
+   m_gradientSpeedScalar(gradientSpeedScalar)
 {
    init();
    startThread();
@@ -112,7 +113,7 @@ void AmbDisp3SpotLights::updateLedStrip()
    std::this_thread::sleep_for(std::chrono::milliseconds(10));
    m_ambDisp->toRgbVect(m_ledColorPattern);
    m_ledStrip->set(m_ledColorPattern);
-   m_ambDisp->gradient_shift(-0.002);
+   m_ambDisp->gradient_shift(-0.002*m_gradientSpeedScalar);
    for(size_t i = 0; i < m_movementGenerators.size(); ++i)
    {
       m_ambDisp->brightness_shift(m_movementGenerators[i]->getNextDelta(), i);

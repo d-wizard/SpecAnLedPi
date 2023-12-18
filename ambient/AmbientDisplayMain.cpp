@@ -27,6 +27,7 @@
 
 // Common Modifications
 static constexpr float GRADIENTS_TO_DISPLAY_AT_A_TIME = 0.5;
+static constexpr float GRADIENTS_SPEED_SCALAR = 0.1;
 
 // LED Stuff
 #define DEFAULT_NUM_LEDS (296)
@@ -144,7 +145,7 @@ int main(int argc, char *argv[])
    else
    {
       // Normal Mode.
-      g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient, GRADIENTS_TO_DISPLAY_AT_A_TIME);
+      g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient, GRADIENTS_TO_DISPLAY_AT_A_TIME, GRADIENTS_SPEED_SCALAR);
    }
 
    /////////////////////////////////////////////////////////////////////////////
