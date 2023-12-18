@@ -25,6 +25,9 @@
 #include "AmbDisp3SpotLights.h"
 #include "smartPlotMessage.h" // Debug Plotting
 
+// Common Modifications
+static constexpr float GRADIENTS_TO_DISPLAY_AT_A_TIME = 0.5;
+
 // LED Stuff
 #define DEFAULT_NUM_LEDS (296)
 static std::shared_ptr<LedStrip> g_ledStrip;
@@ -141,7 +144,7 @@ int main(int argc, char *argv[])
    else
    {
       // Normal Mode.
-      g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient);
+      g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient, GRADIENTS_TO_DISPLAY_AT_A_TIME);
    }
 
    /////////////////////////////////////////////////////////////////////////////

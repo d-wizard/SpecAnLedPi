@@ -17,9 +17,11 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include <stdio.h>
 #include <memory>
 #include <thread>
 #include <atomic>
+#include <math.h>
 #include "ledStrip.h"
 #include "colorGradient.h"
 #include "colorScale.h"
@@ -32,18 +34,21 @@ typedef float AmbDispFltType; // Use a typedef to easily switch between float an
 
 public:
    AmbientLedStripBase(std::shared_ptr<LedStrip> ledStrip):
-      m_ledStrip(ledStrip),
-      m_gradient(ColorGradient::GetRainbowGradient()),
-      m_numLeds(ledStrip->getNumLeds()),
-      m_numGradDuplicates(0) // Zero means use default settings.
+      AmbientLedStripBase(ledStrip, ColorGradient::GetRainbowGradient(), 1.0, true)
    {
    }
-   AmbientLedStripBase(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, unsigned numGradDuplicates = 0):
+   AmbientLedStripBase(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, float gradientsToDisplayAtATime, bool forceGradientMirror):
       m_ledStrip(ledStrip),
       m_gradient(gradient),
       m_numLeds(ledStrip->getNumLeds()),
-      m_numGradDuplicates(numGradDuplicates)
+      m_forceGradientMirror(forceGradientMirror)
    {
+      gradientsToDisplayAtATime = gradientsToDisplayAtATime <= 0.0 ? 1.0 : gradientsToDisplayAtATime; // Avoid divide by zero and negative numbers.
+      m_numGradientCopies = ceil(gradientsToDisplayAtATime);
+      m_numGradientCopies = (forceGradientMirror && (m_numGradientCopies & 1)) ? m_numGradientCopies + 1 : m_numGradientCopies; // If m_forceGradientMirror, make sure numGradientCopies is even.
+
+      m_numBrightCopies = unsigned(float(m_numGradientCopies) / gradientsToDisplayAtATime);
+      m_numBrightCopies = (m_numBrightCopies < 1) ? 1 : m_numBrightCopies; // Bound.
    }
    AmbientLedStripBase() = delete; AmbientLedStripBase(AmbientLedStripBase const&) = delete; void operator=(AmbientLedStripBase const&) = delete; // delete a bunch of constructors.
    virtual ~AmbientLedStripBase()
@@ -59,7 +64,10 @@ protected:
    std::shared_ptr<LedStrip> m_ledStrip;
    ColorGradient::tGradient m_gradient;
    size_t m_numLeds;
-   unsigned m_numGradDuplicates;
+   bool m_forceGradientMirror = true;
+
+   unsigned m_numGradientCopies;
+   unsigned m_numBrightCopies;
 
    virtual void updateLedStrip() = 0;
    

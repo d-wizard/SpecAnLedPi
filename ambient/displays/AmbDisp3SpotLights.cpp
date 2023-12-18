@@ -21,10 +21,8 @@
 
 // Brightness Constants.
 #define BRIGHTNESS_PATTERN_NUM_POINTS (51)
-#define BRIGHTNESS_PATTERN_HI_LEVEL (.35)
+#define BRIGHTNESS_PATTERN_HI_LEVEL (.85)
 #define BRIGHTNESS_PATTERN_LO_LEVEL (0.0)
-
-#define GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO (3.0)
 
 #define NUM_SPOT_LIGHTS (3)
 
@@ -35,8 +33,8 @@ AmbDisp3SpotLights::AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip):
    startThread();
 }
 
-AmbDisp3SpotLights::AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, unsigned numGradDuplicates):
-   AmbientLedStripBase(ledStrip, gradient, numGradDuplicates)
+AmbDisp3SpotLights::AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, float gradientsToDisplayAtATime, bool forceGradientMirror):
+   AmbientLedStripBase(ledStrip, gradient, gradientsToDisplayAtATime, forceGradientMirror)
 {
    init();
    startThread();
@@ -73,14 +71,13 @@ void AmbDisp3SpotLights::init()
    // Setup the Display
    /////////////////////////////////////////////////////////////////////////////
    auto gradPoints = m_gradient;
-   unsigned numDuplicates = (m_numGradDuplicates > 0) ? m_numGradDuplicates : 2; // If the number of gradient duplicates is specified, use that value. Otherwise use the default value.
-   ColorGradient::DuplicateGradient(gradPoints, numDuplicates, true);
-   ColorScale::DuplicateBrightness(spotLightBrightness, int(GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO), false);
+   ColorGradient::DuplicateGradient(gradPoints, m_numGradientCopies, m_forceGradientMirror);
+   ColorScale::DuplicateBrightness(spotLightBrightness, m_numBrightCopies, false);
 
    std::vector<ColorScale::tBrightnessScale> spotLights;
    for(int i = 0; i < NUM_SPOT_LIGHTS; ++i)
       spotLights.push_back(spotLightBrightness);
-   m_ambDisp = std::make_unique<AmbientDisplay>(GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO*m_numLeds, m_numLeds, gradPoints, spotLights);
+   m_ambDisp = std::make_unique<AmbientDisplay>(m_numBrightCopies*m_numLeds, m_numLeds, gradPoints, spotLights);
 
    /////////////////////////////////////////////////////////////////////////////
    // Setup the Brightness Movement
@@ -89,7 +86,7 @@ void AmbDisp3SpotLights::init()
    m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.0008381984, 0.4));
    m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.0003984116, 0.7));
    auto brightTransforms_saw    = std::make_shared<AmbientMovement::SawTransform<AmbDispFltType>>();
-   auto brightTransforms_scale  = std::make_shared<AmbientMovement::LinearTransform<AmbDispFltType>>(0.4/GRADIENT_TO_BRIGHTNESS_PATTERN_RATIO);
+   auto brightTransforms_scale  = std::make_shared<AmbientMovement::LinearTransform<AmbDispFltType>>(0.4/m_numBrightCopies);
    std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> brightTransformsSawScale = {brightTransforms_saw, brightTransforms_scale};
    std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> brightTransformsLinScale = {brightTransforms_scale};
 
