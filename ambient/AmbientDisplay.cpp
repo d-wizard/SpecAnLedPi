@@ -25,6 +25,10 @@
 #include "AmbientDisplay.h"
 #include "gradientToScale.h"
 
+// #define PLOT_BRIGHTNESS
+#ifdef PLOT_BRIGHTNESS
+#include "smartPlotMessage.h"
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -419,6 +423,18 @@ void AmbientDisplay::toRgbVect(SpecAnLedTypes::tRgbVector& ledColors)
    {
       ledColors[i] = colorScale.getColor((float)i * deltaBetweenPoints, 1.0);
    }
+
+#ifdef PLOT_BRIGHTNESS
+   std::vector<float> brightnessPlot(m_numLeds);
+   std::vector<float> positionPlot(m_numLeds);
+   float divisor = m_numLeds-1;
+   for(size_t i = 0 ; i < m_numLeds; ++i)
+   {
+      brightnessPlot[i] = sqrt(ledColors[i].rgb.r * ledColors[i].rgb.r + ledColors[i].rgb.g * ledColors[i].rgb.g + ledColors[i].rgb.b * ledColors[i].rgb.b);
+      positionPlot[i] = (float)i / divisor;
+   }
+   smartPlot_2D(positionPlot.data(), E_FLOAT_32, brightnessPlot.data(), E_FLOAT_32, m_numLeds, m_numLeds, 0, "Brightness", "Val");
+#endif
 }
 
 ColorScale::tBrightnessScale& AmbientDisplay::combineBrightnessValues(float minBetweenPoints)
