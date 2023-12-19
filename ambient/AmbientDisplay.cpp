@@ -398,13 +398,15 @@ void AmbientDisplay::gradient_shift(float shiftValue)
    m_gradient.shift(shiftValue);
 }
 
-void AmbientDisplay::brightness_shift(float shiftValue, size_t index)
+float AmbientDisplay::brightness_shift(float shiftValue, size_t index)
 {
    auto curSize = m_brightness_separate.size();
    if(curSize > 0 && index >= 0 && index < curSize)
    { 
       m_brightness_separate[index]->shift(shiftValue);
+      return m_brightness_separate[index]->getShiftVal();
    }
+   return 0.0; // Should never get here, return dummy value just in case.
 }
 
 

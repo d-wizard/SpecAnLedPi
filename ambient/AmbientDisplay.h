@@ -62,6 +62,7 @@ public:
 
    void shift(float shiftValue); // Shift values should be between -1 and 1
    ColorScale::tBrightnessScale& get(){return m_bright_current;}
+   float getShiftVal(){return m_brightShiftVal;}
 private:
    ColorScale::tBrightnessScale m_bright_orig;
    ColorScale::tBrightnessScale m_bright_current;
@@ -77,7 +78,7 @@ public:
    AmbientDisplay() = delete; AmbientDisplay(AmbientDisplay const&) = delete; void operator=(AmbientDisplay const&) = delete; // delete a bunch of constructors.
 
    void gradient_shift(float shiftValue); // Shift values should be between -1 and 1
-   void brightness_shift(float shiftValue, size_t index = 0); // Shift values should be between -1 and 1
+   float brightness_shift(float shiftValue, size_t index = 0); // Shift values should be between -1 and 1. Return the current shift value.
 
    void toRgbVect(SpecAnLedTypes::tRgbVector& ledColors);
 private:
