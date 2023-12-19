@@ -49,6 +49,8 @@ public:
 
       m_numBrightCopies = unsigned(float(m_numGradientCopies) / gradientsToDisplayAtATime);
       m_numBrightCopies = (m_numBrightCopies < 1) ? 1 : m_numBrightCopies; // Bound.
+
+      printf("gradientsToDisplayAtATime = %f | m_numGradientCopies = %u | m_numBrightCopies = %u\n", gradientsToDisplayAtATime, m_numGradientCopies, m_numBrightCopies); fflush(stdout);
    }
    AmbientLedStripBase() = delete; AmbientLedStripBase(AmbientLedStripBase const&) = delete; void operator=(AmbientLedStripBase const&) = delete; // delete a bunch of constructors.
    virtual ~AmbientLedStripBase()
