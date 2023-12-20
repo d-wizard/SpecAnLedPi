@@ -90,43 +90,40 @@ void AmbDisp3SpotLights::init()
    /////////////////////////////////////////////////////////////////////////////
    // Setup the Brightness Movement
    /////////////////////////////////////////////////////////////////////////////
-   m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.001, 0.1));
-   m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.0008381984, 0.4));
-   m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.0003984116, 0.7));
+   for(size_t i = 0; i < NUM_SPOT_LIGHTS; ++i) // Define the sources.
+   {
+      if(i == 0)
+         m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.001, 0.1));
+      else if(i == 1)
+         m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.0008381984, 0.4));
+      else
+         m_movementSources.push_back(std::make_shared<AmbientMovement::LinearSource<AmbDispFltType>>(0.0003984116, 0.7));
+   }
+   // Define the final movement generators (sources and transforms.)
    auto brightTransforms_saw    = std::make_shared<AmbientMovement::SawTransform<AmbDispFltType>>();
    auto brightTransforms_scale  = std::make_shared<AmbientMovement::LinearTransform<AmbDispFltType>>(0.4/m_numBrightCopies);
    std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> brightTransformsSawScale = {brightTransforms_saw, brightTransforms_scale};
    std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> brightTransformsLinScale = {brightTransforms_scale};
-
-   m_movementGenerators.emplace_back(std::make_unique<AmbMoveGen>(m_movementSources[0], brightTransformsSawScale));
-   m_movementGenerators.emplace_back(std::make_unique<AmbMoveGen>(m_movementSources[1], brightTransformsLinScale));
-   m_movementGenerators.emplace_back(std::make_unique<AmbMoveGen>(m_movementSources[2], brightTransformsLinScale));
+   for(size_t i = 0; i < NUM_SPOT_LIGHTS; ++i)
+   {
+      if(i == 0)
+         m_movementGenerators.emplace_back(std::make_unique<AmbMoveGen>(m_movementSources[i], brightTransformsSawScale));
+      else
+         m_movementGenerators.emplace_back(std::make_unique<AmbMoveGen>(m_movementSources[i], brightTransformsLinScale));
+   }
 
    /////////////////////////////////////////////////////////////////////////////
    // Add some randomness to the brightness movement speed
    /////////////////////////////////////////////////////////////////////////////
-   // Define m_brightMoveSpeedModGen[0]
-   std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> brightMoveTransforms;
-   brightMoveTransforms.emplace_back(std::make_shared<AmbientMovement::RandNegateTransform<AmbDispFltType>>()); // Randomly change the direction of the movement.
-   brightMoveTransforms.emplace_back(std::make_shared<AmbientMovement::BlockFastSignChanges<AmbDispFltType>>(5.0)); // Keep direction of movement from change too quickly.
-   m_brightMoveSpeedModGen.emplace_back( std::make_unique<AmbMoveGen>(
-      std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.5, 1.25), // Generator
-      brightMoveTransforms) ); // Transforms.
+   for(size_t i = 0; i < NUM_SPOT_LIGHTS; ++i)
+   {
+      std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> brightMoveTransforms;
+      brightMoveTransforms.emplace_back(std::make_shared<AmbientMovement::RandNegateTransform<AmbDispFltType>>(0.05)); // Randomly change the direction of the movement.
+      brightMoveTransforms.emplace_back(std::make_shared<AmbientMovement::BlockFastSignChanges<AmbDispFltType>>(5.0)); // Keep direction of movement from change too quickly.
+      m_brightMoveSpeedModGen.emplace_back( std::make_unique<AmbMoveGen>(std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.5, 1.25), brightMoveTransforms) );
+   }
 
-   // Define m_brightMoveSpeedModGen[1]
-   brightMoveTransforms.resize(1); // Remove the BlockFastSignChanges transform to change the time.
-   brightMoveTransforms.emplace_back(std::make_shared<AmbientMovement::BlockFastSignChanges<AmbDispFltType>>(6.0*2.718281828459045)); // Keep direction of movement from change too quickly.
-   m_brightMoveSpeedModGen.emplace_back( std::make_unique<AmbMoveGen>(
-      std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.5, 1.25), // Generator
-      brightMoveTransforms) ); // Transforms.
-
-   // Define m_brightMoveSpeedModGen[2]
-   brightMoveTransforms.resize(1); // Remove the BlockFastSignChanges transform to change the time.
-   brightMoveTransforms.emplace_back(std::make_shared<AmbientMovement::BlockFastSignChanges<AmbDispFltType>>(5.0*3.14159265358979)); // Keep direction of movement from change too quickly.
-   m_brightMoveSpeedModGen.emplace_back( std::make_unique<AmbMoveGen>(
-      std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.5, 1.25), // Generator
-      brightMoveTransforms) ); // Transforms.
-
+   // Make a simple random number generator (0 to 1)
    m_brightMoveSpeedModRandNumGen = std::make_unique<AmbMoveGen>(
       std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.0, 1.0));
 }
