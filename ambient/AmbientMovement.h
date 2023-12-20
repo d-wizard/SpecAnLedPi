@@ -80,6 +80,8 @@ public:
    }
    void setIncr(T newIncr){m_incr_orig = m_incr_cur = newIncr;}
    void scaleIncr(T scalar){m_incr_cur = m_incr_orig * scalar;}
+   void negateIncr(){m_incr_cur = -m_incr_cur;}
+   T getIncr(){return m_incr_cur;}
    LinearSource() = delete; LinearSource(LinearSource const&) = delete; void operator=(LinearSource const&) = delete; // delete a bunch of constructors.
 private:
    T m_nextValue;

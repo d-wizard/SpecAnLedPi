@@ -41,7 +41,7 @@ private:
    std::vector<std::shared_ptr<AmbientMovement::LinearSource<AmbDispFltType>>> m_movementSources;
    std::vector<AmbMoveGenPtr> m_movementGenerators;
 
-   AmbMoveGenPtr m_brightMoveSpeedModGen;
+   std::vector<AmbMoveGenPtr> m_brightMoveSpeedModGen;
    AmbMoveGenPtr m_brightMoveSpeedModRandNumGen;
 
    int m_brightMoveSpeedModGenCount = 0;

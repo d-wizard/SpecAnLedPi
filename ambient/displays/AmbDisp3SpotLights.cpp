@@ -16,8 +16,15 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#include <algorithm>
 #include "AmbDisp3SpotLights.h"
 #include "WaveformGen.h"
+
+// Debug Defines.
+// #define PLOT_SPOT_LIGHT_POSITIONS
+#ifdef PLOT_SPOT_LIGHT_POSITIONS
+#include "smartPlotMessage.h"
+#endif
 
 // Brightness Constants.
 #define BRIGHTNESS_PATTERN_NUM_POINTS (51)
@@ -98,32 +105,109 @@ void AmbDisp3SpotLights::init()
    /////////////////////////////////////////////////////////////////////////////
    // Add some randomness to the brightness movement speed
    /////////////////////////////////////////////////////////////////////////////
+   // Define m_brightMoveSpeedModGen[0]
    std::vector<AmbientMovement::TransformPtr<AmbDispFltType>> brightMoveTransforms;
    brightMoveTransforms.emplace_back(std::make_shared<AmbientMovement::RandNegateTransform<AmbDispFltType>>()); // Randomly change the direction of the movement.
    brightMoveTransforms.emplace_back(std::make_shared<AmbientMovement::BlockFastSignChanges<AmbDispFltType>>(5.0)); // Keep direction of movement from change too quickly.
-   m_brightMoveSpeedModGen = std::make_unique<AmbMoveGen>(
+   m_brightMoveSpeedModGen.emplace_back( std::make_unique<AmbMoveGen>(
       std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.5, 1.25), // Generator
-      brightMoveTransforms); // Transforms.
+      brightMoveTransforms) ); // Transforms.
+
+   // Define m_brightMoveSpeedModGen[1]
+   brightMoveTransforms.resize(1); // Remove the BlockFastSignChanges transform to change the time.
+   brightMoveTransforms.emplace_back(std::make_shared<AmbientMovement::BlockFastSignChanges<AmbDispFltType>>(6.0*2.718281828459045)); // Keep direction of movement from change too quickly.
+   m_brightMoveSpeedModGen.emplace_back( std::make_unique<AmbMoveGen>(
+      std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.5, 1.25), // Generator
+      brightMoveTransforms) ); // Transforms.
+
+   // Define m_brightMoveSpeedModGen[2]
+   brightMoveTransforms.resize(1); // Remove the BlockFastSignChanges transform to change the time.
+   brightMoveTransforms.emplace_back(std::make_shared<AmbientMovement::BlockFastSignChanges<AmbDispFltType>>(5.0*3.14159265358979)); // Keep direction of movement from change too quickly.
+   m_brightMoveSpeedModGen.emplace_back( std::make_unique<AmbMoveGen>(
+      std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.5, 1.25), // Generator
+      brightMoveTransforms) ); // Transforms.
+
    m_brightMoveSpeedModRandNumGen = std::make_unique<AmbMoveGen>(
       std::make_shared<AmbientMovement::RandUniformSource<AmbDispFltType>>(0.0, 1.0));
 }
 
 void AmbDisp3SpotLights::updateLedStrip()
 {
+   static constexpr float TOO_CLOSE_DISTANCE = 0.05; // 5% of the LED strip.
+
+   // Wait (don't want a tight loop)
    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+   // Update the LED Strip.
    m_ambDisp->toRgbVect(m_ledColorPattern);
    m_ledStrip->set(m_ledColorPattern);
+
+   // Move the Gradient.
    m_ambDisp->gradient_shift(-0.002*m_gradientSpeedScalar);
+
+   // Update the Spot Light positions.
+   std::vector<float> spotLightPositions(m_movementGenerators.size());
    for(size_t i = 0; i < m_movementGenerators.size(); ++i)
    {
-      m_ambDisp->brightness_shift(m_movementGenerators[i]->getNextDelta(), i);
+      float shift = m_ambDisp->brightness_shift(m_movementGenerators[i]->getNextDelta(), i);
+
+      // Keep track of where the Spot Lights are.
+      shift *= float(m_numBrightCopies);
+      shift += 0.5;
+      shift = fmod(shift, 1.0);
+      shift = (shift < 0.0) ? 1.0 + shift : shift; // Keep between 0 and 1
+      spotLightPositions[i] = shift;
+
+#ifdef PLOT_SPOT_LIGHT_POSITIONS
+      char curveName[2] = {(char)('0'+i), '\0'};
+      smartPlot_1D(&shift, E_FLOAT_32, 1, 10000, 10, "Spot Light Position", curveName);
+#endif
    }
 
+   // Get some stats about how close the Spot Lights are to each other and if they are moving in the same direction.
+   std::vector<float> spotLightPositionDeltas(m_movementGenerators.size(), 1.0); // Start with max value.
+   std::vector<bool> spotLightDirectionsSame(m_movementGenerators.size(), false);
+   std::vector<size_t> otherSpotLightIndex(m_movementGenerators.size(), 0);
+   size_t spotLightPositionSize = spotLightPositions.size();
+   if(spotLightPositionSize > 1)
+   {
+      for(size_t i = 0; i < (spotLightPositionSize-1); ++i)
+      {
+         for(size_t j = i+1; j < spotLightPositionSize; ++j)
+         {
+            float positionDelta = fabs(spotLightPositions[i] - spotLightPositions[j]);
+            if(positionDelta < spotLightPositionDeltas[i])
+            {
+               spotLightPositionDeltas[i] = positionDelta;
+               spotLightDirectionsSame[i] = (m_movementSources[i]->getIncr() > 0.0) == (m_movementSources[j]->getIncr() > 0.0);
+               otherSpotLightIndex[i] = j;
+            }
+         }
+      }
+   }
+
+   // Update the Spot Light positions.
    for(size_t i = 0; i < m_movementSources.size(); ++i)
    {
-      if(m_brightMoveSpeedModRandNumGen->getNext() < 0.02) // 2% chance of hitting
+      if(spotLightPositionDeltas[i] < TOO_CLOSE_DISTANCE) // Is this Spot Light is too close to another Spot Light?
       {
-         m_movementSources[i]->scaleIncr(m_brightMoveSpeedModGen->getNext());
+         float scalar = (TOO_CLOSE_DISTANCE - spotLightPositionDeltas[i]) / TOO_CLOSE_DISTANCE; // The close the 2 spot lights are the closer to 1.0 this will be.
+         float randNum = m_brightMoveSpeedModRandNumGen->getNext();
+         size_t indexToMod = (m_brightMoveSpeedModRandNumGen->getNext() < 0.5) ? i : otherSpotLightIndex[i];
+         if(spotLightDirectionsSame[i] && (randNum < (0.01 * scalar)))
+         {
+            // The Spot Lights that are too close are moving in the same direction. 
+            m_movementSources[indexToMod]->negateIncr();
+         }
+         else if(randNum < (0.20 * scalar))
+         {
+            float directionScalar = (m_movementSources[indexToMod]->getIncr() > 0.0) ? 1.0 : -1.0;
+            m_movementSources[indexToMod]->scaleIncr(1.5 * directionScalar); // 1.5 of nominal speed.
+         }
+      }
+      else if(m_brightMoveSpeedModRandNumGen->getNext() < 0.02) // 2% chance of hitting
+      {
+         m_movementSources[i]->scaleIncr(m_brightMoveSpeedModGen[i]->getNext());
       }
    }
 }
