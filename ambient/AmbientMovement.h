@@ -197,15 +197,20 @@ class RandNegateTransform : public TransformBase<T>
 {
    // Randomly negates the input value (i.e. half the time the output will be -input)
 public:
-   RandNegateTransform():m_dist(0,1){}
+   RandNegateTransform(double chanceForNegateChange = 0.5):m_dist(0.0,1.0),m_chanceForNegateChange(chanceForNegateChange){}
    virtual ~RandNegateTransform(){}
    virtual T transform(T input) override
    {
-      return m_dist(TransformBase<T>::m_randGen) ? input : -input;
+      bool doNegateChange = (m_dist(TransformBase<T>::m_randGen) <= m_chanceForNegateChange);
+      if(doNegateChange)
+         m_prevNegateValue = !m_prevNegateValue;
+      return  m_prevNegateValue ? input : -input;
    }
    RandNegateTransform(RandNegateTransform const&) = delete; void operator=(RandNegateTransform const&) = delete; // delete a bunch of constructors.
 private:
-   std::uniform_int_distribution<int> m_dist;
+   std::uniform_real_distribution<double> m_dist;
+   double m_chanceForNegateChange;
+   bool m_prevNegateValue = false;
 };
 ////////////////////////////////////////////////////////////////////////////////
 template<class T>
