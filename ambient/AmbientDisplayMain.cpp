@@ -1,4 +1,4 @@
-/* Copyright 2023 Dan Williams. All Rights Reserved.
+/* Copyright 2023 - 2024 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -26,7 +26,7 @@
 #include "smartPlotMessage.h" // Debug Plotting
 
 // Common Modifications
-static constexpr float GRADIENTS_TO_DISPLAY_AT_A_TIME = 0.5;
+static constexpr float GRADIENTS_TO_DISPLAY_AT_A_TIME = 1.0; // 1.0 works best for rainbow. 0.5 works best for Christmas.
 static constexpr float GRADIENTS_SPEED_SCALAR = 0.1;
 
 // LED Stuff
@@ -109,7 +109,7 @@ static void displayGradient(ColorGradient::tGradient& gradient, size_t numDispla
 
 int main(int argc, char *argv[])
 {
-   smartPlot_createFlushThread_withPriorityPolicy(200, 30, SCHED_FIFO);
+   // smartPlot_createFlushThread_withPriorityPolicy(200, 30, SCHED_FIFO);
 
    // Setup Signal Handler for ctrl+c
    signal(SIGINT, signalHandler);
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
    /////////////////////////////////////////////////////////////////////////////
    // Setup settings.
    /////////////////////////////////////////////////////////////////////////////
-   auto gradient = ColorGradient::GetRainbowGradient(10, 0.6);
+   auto gradient = ColorGradient::GetRainbowGradient(10, 1.0);
    if(argc > 1)
    {
       parseCmdLineArgs(argc, argv);
