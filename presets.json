@@ -165,5 +165,94 @@
 			"reach" : 0.25,
 			"position" : 1.0
 		}
-	}	
+	},
+	"6_valentines" : 
+	{
+		"0 red" : 
+		{
+			"hue" : 0.0010005454532802105,
+			"lightness" : 1.0,
+			"position" : 0.0,
+			"reach" : 0.0078125,
+			"saturation" : 0.0
+		},
+		"1 pink" : 
+		{
+			"hue" : 0.9449998140335083,
+			"lightness" : 1.0,
+			"position" : 0.36874991655349731,
+			"reach" : 0.0078125,
+			"saturation" : 1.0
+		},
+		"2 white" : 
+		{
+			"hue" : 0.0,
+			"lightness" : 1.0,
+			"position" : 1.0,
+			"reach" : 0.20781251788139343,
+			"saturation" : 1.0
+		}
+	},
+	"7_st_paddies" : 
+	{
+		"0 green" : 
+		{
+			"hue" : 0.31299901008605957,
+			"lightness" : 1.0,
+			"position" : 0.0,
+			"reach" : 0.20000000298023224,
+			"saturation" : 1.0
+		},
+		"1 light green" : 
+		{
+			"hue" : 0.25200051069259644,
+			"lightness" : 1.0,
+			"position" : 0.74531245231628418,
+			"reach" : 0.0078125,
+			"saturation" : 1.0
+		},
+		"2 white" : 
+		{
+			"hue" : 0.71200001239776611,
+			"lightness" : 1.0,
+			"position" : 0.86875009536743164,
+			"reach" : 0.0078125,
+			"saturation" : 0.0
+		},
+		"3 yellow" : 
+		{
+			"hue" : 0.096999913454055786,
+			"lightness" : 1.0,
+			"position" : 1.0,
+			"reach" : 0.11480572819709778,
+			"saturation" : 1.0
+		}
+	},
+	"8 fall" : 
+	{
+		"0 orange" : 
+		{
+			"hue" : 0.012999009341001511,
+			"lightness" : 1.0,
+			"position" : 0.0,
+			"reach" : 0.20000000298023224,
+			"saturation" : 1.0
+		},
+		"1 yellow" : 
+		{
+			"hue" : 0.098000288009643555,
+			"lightness" : 1.0,
+			"position" : 0.60953140258789062,
+			"reach" : 0.20781251788139343,
+			"saturation" : 1.0
+		},
+		"2 green" : 
+		{
+			"hue" : 0.31199991703033447,
+			"lightness" : 1.0,
+			"position" : 1.0,
+			"reach" : 0.17849583923816681,
+			"saturation" : 1.0
+		}
+	}
 }
