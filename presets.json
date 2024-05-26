@@ -1,5 +1,5 @@
 {
-	"0_xmas" : 
+	"xmas" : 
 	{
 		"0" : 
 		{
@@ -26,7 +26,7 @@
 			"position" : 1.0
 		}
 	},
-	"2_halloween" : 
+	"halloween" : 
 	{
 		"0" : 
 		{
@@ -61,7 +61,7 @@
 			"position" : 1.0
 		}
 	},
-	"3_merica" : 
+	"merica" : 
 	{
 		"0" : 
 		{
@@ -88,7 +88,7 @@
 			"position" : 1.0
 		}
 	},
-	"4_rainbow" : 
+	"rainbow" : 
 	{
 		"0" : 
 		{
@@ -131,7 +131,7 @@
 			"position" : 1.0
 		}
 	},
-	"5_fire" : 
+	"fire" : 
 	{
 		"0 light purple" : 
 		{
@@ -166,7 +166,7 @@
 			"position" : 1.0
 		}
 	},
-	"6_valentines" : 
+	"valentines" : 
 	{
 		"0 red" : 
 		{
@@ -193,7 +193,7 @@
 			"saturation" : 1.0
 		}
 	},
-	"7_st_paddies" : 
+	"st_paddies" : 
 	{
 		"0 green" : 
 		{
@@ -220,7 +220,7 @@
 			"saturation" : 1.0
 		}
 	},
-	"8 fall" : 
+	"fall" : 
 	{
 		"0 orange" : 
 		{

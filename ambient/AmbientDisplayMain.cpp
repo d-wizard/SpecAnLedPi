@@ -20,14 +20,11 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string>
+#include <map>
 #include "ledStrip.h"
 #include "SaveRestore.h"
 #include "AmbDisp3SpotLights.h"
 #include "smartPlotMessage.h" // Debug Plotting
-
-// Common Modifications
-static constexpr float GRADIENTS_TO_DISPLAY_AT_A_TIME = 1.0; // 1.0 works best for rainbow. 0.5 works best for Christmas.
-static constexpr float GRADIENTS_SPEED_SCALAR = 0.1;
 
 // LED Stuff
 #define DEFAULT_NUM_LEDS (296)
@@ -42,6 +39,26 @@ static int g_presetGradIndex = -1;
 
 // Gradient Display
 static bool g_gradDisplay_displayGradient = false;
+
+////////////////////////////////////////////////////////////////////////////////
+typedef struct
+{
+   float gradToDisplayAtATime; // 1.0 works best for rainbow. 0.5 works best for Christmas.
+   float gradSpeedScalar; // 0.1 is a good default
+   bool  gradMirror;
+}tAmbGradSettings;
+static const tAmbGradSettings DEFAULT_GRAD_SETTINGS = {0.5, 0.1, true};
+static const std::map<std::string, tAmbGradSettings> GRAD_SETTINGS = {
+   {"xmas",       DEFAULT_GRAD_SETTINGS},
+   {"halloween",  DEFAULT_GRAD_SETTINGS},
+   {"merica",     DEFAULT_GRAD_SETTINGS},
+   {"rainbow",    {1.0, 0.1, false}},
+   {"fire",       DEFAULT_GRAD_SETTINGS},
+   {"valentines", DEFAULT_GRAD_SETTINGS},
+   {"st_paddies", DEFAULT_GRAD_SETTINGS},
+   {"fall",       DEFAULT_GRAD_SETTINGS}
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -119,6 +136,7 @@ int main(int argc, char *argv[])
    /////////////////////////////////////////////////////////////////////////////
    auto gradient = ColorGradient::GetRainbowGradient(10, 1.0);
    std::string gradName = "GetRainbowGradient";
+   tAmbGradSettings gradSettings = DEFAULT_GRAD_SETTINGS;
    if(argc > 1)
    {
       parseCmdLineArgs(argc, argv);
@@ -131,6 +149,13 @@ int main(int argc, char *argv[])
       }
       gradient = ColorGradient::ConvertToZeroReach(gradient); // The Ambient Display wants gradients with the reach value set to zero.
       gradName = g_saveRestoreJson->getGradName();
+
+      // Get the gradient specific settings (using the gradient name as the key).
+      auto match = GRAD_SETTINGS.find(gradName);
+      if(match != GRAD_SETTINGS.end())
+      {
+         gradSettings = match->second;
+      }
    }
 
    /////////////////////////////////////////////////////////////////////////////
@@ -147,7 +172,7 @@ int main(int argc, char *argv[])
    else
    {
       // Normal Mode.
-      g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient, GRADIENTS_TO_DISPLAY_AT_A_TIME, GRADIENTS_SPEED_SCALAR, false, gradName);
+      g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient, gradSettings.gradToDisplayAtATime, gradSettings.gradSpeedScalar, gradSettings.gradMirror, gradName);
    }
 
    /////////////////////////////////////////////////////////////////////////////
