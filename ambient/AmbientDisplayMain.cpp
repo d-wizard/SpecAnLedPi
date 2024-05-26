@@ -49,14 +49,15 @@ typedef struct
 }tAmbGradSettings;
 static const tAmbGradSettings DEFAULT_GRAD_SETTINGS = {0.5, 0.1, true};
 static const std::map<std::string, tAmbGradSettings> GRAD_SETTINGS = {
-   {"xmas",       DEFAULT_GRAD_SETTINGS},
-   {"halloween",  DEFAULT_GRAD_SETTINGS},
-   {"merica",     DEFAULT_GRAD_SETTINGS},
-   {"rainbow",    {1.0, 0.1, false}},
-   {"fire",       DEFAULT_GRAD_SETTINGS},
-   {"valentines", DEFAULT_GRAD_SETTINGS},
-   {"st_paddies", DEFAULT_GRAD_SETTINGS},
-   {"fall",       DEFAULT_GRAD_SETTINGS}
+   {"xmas",           DEFAULT_GRAD_SETTINGS},
+   {"halloween",      DEFAULT_GRAD_SETTINGS},
+   {"merica",         DEFAULT_GRAD_SETTINGS},
+   {"rainbow",        {1.0, 0.1, false}},
+   {"rainbow_pastel", {2.0, 1.0, false}},
+   {"fire",           DEFAULT_GRAD_SETTINGS},
+   {"valentines",     DEFAULT_GRAD_SETTINGS},
+   {"st_paddies",     DEFAULT_GRAD_SETTINGS},
+   {"fall",           DEFAULT_GRAD_SETTINGS}
 };
 
 

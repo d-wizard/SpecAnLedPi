@@ -131,6 +131,49 @@
 			"position" : 1.0
 		}
 	},
+	"rainbow_pastel" : 
+	{
+		"0" : 
+		{
+			"hue" : 0.741,
+			"saturation" : 0.7,
+			"lightness" : 1.0,
+			"reach" : 0.0078125,
+			"position" : 0.0
+		},
+		"1" : 
+		{
+			"hue" : 0.691,
+			"saturation" : 0.7,
+			"lightness" : 1.0,
+			"reach" : 0.0078125,
+			"position" : 0.119531
+		},
+		"2" : 
+		{
+			"hue" : 0.35,
+			"saturation" : 0.7,
+			"lightness" : 1.0,
+			"reach" : 0.0078125,
+			"position" : 0.373498
+		},
+		"3" : 
+		{
+			"hue" : 0.25,
+			"saturation" : 0.7,
+			"lightness" : 1.0,
+			"reach" : 0.0078125,
+			"position" : 0.596936
+		},
+		"4" : 
+		{
+			"hue" : 0,
+			"saturation" : 0.7,
+			"lightness" : 1.0,
+			"reach" : 0.124099,
+			"position" : 1.0
+		}
+	},
 	"fire" : 
 	{
 		"0 light purple" : 
