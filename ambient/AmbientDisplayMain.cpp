@@ -118,6 +118,7 @@ int main(int argc, char *argv[])
    // Setup settings.
    /////////////////////////////////////////////////////////////////////////////
    auto gradient = ColorGradient::GetRainbowGradient(10, 1.0);
+   std::string gradName = "GetRainbowGradient";
    if(argc > 1)
    {
       parseCmdLineArgs(argc, argv);
@@ -129,6 +130,7 @@ int main(int argc, char *argv[])
             gradient = g_saveRestoreJson->restore_gradientNext();
       }
       gradient = ColorGradient::ConvertToZeroReach(gradient); // The Ambient Display wants gradients with the reach value set to zero.
+      gradName = g_saveRestoreJson->getGradName();
    }
 
    /////////////////////////////////////////////////////////////////////////////
@@ -145,7 +147,7 @@ int main(int argc, char *argv[])
    else
    {
       // Normal Mode.
-      g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient, GRADIENTS_TO_DISPLAY_AT_A_TIME, GRADIENTS_SPEED_SCALAR);
+      g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient, GRADIENTS_TO_DISPLAY_AT_A_TIME, GRADIENTS_SPEED_SCALAR, false, gradName);
    }
 
    /////////////////////////////////////////////////////////////////////////////

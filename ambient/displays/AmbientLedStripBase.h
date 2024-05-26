@@ -1,4 +1,4 @@
-/* Copyright 2023 Dan Williams. All Rights Reserved.
+/* Copyright 2023 - 2024 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -22,6 +22,7 @@
 #include <thread>
 #include <atomic>
 #include <math.h>
+#include <string>
 #include "ledStrip.h"
 #include "colorGradient.h"
 #include "colorScale.h"
@@ -34,10 +35,10 @@ typedef float AmbDispFltType; // Use a typedef to easily switch between float an
 
 public:
    AmbientLedStripBase(std::shared_ptr<LedStrip> ledStrip):
-      AmbientLedStripBase(ledStrip, ColorGradient::GetRainbowGradient(), 1.0, true)
+      AmbientLedStripBase(ledStrip, ColorGradient::GetRainbowGradient(), 1.0, true, "DefaultRainbow")
    {
    }
-   AmbientLedStripBase(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, float gradientsToDisplayAtATime, bool forceGradientMirror):
+   AmbientLedStripBase(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, float gradientsToDisplayAtATime, bool forceGradientMirror, const std::string& gradName):
       m_ledStrip(ledStrip),
       m_gradient(gradient),
       m_numLeds(ledStrip->getNumLeds()),
@@ -50,7 +51,7 @@ public:
       m_numBrightCopies = unsigned(float(m_numGradientCopies) / gradientsToDisplayAtATime);
       m_numBrightCopies = (m_numBrightCopies < 1) ? 1 : m_numBrightCopies; // Bound.
 
-      printf("gradientsToDisplayAtATime = %f | m_numGradientCopies = %u | m_numBrightCopies = %u\n", gradientsToDisplayAtATime, m_numGradientCopies, m_numBrightCopies); fflush(stdout);
+      printf("[%s] gradientsToDisplayAtATime = %f | m_numGradientCopies = %u | m_numBrightCopies = %u\n", gradName.c_str(), gradientsToDisplayAtATime, m_numGradientCopies, m_numBrightCopies); fflush(stdout);
    }
    AmbientLedStripBase() = delete; AmbientLedStripBase(AmbientLedStripBase const&) = delete; void operator=(AmbientLedStripBase const&) = delete; // delete a bunch of constructors.
    virtual ~AmbientLedStripBase()

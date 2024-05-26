@@ -1,4 +1,4 @@
-/* Copyright 2023 Dan Williams. All Rights Reserved.
+/* Copyright 2023 - 2024 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -27,7 +27,7 @@ class AmbDisp3SpotLights : public AmbientLedStripBase
 {
 public:
    AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip);
-   AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, float gradientsToDisplayAtATime, float gradientSpeedScalar = 1.0, bool forceGradientMirror = true);
+   AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, float gradientsToDisplayAtATime, float gradientSpeedScalar, bool forceGradientMirror, const std::string& gradName);
    virtual ~AmbDisp3SpotLights();
 
 private:

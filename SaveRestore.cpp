@@ -1,4 +1,4 @@
-/* Copyright 2020, 2022 - 2023 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2022 - 2024 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -514,6 +514,34 @@ std::string SaveRestoreJson::restore_microphoneName()
    if(settingsJson.isMember("microphone_name"))
    {
       retVal = settingsJson["microphone_name"].asString();
+   }
+
+   return retVal;
+}
+
+std::string SaveRestoreJson::getGradName()
+{
+   std::string retVal = "";
+
+   std::unique_lock<std::mutex> lock(m_mutex); // Lock around all public functions (they will never call each other).
+   
+   // Get the current index
+   Json::Value settingsJson;
+   getJson(SETTINGS_JSON, settingsJson);
+   auto userGrads = getUserGradients(settingsJson);
+   auto currentIndex = settingsJson["grad_index"].asInt();
+
+   Json::Value presetJson;
+   getJson(PRESET_GRADIENT_JSON, presetJson);
+   
+   int gradIndex = 0;
+   for(auto gradItr = presetJson.begin(); gradItr != presetJson.end(); ++gradItr)
+   {
+      if(gradIndex++ == currentIndex)
+      {
+         retVal = gradItr.key().asString();
+         break;
+      }
    }
 
    return retVal;
