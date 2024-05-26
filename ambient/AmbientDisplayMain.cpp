@@ -20,9 +20,12 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string>
+#include <mutex>
+#include <condition_variable>
 #include "ledStrip.h"
 #include "SaveRestore.h"
 #include "AmbDisp3SpotLights.h"
+#include "AmbRemoteControl.h"
 #include "smartPlotMessage.h" // Debug Plotting
 
 // Common Modifications
@@ -43,6 +46,13 @@ static int g_presetGradIndex = -1;
 // Gradient Display
 static bool g_gradDisplay_displayGradient = false;
 
+// Remote Control
+static std::unique_ptr<AmbRemoteControl> g_remoteCtrl_worker;
+static bool g_remoteCtrl_msgReady = false;
+static std::mutex g_remoteCtrl_mutex;
+static std::condition_variable g_remoteCtrl_condVar;
+/*static*/ void newRemoteCtrlMsgReady();
+
 ////////////////////////////////////////////////////////////////////////////////
 
 static void cleanUpBeforeExit()
@@ -59,6 +69,15 @@ static void signalHandler(int signum)
 {
    cleanUpBeforeExit();
    exit(signum); 
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+/*static*/ void newRemoteCtrlMsgReady()
+{
+   std::lock_guard<std::mutex> lock(g_remoteCtrl_mutex);
+   g_remoteCtrl_msgReady = true;
+   g_remoteCtrl_condVar.notify_all();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -117,11 +136,11 @@ int main(int argc, char *argv[])
    /////////////////////////////////////////////////////////////////////////////
    // Setup settings.
    /////////////////////////////////////////////////////////////////////////////
+   g_saveRestoreJson = std::make_unique<SaveRestoreJson>(g_settingsJsonPath, g_presetJsonPath);
    auto gradient = ColorGradient::GetRainbowGradient(10, 1.0);
    if(argc > 1)
    {
       parseCmdLineArgs(argc, argv);
-      g_saveRestoreJson = std::make_unique<SaveRestoreJson>(g_settingsJsonPath, g_presetJsonPath);
       gradient = g_saveRestoreJson->restore_gradient();
       if(g_presetGradIndex > 0)
       {
@@ -131,30 +150,31 @@ int main(int argc, char *argv[])
       gradient = ColorGradient::ConvertToZeroReach(gradient); // The Ambient Display wants gradients with the reach value set to zero.
    }
 
-   /////////////////////////////////////////////////////////////////////////////
-   // Setup LED strip.
-   /////////////////////////////////////////////////////////////////////////////
-   g_ledStrip.reset(new LedStrip(DEFAULT_NUM_LEDS, LedStrip::GRB));
-   g_ledStrip->clear();
-
-   if(g_gradDisplay_displayGradient)
-   {
-      // Special Mode. Just display the gradient.
-      displayGradient(gradient, unsigned(float(DEFAULT_NUM_LEDS)/4.0), DEFAULT_NUM_LEDS);
-   }
-   else
-   {
-      // Normal Mode.
-      g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient, GRADIENTS_TO_DISPLAY_AT_A_TIME, GRADIENTS_SPEED_SCALAR);
-   }
-
-   /////////////////////////////////////////////////////////////////////////////
-   // Main Loop
-   /////////////////////////////////////////////////////////////////////////////
    while(1)
    {
-      // Do nothing
-      std::this_thread::sleep_for(std::chrono::hours(240));
+      /////////////////////////////////////////////////////////////////////////////
+      // Setup LED strip.
+      /////////////////////////////////////////////////////////////////////////////
+      g_ledStrip.reset(new LedStrip(DEFAULT_NUM_LEDS, LedStrip::GRB));
+      g_ledStrip->clear();
+
+      if(g_gradDisplay_displayGradient)
+      {
+         // Special Mode. Just display the gradient.
+         displayGradient(gradient, unsigned(float(DEFAULT_NUM_LEDS)/4.0), DEFAULT_NUM_LEDS);
+      }
+      else
+      {
+         // Normal Mode.
+         g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient, GRADIENTS_TO_DISPLAY_AT_A_TIME, GRADIENTS_SPEED_SCALAR);
+      }
+
+      // Wait for remote control message
+      {
+         std::unique_lock<std::mutex> lock(g_remoteCtrl_mutex);
+         g_remoteCtrl_condVar.wait(lock);
+      }
    }
+
    return 0;
 }
