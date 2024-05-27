@@ -120,7 +120,8 @@ if crossCompilePrefix == None: # If not cross compiling, build the final binary
    srcNonPortable = [
       'ambient/AmbientDisplayMain.cpp',
       'ambient/AmbientDisplay.cpp',
-      'ambient/displays/AmbDisp3SpotLights.cpp'
+      'ambient/displays/AmbDisp3SpotLights.cpp',
+      'ambient/AmbRemoteControl.cpp'
       ]
 
    extraIncludes = [

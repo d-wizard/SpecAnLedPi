@@ -21,9 +21,12 @@
 #include <signal.h>
 #include <string>
 #include <map>
+#include <mutex>
+#include <condition_variable>
 #include "ledStrip.h"
 #include "SaveRestore.h"
 #include "AmbDisp3SpotLights.h"
+#include "AmbRemoteControl.h"
 #include "smartPlotMessage.h" // Debug Plotting
 
 // LED Stuff
@@ -39,6 +42,17 @@ static int g_presetGradIndex = -1;
 
 // Gradient Display
 static bool g_gradDisplay_displayGradient = false;
+
+// Remote Control
+static std::unique_ptr<AmbRemoteControl> g_remoteCtrl_worker;
+static const uint16_t g_remoteCtrl_socketPort = 2070;
+static bool g_remoteCtrl_msgReady = false;
+static std::mutex g_remoteCtrl_mutex;
+static std::condition_variable g_remoteCtrl_condVar;
+static void newRemoteCtrlMsgReady();
+
+// Alive
+static bool g_stayAlive = true;
 
 ////////////////////////////////////////////////////////////////////////////////
 typedef struct
@@ -76,6 +90,8 @@ static void cleanUpBeforeExit()
 static void signalHandler(int signum)
 {
    cleanUpBeforeExit();
+   g_stayAlive = false;
+   newRemoteCtrlMsgReady(); // Fake out remote control message to wait up main loop.
    exit(signum); 
 }
 
@@ -125,6 +141,101 @@ static void displayGradient(ColorGradient::tGradient& gradient, size_t numDispla
 
 ////////////////////////////////////////////////////////////////////////////////
 
+static void setPresetGradByIndex(int index, ColorGradient::tGradient& gradient, std::string& gradName, tAmbGradSettings& gradSettings)
+{
+   gradient = g_saveRestoreJson->restore_gradient();
+   if(index > 0)
+   {
+      for(int i = 0; i < index; ++i)
+         gradient = g_saveRestoreJson->restore_gradientNext();
+   }
+   else if(index < 0)
+   {
+      index = -index; // Negate and call restore_gradientPrev
+      for(int i = 0; i < index; ++i)
+         gradient = g_saveRestoreJson->restore_gradientPrev();
+   }
+   gradient = ColorGradient::ConvertToZeroReach(gradient); // The Ambient Display wants gradients with the reach value set to zero.
+   gradName = g_saveRestoreJson->getGradName();
+
+   // Get the gradient specific settings (using the gradient name as the key).
+   auto match = GRAD_SETTINGS.find(gradName);
+   if(match != GRAD_SETTINGS.end())
+      gradSettings = match->second;
+   else
+      gradSettings = DEFAULT_GRAD_SETTINGS;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+static bool setPresetGradByName(const std::string& desiredGradName, ColorGradient::tGradient& gradient, std::string& gradName, tAmbGradSettings& gradSettings)
+{
+   ColorGradient::tGradient tempGradient;
+   std::string tempGradName;
+   tAmbGradSettings tempGradSettings;
+
+   std::string origGradName;
+   setPresetGradByIndex(0, tempGradient, origGradName, tempGradSettings); // Get the current gradient name (need this to make sure not to loop forever if the desired name isn't available).
+
+   // Search through the gradients until a match is found or we looped back again.
+   bool found = (origGradName == desiredGradName);
+   while(!found && tempGradName != origGradName)
+   {
+      setPresetGradByIndex(1, tempGradient, tempGradName, tempGradSettings);
+      found = (tempGradName == desiredGradName);
+   }
+
+   // If found, set return values.
+   if(found)
+   {
+      gradient = tempGradient;
+      gradName = desiredGradName;
+      gradSettings = tempGradSettings;
+   }
+   return found;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+static void newRemoteCtrlMsgReady()
+{
+   std::lock_guard<std::mutex> lock(g_remoteCtrl_mutex);
+   g_remoteCtrl_msgReady = true;
+   g_remoteCtrl_condVar.notify_all();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+static void processNewRemoteCtrlMsgs(ColorGradient::tGradient& gradient, std::string& gradName, tAmbGradSettings& gradSettings)
+{
+   bool lastCmd = false;
+   while(!lastCmd)
+   {
+      AmbRemoteControl::tCmdAndVal cmdVal;
+      lastCmd = g_remoteCtrl_worker->getRemoteCmd(cmdVal);
+      switch(cmdVal.cmd)
+      {
+         case AmbRemoteControl::eCommands::E_GRADIENT_POS:
+            setPresetGradByIndex(1, gradient, gradName, gradSettings);
+         break;
+         case AmbRemoteControl::eCommands::E_GRADIENT_NEG:
+            setPresetGradByIndex(-1, gradient, gradName, gradSettings);
+         break;
+         case AmbRemoteControl::eCommands::E_GRADIENT_NAME:
+            setPresetGradByName(cmdVal.val_str, gradient, gradName, gradSettings);
+         break;
+         case AmbRemoteControl::eCommands::E_INVALID_COMMAND:
+            printf("[%s] - E_INVALID_COMMAND\n", __func__);
+         break;
+         default:
+            printf("[%s] - Unsupported Cmd (%d)\n", __func__, (int)cmdVal.cmd);
+         break;
+      }
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 int main(int argc, char *argv[])
 {
    // smartPlot_createFlushThread_withPriorityPolicy(200, 30, SCHED_FIFO);
@@ -135,54 +246,55 @@ int main(int argc, char *argv[])
    /////////////////////////////////////////////////////////////////////////////
    // Setup settings.
    /////////////////////////////////////////////////////////////////////////////
+   g_saveRestoreJson = std::make_unique<SaveRestoreJson>(g_settingsJsonPath, g_presetJsonPath);
    auto gradient = ColorGradient::GetRainbowGradient(10, 1.0);
    std::string gradName = "GetRainbowGradient";
    tAmbGradSettings gradSettings = DEFAULT_GRAD_SETTINGS;
    if(argc > 1)
    {
       parseCmdLineArgs(argc, argv);
-      g_saveRestoreJson = std::make_unique<SaveRestoreJson>(g_settingsJsonPath, g_presetJsonPath);
-      gradient = g_saveRestoreJson->restore_gradient();
-      if(g_presetGradIndex > 0)
-      {
-         for(int i = 0; i < g_presetGradIndex; ++i)
-            gradient = g_saveRestoreJson->restore_gradientNext();
-      }
-      gradient = ColorGradient::ConvertToZeroReach(gradient); // The Ambient Display wants gradients with the reach value set to zero.
-      gradName = g_saveRestoreJson->getGradName();
-
-      // Get the gradient specific settings (using the gradient name as the key).
-      auto match = GRAD_SETTINGS.find(gradName);
-      if(match != GRAD_SETTINGS.end())
-      {
-         gradSettings = match->second;
-      }
+      setPresetGradByIndex(g_presetGradIndex, gradient, gradName, gradSettings);
    }
+
+   // Start Remote Control
+   g_remoteCtrl_worker = std::make_unique<AmbRemoteControl>(g_remoteCtrl_socketPort, newRemoteCtrlMsgReady);
 
    /////////////////////////////////////////////////////////////////////////////
    // Setup LED strip.
    /////////////////////////////////////////////////////////////////////////////
-   g_ledStrip.reset(new LedStrip(DEFAULT_NUM_LEDS, LedStrip::GRB));
+   g_ledStrip = std::make_shared<LedStrip>(DEFAULT_NUM_LEDS, LedStrip::GRB);
    g_ledStrip->clear();
-
-   if(g_gradDisplay_displayGradient)
-   {
-      // Special Mode. Just display the gradient.
-      displayGradient(gradient, unsigned(float(DEFAULT_NUM_LEDS)/4.0), DEFAULT_NUM_LEDS);
-   }
-   else
-   {
-      // Normal Mode.
-      g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient, gradSettings.gradToDisplayAtATime, gradSettings.gradSpeedScalar, gradSettings.gradMirror, gradName);
-   }
-
+   
    /////////////////////////////////////////////////////////////////////////////
    // Main Loop
    /////////////////////////////////////////////////////////////////////////////
-   while(1)
+   while(g_stayAlive)
    {
-      // Do nothing
-      std::this_thread::sleep_for(std::chrono::hours(240));
+      g_ledStrip->clear();
+      g_activeAmbient.reset();
+
+      if(g_gradDisplay_displayGradient)
+      {
+         // Special Mode. Just display the gradient.
+         displayGradient(gradient, unsigned(float(DEFAULT_NUM_LEDS)/4.0), DEFAULT_NUM_LEDS);
+      }
+      else
+      {
+         // Normal Mode.
+         g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient, gradSettings.gradToDisplayAtATime, gradSettings.gradSpeedScalar, gradSettings.gradMirror, gradName);
+      }
+
+      // Wait for remote control message
+      {
+         std::unique_lock<std::mutex> lock(g_remoteCtrl_mutex);
+         g_remoteCtrl_condVar.wait(lock);
+         if(g_stayAlive)
+         {
+            lock.unlock();
+            processNewRemoteCtrlMsgs(gradient, gradName, gradSettings);
+         }
+      }
    }
+
    return 0;
 }
