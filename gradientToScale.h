@@ -1,4 +1,4 @@
-/* Copyright 2020, 2023 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2023 - 2024 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -28,8 +28,8 @@ namespace Convert
 
    ColorScale::tColorScale convertGradientToScale(const ColorGradient::tGradient& gradPoints);
 
-   SpecAnLedTypes::tRgbColor convertGradientPointToRGB(ColorGradient::tGradientPoint in);
+   SpecAnLedTypes::tRgbColor convertGradientPointToRGB(const ColorGradient::tGradientPoint in);
 
-   ColorGradient::tGradient reverseGradient(ColorGradient::tGradient& in);
+   ColorGradient::tGradient reverseGradient(const ColorGradient::tGradient& in);
 }
 
