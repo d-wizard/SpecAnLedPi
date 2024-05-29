@@ -251,6 +251,15 @@ void AmbientDisplayGradient::shift(float shiftValue)
    }
 }
 
+void AmbientDisplayGradient::reverseGradient()
+{
+   m_grad_orig = Convert::reverseGradient(m_grad_orig);
+   m_grad_current = m_grad_orig;
+   float oldGradShiftVal = m_gradShiftVal;
+   m_gradShiftVal = 0;
+   shift(-oldGradShiftVal);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -437,6 +446,11 @@ void AmbientDisplay::toRgbVect(SpecAnLedTypes::tRgbVector& ledColors)
    }
    smartPlot_2D(positionPlot.data(), E_FLOAT_32, brightnessPlot.data(), E_FLOAT_32, m_numLeds, m_numLeds, 0, "Brightness", "Val");
 #endif
+}
+
+void AmbientDisplay::reverseGradient()
+{
+   m_gradient.reverseGradient();
 }
 
 ColorScale::tBrightnessScale& AmbientDisplay::combineBrightnessValues(float minBetweenPoints)

@@ -47,6 +47,7 @@ public:
 
    void shift(float shiftValue); // Shift values should be between -1 and 1
    ColorGradient::tGradient& get(){return m_grad_current;}
+   void reverseGradient();
 private:
    ColorGradient::tGradient m_grad_orig;
    ColorGradient::tGradient m_grad_current;
@@ -81,6 +82,7 @@ public:
    float brightness_shift(float shiftValue, size_t index = 0); // Shift values should be between -1 and 1. Return the current shift value.
 
    void toRgbVect(SpecAnLedTypes::tRgbVector& ledColors);
+   void reverseGradient();
 private:
    size_t m_numGenPoints;
    size_t m_numLeds;
