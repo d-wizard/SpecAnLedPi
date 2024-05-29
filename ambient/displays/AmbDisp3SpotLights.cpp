@@ -132,8 +132,21 @@ void AmbDisp3SpotLights::updateLedStrip()
 {
    static constexpr float TOO_CLOSE_DISTANCE = 0.05; // 5% of the LED strip.
 
+   // Run Rate Parameters
+   static constexpr double RUNS_PER_SEC = 100;
+   static constexpr std::chrono::nanoseconds NS_BETWEEN_RUNS( int64_t(1e9 / RUNS_PER_SEC) );
+   static constexpr double PER_SEC_LIKELIHOOD = 1.0 / RUNS_PER_SEC;
+
    // Wait (don't want a tight loop)
-   std::this_thread::sleep_for(std::chrono::milliseconds(10));
+   std::this_thread::sleep_for(NS_BETWEEN_RUNS);
+
+   // Every once in a while, reverse the gradient.
+   if(getRandNum() < (PER_SEC_LIKELIHOOD / 10000.0))
+      m_ambDisp->reverseGradient();
+
+   // Every once in a while, reverse the gradient movement direction.
+   if(getRandNum() < (PER_SEC_LIKELIHOOD / 10000.0))
+      m_gradientSpeedScalar *= -1.0;
 
    // Update the LED Strip.
    m_ambDisp->toRgbVect(m_ledColorPattern);
