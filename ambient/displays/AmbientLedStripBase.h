@@ -23,6 +23,8 @@
 #include <atomic>
 #include <math.h>
 #include <string>
+#include <random>
+#include <chrono>
 #include "ledStrip.h"
 #include "colorGradient.h"
 #include "colorScale.h"
@@ -42,8 +44,11 @@ public:
       m_ledStrip(ledStrip),
       m_gradient(gradient),
       m_numLeds(ledStrip->getNumLeds()),
-      m_forceGradientMirror(forceGradientMirror)
+      m_forceGradientMirror(forceGradientMirror),
+      m_randDist(0.0, 1.0)
    {
+      m_randGen.seed(std::chrono::steady_clock::now().time_since_epoch().count()); // Seed random number generator
+
       gradientsToDisplayAtATime = gradientsToDisplayAtATime <= 0.0 ? 1.0 : gradientsToDisplayAtATime; // Avoid divide by zero and negative numbers.
       m_numGradientCopies = ceil(gradientsToDisplayAtATime);
       m_numGradientCopies = (forceGradientMirror && (m_numGradientCopies & 1)) ? m_numGradientCopies + 1 : m_numGradientCopies; // If m_forceGradientMirror, make sure numGradientCopies is even.
@@ -89,9 +94,18 @@ protected:
             m_thread.join();
       }
    }
+   double getRandNum()
+   {
+      return m_randDist(m_randGen);
+   }
+
 private:
    std::thread m_thread;
    std::atomic<bool> m_threadActive {false};
+
+   // Random number generation
+   std::mt19937 m_randGen;
+   std::uniform_real_distribution<double> m_randDist;
 
    void threadFunc()
    {
