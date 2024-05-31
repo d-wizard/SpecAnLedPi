@@ -21,6 +21,7 @@
 #include <memory>
 #include <thread>
 #include <atomic>
+#include <mutex>
 #include <math.h>
 #include <string>
 #include <random>
@@ -35,6 +36,13 @@ public:
 // Types
 typedef float AmbDispFltType; // Use a typedef to easily switch between float and double.
 
+typedef struct
+{
+   double runsPerSec;
+   std::chrono::nanoseconds nsBetweenRuns;
+   double perSecLikelihood;
+}tUpdateRateParam;
+
 public:
    AmbientLedStripBase(std::shared_ptr<LedStrip> ledStrip):
       AmbientLedStripBase(ledStrip, ColorGradient::GetRainbowGradient(), 1.0, true, "DefaultRainbow")
@@ -48,6 +56,8 @@ public:
       m_randDist(0.0, 1.0)
    {
       m_randGen.seed(std::chrono::steady_clock::now().time_since_epoch().count()); // Seed random number generator
+
+      setUpdateRate(1.0); // Set default run rate.
 
       gradientsToDisplayAtATime = gradientsToDisplayAtATime <= 0.0 ? 1.0 : gradientsToDisplayAtATime; // Avoid divide by zero and negative numbers.
       m_numGradientCopies = ceil(gradientsToDisplayAtATime);
@@ -69,6 +79,23 @@ public:
    {
       m_gradient = gradient;
    }
+
+   void setUpdateRate(float rateScalar)
+   {
+      tUpdateRateParam newRate;
+      newRate.runsPerSec = 100.0 * rateScalar; // 100 Hz is default
+      newRate.nsBetweenRuns = std::chrono::nanoseconds(int64_t(1e9 / newRate.runsPerSec));
+      newRate.perSecLikelihood = 1.0 / newRate.runsPerSec;
+
+      std::lock_guard<std::mutex> lock(m_updateRate_mutex);
+      m_updateRate = newRate;
+   }
+   tUpdateRateParam getUpdateRate()
+   {
+      std::lock_guard<std::mutex> lock(m_updateRate_mutex);
+      return m_updateRate;
+   }
+
 protected:
    std::shared_ptr<LedStrip> m_ledStrip;
    ColorGradient::tGradient m_gradient;
@@ -106,6 +133,9 @@ private:
    // Random number generation
    std::mt19937 m_randGen;
    std::uniform_real_distribution<double> m_randDist;
+
+   std::mutex m_updateRate_mutex;
+   tUpdateRateParam m_updateRate;
 
    void threadFunc()
    {

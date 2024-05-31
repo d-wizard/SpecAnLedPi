@@ -40,10 +40,13 @@ AmbDisp3SpotLights::AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip):
    startThread();
 }
 
-AmbDisp3SpotLights::AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, float gradientsToDisplayAtATime, float gradientSpeedScalar, bool forceGradientMirror, const std::string& gradName):
+AmbDisp3SpotLights::AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, 
+   float gradientsToDisplayAtATime, float gradientSpeedScalar, bool forceGradientMirror, float updateRateScalar, const std::string& gradName):
    AmbientLedStripBase(ledStrip, gradient, gradientsToDisplayAtATime, forceGradientMirror, gradName),
    m_gradientSpeedScalar(gradientSpeedScalar)
 {
+   setUpdateRate(updateRateScalar);
+   
    init();
    startThread();
 }
@@ -133,19 +136,17 @@ void AmbDisp3SpotLights::updateLedStrip()
    static constexpr float TOO_CLOSE_DISTANCE = 0.05; // 5% of the LED strip.
 
    // Run Rate Parameters
-   static constexpr double RUNS_PER_SEC = 100;
-   static constexpr std::chrono::nanoseconds NS_BETWEEN_RUNS( int64_t(1e9 / RUNS_PER_SEC) );
-   static constexpr double PER_SEC_LIKELIHOOD = 1.0 / RUNS_PER_SEC;
+   auto updateRate = getUpdateRate();
 
    // Wait (don't want a tight loop)
-   std::this_thread::sleep_for(NS_BETWEEN_RUNS);
+   std::this_thread::sleep_for(updateRate.nsBetweenRuns);
 
    // Every once in a while, reverse the gradient.
-   if(getRandNum() < (PER_SEC_LIKELIHOOD / 10000.0))
+   if(getRandNum() < (updateRate.perSecLikelihood / 10000.0))
       m_ambDisp->reverseGradient();
 
    // Every once in a while, reverse the gradient movement direction.
-   if(getRandNum() < (PER_SEC_LIKELIHOOD / 10000.0))
+   if(getRandNum() < (updateRate.perSecLikelihood / 10000.0))
       m_gradientSpeedScalar *= -1.0;
 
    // Update the LED Strip.

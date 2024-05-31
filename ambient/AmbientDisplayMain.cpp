@@ -59,15 +59,16 @@ typedef struct
 {
    float gradToDisplayAtATime; // 1.0 works best for rainbow. 0.5 works best for Christmas.
    float gradSpeedScalar; // 0.1 is a good default
+   float updateRateScalar; // 1.0 = default
    bool  gradMirror;
 }tAmbGradSettings;
-static const tAmbGradSettings DEFAULT_GRAD_SETTINGS = {2.5, 0.3, true};
+static const tAmbGradSettings DEFAULT_GRAD_SETTINGS = {2.5, 0.25, 0.5, true};
 static const std::map<std::string, tAmbGradSettings> GRAD_SETTINGS = {
    {"xmas",           DEFAULT_GRAD_SETTINGS},
    {"halloween",      DEFAULT_GRAD_SETTINGS},
    {"merica",         DEFAULT_GRAD_SETTINGS},
-   {"rainbow",        {1.0, 0.1, false}},
-   {"rainbow_pastel", {2.0, 0.3, false}},
+   {"rainbow",        {1.0, 0.1, 1.0, false}},
+   {"rainbow_pastel", {2.0, 0.3, 1.0, false}},
    {"fire",           DEFAULT_GRAD_SETTINGS},
    {"valentines",     DEFAULT_GRAD_SETTINGS},
    {"st_paddies",     DEFAULT_GRAD_SETTINGS},
@@ -281,7 +282,9 @@ int main(int argc, char *argv[])
       else
       {
          // Normal Mode.
-         g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient, gradSettings.gradToDisplayAtATime, gradSettings.gradSpeedScalar, gradSettings.gradMirror, gradName);
+         g_activeAmbient = std::make_unique<AmbDisp3SpotLights>(g_ledStrip, gradient, 
+            gradSettings.gradToDisplayAtATime, gradSettings.gradSpeedScalar, 
+            gradSettings.gradMirror, gradSettings.updateRateScalar, gradName);
       }
 
       // Wait for remote control message

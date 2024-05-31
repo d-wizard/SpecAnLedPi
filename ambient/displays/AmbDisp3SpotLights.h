@@ -19,6 +19,7 @@
 #pragma once
 #include <memory>
 #include <vector>
+#include <chrono>
 #include "AmbientLedStripBase.h"
 #include "AmbientDisplay.h"
 #include "AmbientMovement.h"
@@ -27,7 +28,7 @@ class AmbDisp3SpotLights : public AmbientLedStripBase
 {
 public:
    AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip);
-   AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, float gradientsToDisplayAtATime, float gradientSpeedScalar, bool forceGradientMirror, const std::string& gradName);
+   AmbDisp3SpotLights(std::shared_ptr<LedStrip> ledStrip, const ColorGradient::tGradient& gradient, float gradientsToDisplayAtATime, float gradientSpeedScalar, bool forceGradientMirror, float updateRateScalar, const std::string& gradName);
    virtual ~AmbDisp3SpotLights();
 
 private:
