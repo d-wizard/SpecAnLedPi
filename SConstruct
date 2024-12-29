@@ -121,7 +121,8 @@ if crossCompilePrefix == None: # If not cross compiling, build the final binary
       'ambient/AmbientDisplayMain.cpp',
       'ambient/AmbientDisplay.cpp',
       'ambient/displays/AmbDisp3SpotLights.cpp',
-      'ambient/AmbRemoteControl.cpp'
+      'ambient/AmbRemoteControl.cpp',
+      'ambient/SpotLightStrip.cpp'
       ]
 
    extraIncludes = [
