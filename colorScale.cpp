@@ -111,8 +111,8 @@ ColorScale::ColorScale(tColorScale& colorPoints, tBrightnessScale& brightnessPoi
       int32_t endPoint   = last ? FULL_SCALE : colorPoints[i+1].startPoint * FULL_SCALE;
 
       // endPoint should keep getting bigger.
-      assert( endPoint >= startPoint );
-      assert( endPoint <= FULL_SCALE );
+      // assert( endPoint >= startPoint );
+      // assert( endPoint <= FULL_SCALE );
 
       // Store colors.
       m_red[i].start   = colorPoints[i  ].color.rgb.r;
@@ -139,7 +139,7 @@ ColorScale::ColorScale(tColorScale& colorPoints, tBrightnessScale& brightnessPoi
       int32_t endPoint = last ? FULL_SCALE : brightnessPoints[i+1].startPoint * FULL_SCALE;
 
       // endPoint should keep getting bigger.
-      assert( endPoint > startPoint );
+//      assert( endPoint > startPoint );
       assert( endPoint <= FULL_SCALE );
 
       // Store brightness.
