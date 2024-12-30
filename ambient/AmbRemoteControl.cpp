@@ -153,6 +153,8 @@ void AmbRemoteControl::processPacket(char* packetPtr, unsigned int packetSize)
       cmdAndVal.cmd = eCommands::E_DISPLAY_CHANGE_NEG;
    else if(cmdStr == "E_REVERSE_GRADIENT_TOGGLE")
       cmdAndVal.cmd = eCommands::E_REVERSE_GRADIENT_TOGGLE;
+   else if(cmdStr == "E_TOGGLE_SPOTLIGHT")
+      cmdAndVal.cmd = eCommands::E_TOGGLE_SPOTLIGHT;
    else
    {
       // Check for Gain / Brightness values.

@@ -51,6 +51,7 @@ public:
       E_REVERSE_GRADIENT_TOGGLE,
       E_GAIN_VALUE,
       E_BRIGHT_VALUE,
+      E_TOGGLE_SPOTLIGHT,
       E_INVALID_COMMAND
    };
 

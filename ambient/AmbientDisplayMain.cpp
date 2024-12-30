@@ -27,6 +27,7 @@
 #include "SaveRestore.h"
 #include "AmbDisp3SpotLights.h"
 #include "AmbRemoteControl.h"
+#include "SpotLightStrip.h"
 #include "smartPlotMessage.h" // Debug Plotting
 
 // LED Stuff
@@ -34,6 +35,7 @@
 static std::shared_ptr<LedStrip> g_ledStrip;
 
 static std::unique_ptr<AmbientLedStripBase> g_activeAmbient;
+static std::unique_ptr<SpotLightStrip> g_spotLight;
 static std::unique_ptr<SaveRestoreJson> g_saveRestoreJson;
 
 static std::string g_settingsJsonPath = "ambient/AmbientDisplaySettings.json";
@@ -42,6 +44,11 @@ static int g_presetGradIndex = -1;
 
 // Gradient Display
 static bool g_gradDisplay_displayGradient = false;
+
+// Spot Light Display
+static bool g_spotLightDisplay = false;
+static int g_spotLightZones = SpotLightStrip::ALL;
+static uint8_t g_spotLightBrightness = 0xFF; // Set to max brightness.
 
 // Remote Control
 static std::unique_ptr<AmbRemoteControl> g_remoteCtrl_worker;
@@ -81,6 +88,7 @@ static const std::map<std::string, tAmbGradSettings> GRAD_SETTINGS = {
 static void cleanUpBeforeExit()
 {
    g_activeAmbient.reset();
+   g_spotLight.reset();
 
    // Turn off all the LEDs in the LED strip.
    g_ledStrip.reset();
@@ -225,6 +233,9 @@ static void processNewRemoteCtrlMsgs(ColorGradient::tGradient& gradient, std::st
          case AmbRemoteControl::eCommands::E_GRADIENT_NAME:
             setPresetGradByName(cmdVal.val_str, gradient, gradName, gradSettings);
          break;
+         case AmbRemoteControl::eCommands::E_TOGGLE_SPOTLIGHT:
+            g_spotLightDisplay = !g_spotLightDisplay;
+         break;
          case AmbRemoteControl::eCommands::E_INVALID_COMMAND:
             printf("[%s] - E_INVALID_COMMAND\n", __func__);
          break;
@@ -273,11 +284,16 @@ int main(int argc, char *argv[])
    {
       g_ledStrip->clear();
       g_activeAmbient.reset();
+      g_spotLight.reset();
 
       if(g_gradDisplay_displayGradient)
       {
          // Special Mode. Just display the gradient.
          displayGradient(gradient, unsigned(float(DEFAULT_NUM_LEDS)/4.0), DEFAULT_NUM_LEDS);
+      }
+      else if(g_spotLightDisplay)
+      {
+         g_spotLight = std::make_unique<SpotLightStrip>(g_ledStrip, g_spotLightZones, g_spotLightBrightness);
       }
       else
       {
