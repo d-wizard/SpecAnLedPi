@@ -252,8 +252,9 @@ int main(int argc, char *argv[])
 {
    // smartPlot_createFlushThread_withPriorityPolicy(200, 30, SCHED_FIFO);
 
-   // Setup Signal Handler for ctrl+c
+   // Setup Signal Handler for ctrl+c and kill
    signal(SIGINT, signalHandler);
+   signal(SIGTERM, signalHandler);
 
    /////////////////////////////////////////////////////////////////////////////
    // Setup settings.
