@@ -27,8 +27,8 @@
 #endif
 
 // Brightness Constants.
-#define BRIGHTNESS_PATTERN_NUM_POINTS (31)
-#define BRIGHTNESS_PATTERN_HI_LEVEL (0.9)
+#define BRIGHTNESS_PATTERN_NUM_POINTS (51)
+#define BRIGHTNESS_PATTERN_HI_LEVEL (2.5)
 #define BRIGHTNESS_PATTERN_LO_LEVEL (0.2)
 
 #define NUM_SPOT_LIGHTS (3)
@@ -62,7 +62,7 @@ void AmbDisp3SpotLights::init()
    // Define Brightness Scale
    /////////////////////////////////////////////////////////////////////////////
    WaveformGen<AmbDispFltType> brightValGen(BRIGHTNESS_PATTERN_NUM_POINTS);
-   brightValGen.Sinc(-100, 100);
+   brightValGen.Sinc(-1000, 1000);
    brightValGen.absoluteValue();
    brightValGen.scale(BRIGHTNESS_PATTERN_HI_LEVEL - BRIGHTNESS_PATTERN_LO_LEVEL);
    brightValGen.shift(BRIGHTNESS_PATTERN_LO_LEVEL);
