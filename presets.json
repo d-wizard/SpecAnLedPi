@@ -33,7 +33,7 @@
 			"hue" : 0.312999,
 			"saturation" : 1.0,
 			"lightness" : 1.0,
-			"reach" : 0.2,
+			"reach" : 0.15,
 			"position" : 0.0
 		},
 		"1" : 
@@ -41,23 +41,23 @@
 			"hue" : 0.0480003,
 			"saturation" : 1.0,
 			"lightness" : 1.0,
-			"reach" : 0.138281,
-			"position" : 0.361719
+			"reach" : 0.5,
+			"position" : 0.45
 		},
 		"2" : 
 		{
 			"hue" : 0.712,
 			"saturation" : 0.0,
 			"lightness" : 1.0,
-			"reach" : 0.0078125,
-			"position" : 0.56875
+			"reach" : 0.05,
+			"position" : 0.75
 		},
 		"3" : 
 		{
 			"hue" : 0.718,
 			"saturation" : 1.0,
 			"lightness" : 1.0,
-			"reach" : 0.207813,
+			"reach" : 0.15,
 			"position" : 1.0
 		}
 	},
