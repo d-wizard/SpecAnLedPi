@@ -111,6 +111,7 @@ static void parseCmdLineArgs(int argc, char *argv[])
    if(argc > 1 && (argv[1][0] == 'd' || (argv[1][0] == 'D')))
    {
       g_gradDisplay_displayGradient = true;
+      g_presetGradIndex = 0;
    }
    else
    {
