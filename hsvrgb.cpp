@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2025 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -15,9 +15,61 @@
  * FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- */#include "hsvrgb.h"
+ */
+#include <stdio.h>
+#include <math.h>
+#include <algorithm>
+#include "hsvrgb.h"
 
-RgbColor HsvToRgb(HsvColor hsv)
+/**
+ * Calculates a value along a quarter circle curve.
+ * Bounds the input value between 0.0 and 1.0.
+ * 
+ * @param val The input value (0.0 to 1.0).
+ * @return The value mapped along the quarter circle curve.
+ */
+static double quarterCircle(double val) {
+    // Bound the value
+    val = std::max(0.0, std::min(1.0, val));
+    
+    // The equation for a quarter circle: y=(1 - (1-x)^2)^0.5
+    // http://www.wolframalpha.com/input/?i=y%3D%281+-+%281-x%29%5E2%29%5E0.5+from+x%3D0+to+1
+    return std::sqrt(1.0 - std::pow(1.0 - val, 2));
+}
+
+/**
+ * Adjusts a hue value (assumed to be between 0.0 and 1.0) using a more perceptually
+ * uniform scaling based on a quarter circle function and power curve.
+ *
+ * @param hue The input hue value (0.0 to 1.0).
+ * @return The adjusted hue value.
+ */
+static double betterHue(double hue) {
+    const double oneSixth = 1.0 / 6.0;
+
+    // Determine which sixth of the hue we are in.
+    int whichSixth = static_cast<int>(hue / oneSixth);
+    double remainderInSixth = hue - static_cast<double>(whichSixth) * oneSixth;
+    // Direction is 0 for even sixths, 1 for odd sixths
+    int direction = whichSixth & 1; 
+
+    // Setup for scaling
+    double scaledRemainder = remainderInSixth * 6.0; // Convert from 0 to 1/6th to 0 to 1
+    double scaledPower = 2.0; // 2 = square the value, 3 = cube the value, 0.5 = square root, etc
+
+    // Do the math to determine the scaling.
+    if (direction) { scaledRemainder = 1.0 - scaledRemainder; } // Mirror on odd sixths
+    scaledRemainder = quarterCircle(scaledRemainder);
+    scaledRemainder = std::pow(scaledRemainder, scaledPower); // Use power to better scale
+    if (direction) { scaledRemainder = 1.0 - scaledRemainder; } // Mirror back on odd sixths
+
+    scaledRemainder *= oneSixth; // Scale back down to 1/6th
+    
+    // Return the final adjusted hue
+    return static_cast<double>(whichSixth) * oneSixth + scaledRemainder;
+}
+
+RgbColor HsvToRgb(HsvColor hsv, bool applyBetterHue)
 {
     RgbColor rgb;
     unsigned char region, remainder, p, q, t;
@@ -28,6 +80,11 @@ RgbColor HsvToRgb(HsvColor hsv)
         rgb.g = hsv.v;
         rgb.b = hsv.v;
         return rgb;
+    }
+
+    if(applyBetterHue)
+    {
+        hsv.h = (unsigned char)(betterHue(double(hsv.h)/256.0) * 256.0); // Convert from 0 to 255 and back when using the 'betterHue' function.
     }
 
     region = hsv.h / 43;

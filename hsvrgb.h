@@ -1,4 +1,4 @@
-/* Copyright 2020 Dan Williams. All Rights Reserved.
+/* Copyright 2020, 2025 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -34,7 +34,7 @@ typedef struct HsvColor
 
 
 
-RgbColor HsvToRgb(HsvColor hsv);
+RgbColor HsvToRgb(HsvColor hsv, bool applyBetterHue = false);
 HsvColor RgbToHsv(RgbColor rgb);
 
 long RgbToLong(RgbColor rgb);
